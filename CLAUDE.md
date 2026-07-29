@@ -4,14 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A **client-only Progressive Web App template** (SvelteKit + Svelte 5 + Tailwind 4). It is the base
-setup for spinning up a new PWA: the toolchain, PWA plumbing (installable manifest, offline service
-worker, opt-in update flow), and CI are already wired together, so a new project starts from a green
-build. There is **no backend** — adapter-static emits a prerendered shell that hydrates and then runs
-entirely in the browser.
+**Riddlon** — an interactive chat-story platform. Players chat with characters; a plot unfolds
+through the conversation while the app looks and feels like an ordinary messenger. This repository
+is the **Player PWA** (the "App 2" from the concept doc): the end-user app that loads installed
+story packages and runs them, including local LLM inference, entirely client-side. The companion
+Authoring Studio (for creating/exporting story packages) is a separate, not-yet-built app.
 
-When a real app is built on top of this template, extend this file to describe that app's own
-architecture — the sections below document the base the app inherits.
+Full product concept — vision, package format, story/character data model, the reference story
+used to validate it — lives in [`docs/concept.md`](./docs/concept.md). Read it before working on
+anything under `engine/`, `content/`, `characters/`, or `llm/`.
+
+The repo started from a **client-only Progressive Web App template** (SvelteKit + Svelte 5 +
+Tailwind 4): the toolchain, PWA plumbing (installable manifest, offline service worker, opt-in
+update flow), and CI were already wired together, so the project started from a green build. There
+is **no backend** — adapter-static emits a prerendered shell that hydrates and then runs entirely
+in the browser. As of now the app itself is still that template's starter page; the sections below
+document the inherited base, and the GitHub issue backlog tracks building the actual app on top of
+it (story engine, chat UI, content loader, character library, local-LLM module).
+
+Planned module layout inside `src/lib/` (per the concept doc's "App 2" breakdown — none of these
+exist yet, they land via the issue backlog):
+
+| Module        | Responsibility                                                                  |
+| ------------- | ------------------------------------------------------------------------------- |
+| `ui/`         | Chat interface, contact list, menus, settings                                   |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                   |
+| `content/`    | Loader/importer/installer/registry for installed story packages                 |
+| `characters/` | Local, story-independent character library                                      |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends   |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)         |
+| `pwa/`        | Service worker, offline behavior, asset precaching (already present, see below) |
 
 ## Commands
 
@@ -78,8 +100,8 @@ in non-supporting environments (`browser` from `$app/environment`, plus feature 
   registration is off — see `vite.config.ts`); it precaches the shell and static assets cache-first.
   The manifest link and `theme-color` are in `src/app.html`; assets are `static/manifest.webmanifest`
   and `static/pwa-icon*`.
-- **Installable.** `static/manifest.webmanifest` declares name/icons/display; the icons are
-  **placeholders** — replace the SVG + maskable PNGs (192/512) for a real app.
+- **Installable.** `static/manifest.webmanifest` declares name/icons/display; the icon is the
+  Riddlon speech-bubble mark (`static/pwa-icon*`, sourced from `static/riddlon-icon-final.svg`).
 
 ## CI / release
 
@@ -101,7 +123,3 @@ workflow needs a `RELEASE_TOKEN` repository secret (a PAT) so a created release 
   Use the `$lib` alias for `src/lib`.
 - **Nothing touching the DOM may run at module top-level or during SSR/prerender.** Guard with
   `browser` from `$app/environment` and feature-detect optional browser APIs.
-- **Renaming for a new app:** `name` in `package.json`, `package-name` in `release-please-config.json`,
-  `name`/`short_name`/`description` in `static/manifest.webmanifest`, the `theme-color` in
-  `src/app.html` + manifest, the design tokens in `src/routes/layout.css`, and the cache prefix /
-  build-log tag (`pwa-` / `[pwa]`) in `service-worker.ts` / `+layout.svelte`.

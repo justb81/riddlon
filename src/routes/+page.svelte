@@ -12,17 +12,17 @@
 	data-wco={windowChrome.visible}
 >
 	<img src="{base}/pwa-icon.svg" alt="" class="app-header-no-drag size-7" />
-	<h1 class="app-header-no-drag text-h1 font-semibold text-slate-100">PWA Template</h1>
+	<h1 class="app-header-no-drag text-h1 font-semibold text-slate-100">Riddlon</h1>
 </header>
 
 <main class="mx-auto flex max-w-2xl flex-col gap-8 px-5 py-12">
 	<section class="flex flex-col gap-3">
-		<p class="text-display font-semibold text-slate-50">
-			A SvelteKit + Svelte 5 + Tailwind 4 PWA starter.
-		</p>
+		<p class="text-display font-semibold text-slate-50">Interactive chat stories.</p>
 		<p class="text-body text-slate-400">
-			Client-only, installable, offline-capable. Static-adapter build, forced runes mode, and a
-			service worker with an opt-in update banner — all preconfigured. Start editing
+			Riddlon looks like a messenger app — its stories unfold entirely through chat. This is still
+			the client-only PWA shell (offline service worker, opt-in update banner, installable
+			manifest); the story engine, chat UI and character system land via the issue backlog. Start
+			editing
 			<code class="rounded-control bg-surface-raised px-1.5 py-0.5 text-caption text-accent-soft"
 				>src/routes/+page.svelte</code
 			>.

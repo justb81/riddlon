@@ -1,15 +1,15 @@
 {
 	"id": "/",
-	"name": "PWA Template",
-	"short_name": "PWA",
-	"description": "A SvelteKit + Svelte 5 + Tailwind 4 progressive web app.",
+	"name": "Riddlon",
+	"short_name": "Riddlon",
+	"description": "Riddlon — interactive chat stories disguised as a messenger app.",
 	"start_url": ".",
 	"scope": ".",
 	"display_override": ["window-controls-overlay", "standalone"],
 	"display": "standalone",
 	"orientation": "any",
-	"background_color": "#020617",
-	"theme_color": "#0284c7",
+	"background_color": "#151a26",
+	"theme_color": "#151a26",
 	"launch_handler": {
 		"client_mode": "focus-existing"
 	},

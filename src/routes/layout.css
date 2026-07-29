@@ -8,9 +8,9 @@
  * regardless of which component is using it. Retune the palette here for a new app.
  */
 @theme {
-	--color-accent: var(--color-sky-500);
-	--color-accent-strong: var(--color-sky-600);
-	--color-accent-soft: var(--color-sky-400);
+	--color-accent: #c1502e;
+	--color-accent-strong: #a53f22;
+	--color-accent-soft: #d97b52;
 
 	--color-success: var(--color-emerald-500);
 	--color-success-strong: var(--color-emerald-600);
@@ -21,12 +21,12 @@
 	--color-danger: var(--color-rose-400);
 	--color-danger-strong: var(--color-rose-600);
 
-	--color-surface: var(--color-slate-900);
-	--color-surface-raised: var(--color-slate-800);
-	--color-surface-sunken: var(--color-slate-950);
+	--color-surface: #151a26;
+	--color-surface-raised: #1e2436;
+	--color-surface-sunken: #0d1119;
 
-	--color-line: var(--color-slate-700);
-	--color-line-strong: var(--color-slate-600);
+	--color-line: #2a3142;
+	--color-line-strong: #384057;
 
 	/* Type scale — distinct names from Tailwind's default text-xs..2xl so usage stays semantic. */
 	--text-display: 1.5rem;
@@ -52,7 +52,7 @@
 }
 
 body {
-	background-color: #020617;
+	background-color: #0d1119;
 	min-height: 100vh;
 }
 

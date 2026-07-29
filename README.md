@@ -1,8 +1,15 @@
-# pwa_template
+# Riddlon
 
-A Svelte-based **Progressive Web App** template — the base setup for spinning up a new
-client-only PWA. It ships with the toolchain, PWA plumbing, and CI already wired together,
-so a new project starts from a green build instead of a blank folder.
+An open-source platform for interactive chat stories: players chat with characters and the
+plot unfolds through the conversation, while the app looks and feels like an ordinary messenger.
+Riddlon is **offline-first** — after a story package is installed, it's fully playable without a
+network connection, including local LLM inference in the browser.
+
+This repository is the **Player PWA**, built on a client-only Progressive Web App base
+(SvelteKit + Svelte 5 + Tailwind 4). It ships with the toolchain, PWA plumbing, and CI already
+wired together, so the app starts from a green build instead of a blank folder. See
+[`CLAUDE.md`](./CLAUDE.md) for the concept and architecture, and the repo's issues for the
+build roadmap.
 
 ## Stack
 
@@ -75,19 +82,11 @@ static/                     # manifest.webmanifest, placeholder icons, robots.tx
 Tests run under Vitest's `server` (Node) project, which matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is on — every test must assert at least once.
 
-## Using this template
+## Status
 
-1. **Create a repo from this template** (or clone it) and `npm install`.
-2. **Rename the project** — update `name` in `package.json`, `package-name` in
-   `release-please-config.json`, the `name`/`short_name`/`description` in
-   `static/manifest.webmanifest`, and the cache prefix / build-log tag (`pwa-` / `[pwa]`) in
-   `src/service-worker.ts` and `src/routes/+layout.svelte`.
-3. **Replace the placeholder icons** in `static/` (`pwa-icon*.svg` / `pwa-icon*.png`) and the
-   `theme-color` in `src/app.html` + the manifest with your brand.
-4. **Retune the design tokens** at the top of `src/routes/layout.css` for your palette.
-5. **Start building** in `src/routes/+page.svelte` and `src/lib/`. Delete the example
-   `src/lib/utils/greeting.*`.
-6. **Update `CLAUDE.md`** to describe your app's own architecture as it grows.
+The PWA shell is rebranded (name, icons, theme, design tokens) but the app itself is still the
+starter page — the story engine, chat UI, content loader, character library and local-LLM module
+described in `CLAUDE.md` are tracked as GitHub issues, not yet implemented.
 
 ### GitHub Pages / release flow
 
