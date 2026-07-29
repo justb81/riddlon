@@ -1,0 +1,107 @@
+{
+	"common": {
+		"back": "Zurück",
+		"new": "NEU"
+	},
+	"boot": {
+		"tagline": "GESCHICHTEN, DIE ZURÜCKSCHREIBEN",
+		"setupLabel": "ERSTEINRICHTUNG",
+		"setupOfflineNote": "EINMALIG · DANACH VOLLSTÄNDIG OFFLINE",
+		"warmLabel": "GESCHICHTE WIRD VORBEREITET",
+		"step": {
+			"loadingModel": "Lokales Modell wird geladen · {model} ({size})",
+			"preparingDevice": "Modell wird für dein Gerät vorbereitet",
+			"installingStory": "Geschichte „{title}“ wird installiert",
+			"done": "Fertig"
+		}
+	},
+	"chats": {
+		"title": "Chats",
+		"searchPlaceholder": "Chats durchsuchen",
+		"chapterInfo": "KAPITEL {chapter} · {theme}",
+		"chapterGoal": "Ziel: {goal}",
+		"progressPercent": "{percent} %",
+		"chatCount": "{count} CHATS",
+		"libraryPreview": "Deine Bibliothek: {count} Geschichten. Neue importieren?"
+	},
+	"convo": {
+		"clueCount": "HINWEISE {revealed}/{total}",
+		"contradictionsOpen": "{count} Widerspruch offen",
+		"contradictionsOpenPlural": "{count} Widersprüche offen",
+		"lastOnline": "ZULETZT ONLINE {time}",
+		"contradictionPrefix": "WIDERSPRUCH · {label}",
+		"contradictionExplainer": "Beide Aussagen sind in deiner Akte gespeichert. Eine davon ist falsch.",
+		"messagePlaceholder": "Nachricht"
+	},
+	"library": {
+		"title": "Riddlon",
+		"subtitle": "BIBLIOTHEK · IMPORT · UPDATES",
+		"offlineNote": "OFFLINE-BEREIT · KEIN KONTO ERFORDERLICH",
+		"systemContactNote": "Systemkontakt · keine Story-Figur",
+		"welcome": "Willkommen zurück, {name}. Du hast {count} Geschichten installiert — alle vollständig offline spielbar.",
+		"installedLabel": "INSTALLIERT",
+		"status": {
+			"running": "LÄUFT",
+			"solved": "GELÖST",
+			"notStarted": "noch nicht gestartet"
+		},
+		"askImport": "Neue Geschichte hinzufügen? Schick mir eine ZIP-Datei oder eine URL.",
+		"importLabel": "IMPORT",
+		"importZip": "ZIP wählen",
+		"importUrl": "URL einfügen",
+		"importNote": "Wird einmalig heruntergeladen und lokal installiert. Danach kein Netz nötig.",
+		"lastInstalledNote": "„{title}“ installiert · {size} · Prüfsumme ok",
+		"chipCheckUpdates": "Updates prüfen",
+		"chipManageStorage": "Speicher verwalten",
+		"chipSettings": "Einstellungen"
+	},
+	"story": {
+		"title": "Storyübersicht",
+		"chapterInfo": "{story} · KAPITEL {chapter} VON {total}",
+		"milestonesReached": "Meilensteine erreicht",
+		"continue": "Weiterspielen · Kapitel {chapter}"
+	},
+	"settings": {
+		"title": "Profil & Einstellungen",
+		"version": "v{version}",
+		"scopeNote": "GILT FÜR ALLE GESCHICHTEN",
+		"avatarLabel": "SO SEHEN DICH DIE CHARAKTERE",
+		"nicknamePlaceholder": "Anzeigename",
+		"pronounLabel": "ANREDE · PFLICHTFELD",
+		"previewLabel": "VORSCHAU · {name}",
+		"previewFirstName": "„{nickname}, kannst du mir helfen?“",
+		"previewPronoun": "„Kannst du mir helfen? Ich schreibe {form} an, weil ich niemanden sonst habe.“",
+		"bioPlaceholder": "Kurzbeschreibung (optional)",
+		"disguiseLabel": "SPIELGEFÜHL",
+		"disguiseDesc": "Wie sichtbar darf das Spiel im Chat sein? Wirkt sofort in allen Geschichten.",
+		"disguise": {
+			"pure": {
+				"title": "Reiner Messenger",
+				"desc": "Keine Spielelemente. Nur Chats — Fortschritt bleibt unsichtbar."
+			},
+			"subtle": {
+				"title": "Dezente Hinweise",
+				"desc": "Feine Fortschrittslinie und Hinweiszähler über dem Chat."
+			},
+			"game": {
+				"title": "Sichtbares Spiel",
+				"desc": "Kapitelziel, Hinweisleiste und Fortschritt offen sichtbar."
+			}
+		},
+		"modelLabel": "LOKALES MODELL",
+		"modelLoaded": "geladen",
+		"modelNotLoaded": "nicht geladen",
+		"notifyTitle": "Benachrichtigungen",
+		"notifyDesc": "Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen."
+	},
+	"toast": {
+		"achievement": "AUSZEICHNUNG",
+		"overview": "Übersicht"
+	},
+	"celebration": {
+		"kicker": "FALL ABGESCHLOSSEN",
+		"title": "Fall gelöst",
+		"viewStory": "Fallakte ansehen",
+		"later": "Später"
+	}
+}
