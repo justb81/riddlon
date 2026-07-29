@@ -16,20 +16,29 @@ function hostileNetwork(): void {
 		throw new Error('network access attempted while offline');
 	};
 	vi.stubGlobal('fetch', vi.fn(explode));
-	vi.stubGlobal('XMLHttpRequest', class {
-		open = explode;
-		send = explode;
-	});
-	vi.stubGlobal('WebSocket', class {
-		constructor() {
-			explode();
+	vi.stubGlobal(
+		'XMLHttpRequest',
+		class {
+			open = explode;
+			send = explode;
 		}
-	});
-	vi.stubGlobal('EventSource', class {
-		constructor() {
-			explode();
+	);
+	vi.stubGlobal(
+		'WebSocket',
+		class {
+			constructor() {
+				explode();
+			}
 		}
-	});
+	);
+	vi.stubGlobal(
+		'EventSource',
+		class {
+			constructor() {
+				explode();
+			}
+		}
+	);
 	vi.stubGlobal('navigator', { onLine: false });
 }
 

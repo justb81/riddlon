@@ -18,7 +18,11 @@ async function collect(source: AsyncIterable<string>): Promise<string[]> {
 
 describe('readableToAsyncIterable', () => {
 	it('yields every chunk in order', async () => {
-		expect(await collect(readableToAsyncIterable(streamOf('a', 'b', 'c')))).toEqual(['a', 'b', 'c']);
+		expect(await collect(readableToAsyncIterable(streamOf('a', 'b', 'c')))).toEqual([
+			'a',
+			'b',
+			'c'
+		]);
 	});
 
 	it('cancels the stream when the consumer stops early', async () => {

@@ -42,9 +42,7 @@ export function shouldAutoStartDownload(metered: boolean | undefined): boolean {
 }
 
 export type BackendChoice =
-	| { backend: 'native' }
-	| { backend: 'webllm' }
-	| { backend: 'none'; reason: LlmErrorCode };
+	{ backend: 'native' } | { backend: 'webllm' } | { backend: 'none'; reason: LlmErrorCode };
 
 /**
  * Native first: a built-in model costs no download at all, so it wins whenever it exists. WebLLM is

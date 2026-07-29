@@ -16,6 +16,7 @@ import type {
 	ProviderKind,
 	ResolvedProvider
 } from '../types.js';
+import { createProgressEvent } from './progress-event.js';
 
 export interface FakeCall {
 	input: string;
@@ -47,9 +48,7 @@ export interface FakeLanguageModel extends LanguageModelLike {
 
 const DEFAULT_CHUNKS = ['Ich ', 'war ', 'zu Hause.'];
 
-export function createFakeLanguageModel(
-	options: FakeLanguageModelOptions = {}
-): FakeLanguageModel {
+export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}): FakeLanguageModel {
 	const chunks = options.chunks ?? DEFAULT_CHUNKS;
 	const progress = options.progress ?? [0, 0.5, 1];
 
@@ -122,11 +121,7 @@ export function createFakeLanguageModel(
 				createOpts.monitor(target);
 				for (const fraction of progress) {
 					target.dispatchEvent(
-						new ProgressEvent('downloadprogress', {
-							loaded: fraction,
-							total: 1,
-							lengthComputable: true
-						})
+						createProgressEvent('downloadprogress', { loaded: fraction, total: 1 })
 					);
 				}
 			}

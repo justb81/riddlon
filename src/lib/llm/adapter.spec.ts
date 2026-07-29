@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { createLlmAdapter } from './adapter.js';
 import { LLM_MODELS, MODEL_ORDER, type LocalModelId } from './catalog.js';
 import { isLlmError } from './errors.js';
-import { createFakeProvider, type FakeLanguageModelOptions } from './__fixtures__/fake-language-model.js';
+import {
+	createFakeProvider,
+	type FakeLanguageModelOptions
+} from './__fixtures__/fake-language-model.js';
 import type { LlmProgress, LlmSessionConfig } from './types.js';
 
 const LUCY: LlmSessionConfig = { systemPrompt: 'Du bist Lucy.' };

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createProgressEvent } from './__fixtures__/progress-event.js';
 import {
 	PHASE_BUDGET,
 	PREPARE_THRESHOLD,
@@ -11,12 +12,16 @@ import {
 } from './progress.js';
 
 describe('clampFraction', () => {
-	it('clamps to 0..1 and treats non-finite input as 0', () => {
+	it('clamps out-of-range values into 0..1', () => {
 		expect(clampFraction(-0.5)).toBe(0);
 		expect(clampFraction(1.5)).toBe(1);
 		expect(clampFraction(0.42)).toBe(0.42);
+	});
+
+	it('treats NaN as the start, and infinities as their natural clamp', () => {
 		expect(clampFraction(Number.NaN)).toBe(0);
 		expect(clampFraction(Number.POSITIVE_INFINITY)).toBe(1);
+		expect(clampFraction(Number.NEGATIVE_INFINITY)).toBe(0);
 	});
 });
 
@@ -48,20 +53,12 @@ describe('phaseForFraction', () => {
 
 describe('normalizeProgressEvent', () => {
 	it('reads a 0..1 loaded fraction as-is', () => {
-		const event = new ProgressEvent('downloadprogress', {
-			loaded: 0.25,
-			total: 1,
-			lengthComputable: true
-		});
+		const event = createProgressEvent('downloadprogress', { loaded: 0.25, total: 1 });
 		expect(normalizeProgressEvent(event)).toBe(0.25);
 	});
 
 	it('divides byte counts by their total', () => {
-		const event = new ProgressEvent('downloadprogress', {
-			loaded: 512,
-			total: 2048,
-			lengthComputable: true
-		});
+		const event = createProgressEvent('downloadprogress', { loaded: 512, total: 2048 });
 		expect(normalizeProgressEvent(event)).toBe(0.25);
 	});
 

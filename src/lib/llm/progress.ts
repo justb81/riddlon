@@ -34,7 +34,9 @@ export function monotonic(previous: number, next: number): number {
 }
 
 export function clampFraction(value: number): number {
-	if (!Number.isFinite(value)) return 0;
+	// NaN alone is meaningless and maps to the start; +/-Infinity are meaningful and clamp normally
+	// via the comparisons below (Infinity > 1, -Infinity < 0) rather than being treated as invalid.
+	if (Number.isNaN(value)) return 0;
 	if (value < 0) return 0;
 	if (value > 1) return 1;
 	return value;

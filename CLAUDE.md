@@ -31,20 +31,20 @@ package import (the ZIP/URL buttons in `/chat/riddlon` are decorative), local LL
 list is static; nothing actually runs a model), and the character library. Those land per the
 concept doc's "App 2" module breakdown as the issue backlog works through them:
 
-| Module        | Responsibility                                                                | Status                                                                   |
-| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                        |
-| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Mocked in `$lib/state/game.svelte.ts`                                    |
-| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                                        |
-| `characters/` | Local, story-independent character library                                    | Not started                                                              |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                      |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload          |
-| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                              |
+| Module        | Responsibility                                                                | Status                                                          |
+| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                               |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Mocked in `$lib/state/game.svelte.ts`                           |
+| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                               |
+| `characters/` | Local, story-independent character library                                    | Not started                                                     |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                             |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload |
+| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                     |
 
 ## Local LLM
 
 `src/lib/llm/` runs inference in the browser. It does **not** define its own backend vocabulary: the
-interface *is* the [W3C/Chrome Prompt API](https://webmachinelearning.github.io/prompt-api/)
+interface _is_ the [W3C/Chrome Prompt API](https://webmachinelearning.github.io/prompt-api/)
 (`LanguageModel.availability()` / `create()` / `promptStreaming()`), and browsers without a built-in
 one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend over WebGPU.
 **Native first, polyfill fallback** — a built-in model costs no download, so it wins when present.
@@ -55,13 +55,13 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
   and must never be conflated — the design mockup's "1,8 GB / 4,6 GB" were download sizes.
 - **`adapter.ts`** — `LlmAdapter` / `LlmSession`, what `engine/` and `ui/` code against. Injects its
   provider, so `adapter.spec.ts` exercises the real logic against a fake in Node with no GPU.
-- **`provider.ts`** — the *only* file touching `globalThis.LanguageModel`, `window.WEBLLM_CONFIG` or
+- **`provider.ts`** — the _only_ file touching `globalThis.LanguageModel`, `window.WEBLLM_CONFIG` or
   `import('prompt-api-polyfill')`. The native probe must run before the polyfill import (the polyfill
   installs itself on the global as an import side effect), and `WEBLLM_CONFIG` must be set before it
   (with no config the polyfill silently falls back to Transformers.js).
 - **`llm.svelte.ts`** — the `llm` singleton the UI reads: status, real download progress, which
-  backend won, which models are cached. `profile.model` holds the *choice*; `llm.activeModelId` holds
-  what's *loaded* — they differ whenever a selected model hasn't been downloaded.
+  backend won, which models are cached. `profile.model` holds the _choice_; `llm.activeModelId` holds
+  what's _loaded_ — they differ whenever a selected model hasn't been downloaded.
 - **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — the polyfill can also
   reach Firebase/Gemini/OpenAI/Transformers.js. Those four SDKs are aliased to a throwing stub, so
   "no cloud calls" (concept §2/§8) is enforced by the build, not by convention.
@@ -77,7 +77,7 @@ Things that look wrong but aren't:
   provider does get a real session each.
 - Inference runs on the **main thread** — the polyfill's WebLLM backend has no worker variant. Keep
   typing/spinner animations CSS-only so they survive the decode loop.
-- `isModelCached()` asks web-llm's `hasModelInCache` *and* keeps a localStorage marker. The
+- `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker. The
   polyfill's `availability()` always reports `'available'`, so it can't answer this; each fallback is
   wrong in a different way, and together the worst case is one unnecessary progress bar.
 - Automated tests cannot run real inference — CI and the dev sandbox have no GPU. `npm test` covers

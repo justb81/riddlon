@@ -96,7 +96,9 @@
 			<dt class="text-slate-500">built-in api</dt>
 			<dd>{llm.capabilities ? String(llm.capabilities.hasNativeLanguageModel) : '?'}</dd>
 			<dt class="text-slate-500">metered</dt>
-			<dd>{llm.capabilities?.metered === undefined ? 'unbekannt' : String(llm.capabilities.metered)}</dd>
+			<dd>
+				{llm.capabilities?.metered === undefined ? 'unbekannt' : String(llm.capabilities.metered)}
+			</dd>
 			<dt class="text-slate-500">online</dt>
 			<dd>{typeof navigator === 'undefined' ? '?' : String(navigator.onLine)}</dd>
 		</dl>
@@ -165,8 +167,7 @@
 			<textarea
 				bind:value={input}
 				rows="2"
-				class="rounded-tile border border-line bg-slate-100/3 p-3 text-body"
-			></textarea>
+				class="rounded-tile border border-line bg-slate-100/3 p-3 text-body"></textarea>
 		</label>
 	</section>
 
@@ -175,7 +176,7 @@
 			ANTWORT {#if elapsedMs !== null}· {elapsedMs} ms{/if}
 		</h2>
 		<pre
-			class="min-h-24 whitespace-pre-wrap rounded-tile border border-line bg-slate-100/3 p-3 text-body">{answer}</pre>
+			class="min-h-24 rounded-tile border border-line bg-slate-100/3 p-3 text-body whitespace-pre-wrap">{answer}</pre>
 		{#if thrown}
 			<p class="text-caption text-danger">{thrown}</p>
 		{/if}

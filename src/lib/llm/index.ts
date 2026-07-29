@@ -10,11 +10,7 @@
  */
 
 export { createLlmAdapter, modelVramRequiredMB } from './adapter.js';
-export {
-	canRunModel,
-	detectLlmCapabilities,
-	type LlmCapabilities
-} from './capabilities.js';
+export { canRunModel, detectLlmCapabilities, type LlmCapabilities } from './capabilities.js';
 export {
 	isMeteredConnection,
 	resolveBackend,

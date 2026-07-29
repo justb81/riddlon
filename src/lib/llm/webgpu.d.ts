@@ -15,9 +15,9 @@ interface RiddlonGpuAdapter {
 }
 
 interface RiddlonGpu {
-	requestAdapter(options?: { powerPreference?: 'low-power' | 'high-performance' }): Promise<
-		RiddlonGpuAdapter | null
-	>;
+	requestAdapter(options?: {
+		powerPreference?: 'low-power' | 'high-performance';
+	}): Promise<RiddlonGpuAdapter | null>;
 }
 
 interface Navigator {
