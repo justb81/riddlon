@@ -31,15 +31,15 @@ package import (the ZIP/URL buttons in `/chat/riddlon` are decorative), local LL
 list is static; nothing actually runs a model), and the character library. Those land per the
 concept doc's "App 2" module breakdown as the issue backlog works through them:
 
-| Module        | Responsibility                                                                | Status                                                          |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                               |
-| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Mocked in `$lib/state/game.svelte.ts`                           |
-| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                               |
-| `characters/` | Local, story-independent character library                                    | Not started                                                     |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                             |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload |
-| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                     |
+| Module        | Responsibility                                                                | Status                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------|
+| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                     |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`) — `ui/` still runs on the `$lib/state/game.svelte.ts` mock until #14–#17 swap it over |
+| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                                                                                     |
+| `characters/` | Local, story-independent character library                                    | Not started                                                                                                           |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                   |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload                                                       |
+| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                           |
 
 ## Local LLM
 

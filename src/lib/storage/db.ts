@@ -35,6 +35,19 @@ export interface PendingDelayedEvent {
 	fired: boolean;
 }
 
+/** One source's claim about a clue — never overwritten by another source's claim (#8). */
+export interface ClueClaimRecord {
+	characterId: string;
+	value: string;
+}
+
+export interface ClueStateRecord {
+	clueId: string;
+	claims: ClueClaimRecord[];
+	/** Whether a previously-conflicting clue has been resolved by the engine/UI. */
+	resolved: boolean;
+}
+
 export interface SaveRecord {
 	id: string;
 	packageId: string;
@@ -42,8 +55,16 @@ export interface SaveRecord {
 	updatedAt: string;
 	flags: Record<string, boolean>;
 	unlockedSceneIds: string[];
+	/** Added alongside unlockedSceneIds for #7's progress tracking; absent on older records. */
+	completedSceneIds: string[];
+	/** Fired group-chat-scene outcome ids (#7 §5.7); absent on older records. */
+	reachedOutcomeIds: string[];
+	/** Characters force-unlocked via an `unlock-character:` action; absent on older records. */
+	unlockedCharacterIds: string[];
 	chatHistory: SaveChatMessage[];
 	pendingDelayedEvents: PendingDelayedEvent[];
+	/** Added for #8; absent on records written before clue tracking existed. */
+	clueStates: ClueStateRecord[];
 }
 
 export interface PlayerProfileRecord extends PlayerProfile {
