@@ -23,12 +23,15 @@
 
 {#if message.from === 'system'}
 	<div
-		class="my-2.5 max-w-[80%] self-center rounded-control bg-slate-100/6 px-3 py-1.5 text-center font-mono text-[10.5px] leading-snug text-slate-400"
+		class="my-2.5 max-w-[80%] self-center rounded-control bg-slate-100/6 px-3 py-1.5 text-center font-mono text-[10.5px] leading-snug text-slate-400 sm:max-w-[68%] lg:max-w-[60%]"
 	>
 		{message.text}
 	</div>
 {:else if message.from === 'me'}
-	<div class="mt-1.5 max-w-[78%] self-end" style="animation:rd-in .26s ease both">
+	<div
+		class="mt-1.5 max-w-[78%] self-end sm:max-w-[72%] lg:max-w-[68%]"
+		style="animation:rd-in .26s ease both"
+	>
 		<div
 			style="border-radius:16px 16px 4px 16px"
 			class="bg-accent px-3.5 pt-2.5 pb-2.5 text-body leading-relaxed text-white"
@@ -38,7 +41,10 @@
 		<div class="mt-1 text-right font-mono text-[9.5px] text-slate-500">{message.time} ✓✓</div>
 	</div>
 {:else}
-	<div class="mt-1.5 max-w-[80%] self-start" style="animation:rd-in .26s ease both">
+	<div
+		class="mt-1.5 max-w-[80%] self-start sm:max-w-[74%] lg:max-w-[68%]"
+		style="animation:rd-in .26s ease both"
+	>
 		{#if showName && character}
 			<div class="mb-1.5 flex items-center gap-1.5 pl-0.5">
 				<Avatar kind="solo" initial={character.initial} size={20} fontSize={9.5} />

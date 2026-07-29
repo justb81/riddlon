@@ -82,9 +82,45 @@ Building blocks:
 - **`$lib/components/chat/*`** — shared screen chrome: `AppHeader` (60px) + `InfoBand` (46px) are
   used on every screen so header height is identical everywhere (a specific piece of design
   feedback — see chat1.md), `MessageBubble`, `Composer`, `Avatar`, etc.
+- **`AppFrame` + `ChatList`** — the responsive shell (see "Responsive layout" below). Every screen
+  except the splash renders its content inside `<AppFrame>`.
 - **Pure logic lives in plain `.ts` files** next to their `.svelte.ts`/route consumers, so it's
   Node-testable: `$lib/story/detect-evidence.ts`, `$lib/story/boot-steps.ts`,
   `$lib/state/profile.ts`, `$lib/i18n/format.ts`.
+
+## Responsive layout
+
+The design reference is a phone mockup, but the app is a PWA that also runs in a desktop browser
+window. Rather than letting the phone layout stretch, `$lib/components/chat/AppFrame.svelte` wraps
+every screen (splash excepted) and switches between two shapes **in CSS only** — no media-query
+rune, no resize listener, so there's no layout flash on load:
+
+- **below `lg` (1024px)** — pass-through. The route fills the viewport exactly as before; the
+  mobile screens are byte-for-byte the same layout they were.
+- **from `lg` up** — the two-pane desktop layout of WhatsApp/Telegram Web: `ChatList` docks as a
+  persistent left sidebar (336 → 380 → 420px) next to whichever route is open, and marks the open
+  thread as active. `/chats` becomes "sidebar + placeholder pane", since the list moved.
+- **from `xl` up** — the whole frame caps at `max-w-frame` (1600px) and centres itself on
+  `bg-surface-sunken` with a border, radius and shadow, so an ultrawide monitor gets an app window
+  instead of a 2560px-wide chat.
+
+`ChatList` is the extracted `/chats` body, mounted exactly once — it moves between "the whole
+screen" and "the sidebar" purely via the aside/main visibility classes in `AppFrame`.
+
+Two width tokens in `layout.css` cap content _inside_ the frame so text never runs its full width:
+`max-w-chat` (60rem, message column + composer) and `max-w-pane` (46rem, the reading columns —
+settings form, story overview, library). Both are plain `@theme` container values, so
+`max-w-chat`/`max-w-pane` work as ordinary Tailwind utilities.
+
+Gotchas:
+
+- **Window Controls Overlay can't use `AppHeader` in the two-pane layout** — there are two headers
+  side by side then, and only one titlebar rect. From `lg` up the `.app-header[data-wco]` fixed
+  positioning is switched off and `AppFrame` draws its own `.app-frame-titlebar` drag strip above
+  both panes instead (see `layout.css`). Below `lg` the original single-header behaviour stands.
+- **`AppHeader`'s back chevron is hidden on desktop** (`backOnDesktop={false}`) on the conversation
+  screens, where the docked list already is the way back. `/story` and `/settings` keep it — the
+  sidebar has no entry for them.
 
 ## i18n
 

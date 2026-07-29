@@ -22,7 +22,10 @@
 		"chapterGoal": "Ziel: {goal}",
 		"progressPercent": "{percent} %",
 		"chatCount": "{count} CHATS",
-		"libraryPreview": "Deine Bibliothek: {count} Geschichten. Neue importieren?"
+		"libraryPreview": "Deine Bibliothek: {count} Geschichten. Neue importieren?",
+		"emptyTitle": "Wähle einen Chat",
+		"emptyDesc": "Öffne links eine Unterhaltung, um weiterzuspielen. Die Geschichte läuft weiter, während du liest.",
+		"emptyNote": "LÄUFT VOLLSTÄNDIG AUF DEINEM GERÄT"
 	},
 	"convo": {
 		"clueCount": "HINWEISE {revealed}/{total}",
