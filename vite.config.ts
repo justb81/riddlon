@@ -3,7 +3,21 @@ import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+// `prompt-api-polyfill` can drive five backends and declares all of them as dependencies. We only
+// ever configure its WebLLM one (see src/lib/llm/provider.ts); the other four talk to cloud services,
+// which docs/concept.md §2/§8 rules out for core gameplay. Aliasing those SDKs to a throwing stub
+// makes that structural rather than a convention: the polyfill's cloud backend chunks still exist,
+// but they cannot import anything that reaches a server.
+const CLOUD_BACKEND_STUB = '/src/lib/llm/stubs/unsupported-backend.ts';
+const cloudBackendAliases = [
+	{ find: /^firebase(\/.*)?$/, replacement: CLOUD_BACKEND_STUB },
+	{ find: /^openai(\/.*)?$/, replacement: CLOUD_BACKEND_STUB },
+	{ find: /^@google\/genai(\/.*)?$/, replacement: CLOUD_BACKEND_STUB },
+	{ find: /^@huggingface\/transformers(\/.*)?$/, replacement: CLOUD_BACKEND_STUB }
+];
+
 export default defineConfig({
+	resolve: { alias: cloudBackendAliases },
 	plugins: [
 		tailwindcss(),
 		sveltekit({
