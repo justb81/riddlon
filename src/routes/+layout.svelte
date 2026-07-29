@@ -1,6 +1,8 @@
 <script lang="ts">
 	import './layout.css';
 	import Toast from '$lib/components/ui/Toast.svelte';
+	import AchievementToast from '$lib/components/chat/AchievementToast.svelte';
+	import CelebrationOverlay from '$lib/components/chat/CelebrationOverlay.svelte';
 	import { browser, dev, version } from '$app/environment';
 	import { base } from '$app/paths';
 	import { updateStatus } from '$lib/state/update.svelte.js';
@@ -10,7 +12,7 @@
 	if (browser) {
 		// A distinct value per `vite dev`/`vite build` run — paste this when reporting a
 		// bug, so we can tell whether the browser is actually running the build being debugged.
-		console.info(`[pwa] build ${version}`);
+		console.info(`[riddlon] build ${version}`);
 
 		if (dev) {
 			// Registration is disabled in dev (see vite.config.ts): a cache-first worker
@@ -45,4 +47,6 @@
 
 {@render children()}
 
+<AchievementToast />
+<CelebrationOverlay />
 <Toast />

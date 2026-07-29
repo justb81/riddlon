@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#ddd8cd;font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#c1502e;text-decoration:none}a:hover{color:#a8421f}
+*{box-sizing:border-box}
+input,button{font-family:inherit}
+@keyframes rdIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rdToast{0%{opacity:0;transform:translateY(-24px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes rdPop{0%{opacity:0;transform:scale(.82)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
+@keyframes rdRing{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes rdDot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes rdFade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;gap:36px;padding:40px 44px 56px;align-items:flex-start">
+
+  <div style="width:212px;flex:none;position:sticky;top:40px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;align-items:center;gap:11px">
+      <svg width="38" height="38" viewBox="0 0 512 512" style="border-radius:9px;display:block"><rect width="512" height="512" fill="#151a26" rx="72"></rect><g fill="#f3eee3"><path d="m169 376-58 87 135-87z"></path><path d="M130 48h252c53 0 96 43 96 97v135c0 54-43 97-96 97H130c-53 0-96-43-96-97V145c0-54 43-97 96-97"></path></g><g fill="#c1502e"><path d="M172 220h-38v-4q0-10 2-16l7-11 19-17q8-7 8-12t-3-9-10-3-11 5-6 16l-39-4q2-22 16-35 13-13 41-13 22 0 35 9 18 13 18 33 0 9-5 16-4 8-19 20-10 8-12 12-3 5-3 13m-39 10h40v36h-40Zm221-110h44v33l-9 67h-27l-8-67Zm2 110h40v36h-40Z" transform="translate(-51 -20)scale(1.213)"></path><path d="M206 259h50v44h-50zm86 0h50v44h-50z"></path></g></svg>
+      <div>
+        <div style="font:700 17px/1 'DM Sans',sans-serif;color:#151a26;letter-spacing:-.02em">Riddlon</div>
+        <div style="font:400 10px/1.4 'IBM Plex Mono',monospace;color:rgba(21,26,38,.5);margin-top:3px">MVP · Player PWA</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(21,26,38,.42);margin-bottom:5px">SCREENS</div>
+      <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="5">
+        <button onClick="{{ nav.go }}" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 11px;border:0;border-radius:9px;background:rgba(21,26,38,.05);cursor:pointer" style-hover="background:rgba(21,26,38,.11)">
+          <sc-if value="{{ nav.active }}" hint-placeholder-val="{{ true }}"><span style="width:5px;height:5px;border-radius:50%;background:#c1502e;flex:none"></span></sc-if>
+          <sc-if value="{{ nav.inactive }}" hint-placeholder-val="{{ false }}"><span style="width:5px;height:5px;border-radius:50%;background:rgba(21,26,38,.2);flex:none"></span></sc-if>
+          <span style="font:500 12.5px/1.2 'DM Sans',sans-serif;color:#151a26">{{ nav.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:7px;padding-top:18px;border-top:1px solid rgba(21,26,38,.12)">
+      <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(21,26,38,.42)">DEMO</div>
+      <p style="margin:0;font:400 11.5px/1.65 'DM Sans',sans-serif;color:rgba(21,26,38,.62)">Tippe Kontakte an, sende Nachrichten, nutze die Vorschlags-Chips. Im Gruppenchat löst „Beweise vorlegen“ den Fall — und die Auszeichnung.</p>
+      <button onClick="{{ resetDemo }}" style="margin-top:6px;align-self:flex-start;padding:7px 12px;border:1px solid rgba(21,26,38,.2);border-radius:7px;background:transparent;cursor:pointer;font:500 11px/1 'DM Sans',sans-serif;color:#151a26" style-hover="background:rgba(21,26,38,.07)">Demo zurücksetzen</button>
+    </div>
+  </div>
+
+  <div style="width:390px;height:844px;flex:none;position:relative;overflow:hidden;border-radius:32px;background:#0f131c;box-shadow:0 24px 60px -18px rgba(21,26,38,.45),0 0 0 1px rgba(21,26,38,.14)">
+
+    <div style="position:absolute;top:0;left:0;right:0;height:46px;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 24px;pointer-events:none">
+      <span style="font:500 12.5px/1 'DM Sans',sans-serif;color:#f3eee3">21:04</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="width:16px;height:9px;border:1.4px solid rgba(243,238,227,.75);border-radius:2.5px;display:block"></span>
+        <span style="font:400 9px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.6)">78</span>
+      </div>
+    </div>
+
+    <!-- ============ START (SPLASH) ============ -->
+    <sc-if value="{{ isStart }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#151a26;animation:rdFade .3s ease">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,rgba(193,80,46,.14) 0%,rgba(21,26,38,0) 62%)"></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;width:190px;height:190px;border-radius:50%;border:1px dashed rgba(193,80,46,.4);animation:rdRing 22s linear infinite"></div>
+          <svg width="104" height="104" viewBox="0 0 512 512" style="display:block;animation:rdPop .6s ease both"><rect width="512" height="512" fill="#151a26" rx="72"></rect><g fill="#f3eee3"><path d="m169 376-58 87 135-87z"></path><path d="M130 48h252c53 0 96 43 96 97v135c0 54-43 97-96 97H130c-53 0-96-43-96-97V145c0-54 43-97 96-97"></path></g><g fill="#c1502e"><path d="M172 220h-38v-4q0-10 2-16l7-11 19-17q8-7 8-12t-3-9-10-3-11 5-6 16l-39-4q2-22 16-35 13-13 41-13 22 0 35 9 18 13 18 33 0 9-5 16-4 8-19 20-10 8-12 12-3 5-3 13m-39 10h40v36h-40Zm221-110h44v33l-9 67h-27l-8-67Zm2 110h40v36h-40Z" transform="translate(-51 -20)scale(1.213)"></path><path d="M206 259h50v44h-50zm86 0h50v44h-50z"></path></g></svg>
+        </div>
+        <div style="position:relative;margin-top:34px;font:400 40px/1 'Instrument Serif',serif;color:#f3eee3;letter-spacing:.01em">Riddlon</div>
+        <div style="position:relative;margin-top:12px;font:400 11.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45);letter-spacing:.14em">GESCHICHTEN, DIE ZURÜCKSCHREIBEN</div>
+
+        <div style="position:absolute;left:34px;right:34px;bottom:56px;display:flex;flex-direction:column;gap:13px">
+          <sc-if value="{{ firstRun }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                <span style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.5);letter-spacing:.12em">ERSTEINRICHTUNG</span>
+                <span style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:#c1502e">{{ setupPct }}</span>
+              </div>
+              <div style="height:3px;border-radius:2px;background:rgba(243,238,227,.12);overflow:hidden">
+                <div style="height:100%;background:#c1502e;transition:width .4s linear;width:{{ setupWidth }}"></div>
+              </div>
+              <div style="font:400 12.5px/1.5 'DM Sans',sans-serif;color:rgba(243,238,227,.55);text-wrap:pretty">{{ setupStep }}</div>
+              <div style="font:400 10px/1.5 'IBM Plex Mono',monospace;color:rgba(243,238,227,.28);letter-spacing:.06em">EINMALIG · DANACH VOLLSTÄNDIG OFFLINE</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ warmRun }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;justify-content:center">
+              <span style="width:5px;height:5px;border-radius:50%;background:#c1502e;animation:rdDot 1.1s ease-in-out infinite"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#c1502e;animation:rdDot 1.1s ease-in-out .18s infinite"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#c1502e;animation:rdDot 1.1s ease-in-out .36s infinite"></span>
+              <span style="margin-left:5px;font:400 10.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45);letter-spacing:.1em">{{ setupStep }}</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CHAT OVERVIEW ============ -->
+    <sc-if value="{{ isChats }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;padding-top:46px;display:flex;flex-direction:column;animation:rdFade .3s ease">
+        <div style="height:60px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <button onClick="{{ goSettings }}" style="flex:none;width:34px;height:34px;padding:0;border:1px solid rgba(243,238,227,.14);border-radius:50%;background:repeating-linear-gradient(115deg,#242c3e 0 5px,#1b2231 5px 10px);cursor:pointer" style-hover="border-color:rgba(193,80,46,.6)"></button>
+          <sc-if value="{{ searchClosed }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;font:500 20px/1 'DM Sans',sans-serif;color:#f3eee3;letter-spacing:-.01em">Chats</div>
+          </sc-if>
+          <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+            <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Chats durchsuchen" style="flex:1;min-width:0;padding:10px 14px;border:1px solid rgba(193,80,46,.5);border-radius:100px;background:rgba(243,238,227,.05);font:400 13.5px/1 'DM Sans',sans-serif;color:#f3eee3;outline:none" style-focus="border-color:rgba(193,80,46,.75)">
+          </sc-if>
+          <button onClick="{{ toggleSearch }}" style="flex:none;width:34px;height:34px;border:0;border-radius:50%;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(243,238,227,.07)">
+            <sc-if value="{{ searchClosed }}" hint-placeholder-val="{{ true }}">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="rgba(243,238,227,.6)" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5.3"></circle><line x1="11" y1="11" x2="15.2" y2="15.2"></line></svg>
+            </sc-if>
+            <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="#c1502e" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="2" x2="13" y2="13"></line><line x1="13" y1="2" x2="2" y2="13"></line></svg>
+            </sc-if>
+          </button>
+        </div>
+
+        <div style="height:46px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <sc-if value="{{ showChapterBar }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;min-width:0">
+              <div style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:#c1502e">KAPITEL 3 · DER WIDERSPRUCH</div>
+              <div style="margin-top:5px;font:400 11.5px/1.2 'DM Sans',sans-serif;color:rgba(243,238,227,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ziel: Wer stand neben Lucys Jacke?</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ showThinProgress }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;display:flex;align-items:center;gap:11px">
+              <div style="flex:1;height:2px;border-radius:2px;background:rgba(243,238,227,.1);overflow:hidden"><div style="width:62%;height:100%;background:rgba(193,80,46,.85)"></div></div>
+              <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.35);flex:none">62 %</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ pureMode }}" hint-placeholder-val="{{ false }}">
+            <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.28)">5 CHATS</span>
+          </sc-if>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:8px 0 26px">
+          <sc-for list="{{ threads }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.open }}" style="display:flex;gap:13px;align-items:center;width:100%;text-align:left;padding:13px 22px;border:0;background:transparent;cursor:pointer" style-hover="background:rgba(243,238,227,.04)">
+              <sc-if value="{{ t.isGroup }}" hint-placeholder-val="{{ false }}">
+                <span style="width:46px;height:46px;border-radius:14px;flex:none;background:rgba(193,80,46,.18);border:1px solid rgba(193,80,46,.4);display:flex;align-items:center;justify-content:center;font:500 12px/1 'IBM Plex Mono',monospace;color:#c1502e">4</span>
+              </sc-if>
+              <sc-if value="{{ t.isSolo }}" hint-placeholder-val="{{ true }}">
+                <span style="width:46px;height:46px;border-radius:50%;flex:none;background:#242c3e;display:flex;align-items:center;justify-content:center;font:500 16px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">{{ t.initial }}</span>
+              </sc-if>
+              <sc-if value="{{ t.isSystem }}" hint-placeholder-val="{{ false }}">
+                <svg width="46" height="46" viewBox="0 0 512 512" style="flex:none;border-radius:13px;display:block"><rect width="512" height="512" fill="#151a26" rx="72"></rect><g fill="#f3eee3"><path d="m169 376-58 87 135-87z"></path><path d="M130 48h252c53 0 96 43 96 97v135c0 54-43 97-96 97H130c-53 0-96-43-96-97V145c0-54 43-97 96-97"></path></g><g fill="#c1502e"><path d="M172 220h-38v-4q0-10 2-16l7-11 19-17q8-7 8-12t-3-9-10-3-11 5-6 16l-39-4q2-22 16-35 13-13 41-13 22 0 35 9 18 13 18 33 0 9-5 16-4 8-19 20-10 8-12 12-3 5-3 13m-39 10h40v36h-40Zm221-110h44v33l-9 67h-27l-8-67Zm2 110h40v36h-40Z" transform="translate(-51 -20)scale(1.213)"></path><path d="M206 259h50v44h-50zm86 0h50v44h-50z"></path></g></svg>
+              </sc-if>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                  <span style="font:500 14.5px/1.2 'DM Sans',sans-serif;color:#f3eee3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+                  <span style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35);flex:none">{{ t.time }}</span>
+                </span>
+                <span style="display:flex;align-items:center;gap:8px">
+                  <span style="flex:1;min-width:0;font:400 12.5px/1.4 'DM Sans',sans-serif;color:rgba(243,238,227,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.preview }}</span>
+                  <sc-if value="{{ t.unread }}" hint-placeholder-val="{{ true }}">
+                    <span style="flex:none;min-width:19px;height:19px;padding:0 6px;border-radius:10px;background:#c1502e;display:flex;align-items:center;justify-content:center;font:500 10.5px/1 'DM Sans',sans-serif;color:#f3eee3">{{ t.unread }}</span>
+                  </sc-if>
+                </span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+
+              </div>
+    </sc-if>
+
+    <!-- ============ CHAT (SOLO + GROUP share shell) ============ -->
+    <sc-if value="{{ isConvo }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;padding-top:46px;display:flex;flex-direction:column;animation:rdFade .28s ease">
+        <div style="height:60px;flex:none;padding:0 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(243,238,227,.07);background:#151a26">
+          <button onClick="{{ goChats }}" style="border:0;background:transparent;padding:0;cursor:pointer;font:400 22px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">‹</button>
+          <sc-if value="{{ isGroupConvo }}" hint-placeholder-val="{{ false }}">
+            <span style="width:36px;height:36px;border-radius:11px;flex:none;background:rgba(193,80,46,.18);border:1px solid rgba(193,80,46,.4);display:flex;align-items:center;justify-content:center;font:500 11px/1 'IBM Plex Mono',monospace;color:#c1502e">4</span>
+          </sc-if>
+          <sc-if value="{{ isSoloConvo }}" hint-placeholder-val="{{ true }}">
+            <span style="width:36px;height:36px;border-radius:50%;flex:none;background:#242c3e;display:flex;align-items:center;justify-content:center;font:500 14px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">{{ convoInitial }}</span>
+          </sc-if>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font:500 15px/1.2 'DM Sans',sans-serif;color:#f3eee3">{{ convoTitle }}</span>
+            <span style="display:block;margin-top:3px;font:400 11px/1.3 'DM Sans',sans-serif;color:rgba(243,238,227,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ convoSub }}</span>
+          </span>
+        </div>
+
+        <div style="height:46px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <sc-if value="{{ showClueStrip }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ toggleClues }}" style="display:flex;align-items:center;gap:9px;width:100%;height:100%;padding:0;border:0;background:transparent;cursor:pointer;text-align:left">
+              <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:#c1502e;flex:none">HINWEISE 4/6</span>
+              <span style="flex:1;font:400 11.5px/1.3 'DM Sans',sans-serif;color:rgba(243,238,227,.6)">1 Widerspruch offen</span>
+              <span style="font:400 14px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.4)">›</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ pureMode }}" hint-placeholder-val="{{ false }}">
+            <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.28)">ZULETZT ONLINE 21:01</span>
+          </sc-if>
+        </div>
+
+        <div ref="{{ scrollRef }}" style="flex:1;overflow-y:auto;padding:18px 18px 10px;display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ messages }}" as="m" hint-placeholder-count="6">
+            <sc-if value="{{ m.isSystem }}" hint-placeholder-val="{{ false }}">
+              <div style="align-self:center;margin:10px 0;padding:6px 12px;border-radius:8px;background:rgba(243,238,227,.06);font:400 10.5px/1.4 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45);text-align:center;max-width:80%">{{ m.text }}</div>
+            </sc-if>
+            <sc-if value="{{ m.isMe }}" hint-placeholder-val="{{ false }}">
+              <div style="align-self:flex-end;max-width:78%;margin-top:6px;animation:rdIn .26s ease both">
+                <div style="padding:10px 14px 11px;border-radius:16px 16px 4px 16px;background:#c1502e">
+                  <div style="font:400 14px/1.45 'DM Sans',sans-serif;color:#f6efe6;text-wrap:pretty">{{ m.text }}</div>
+                </div>
+                <div style="margin-top:4px;text-align:right;font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.32)">{{ m.time }} ✓✓</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.isThem }}" hint-placeholder-val="{{ true }}">
+              <div style="align-self:flex-start;max-width:80%;margin-top:6px;animation:rdIn .26s ease both">
+                <sc-if value="{{ m.showName }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:7px;margin:6px 0 5px 2px">
+                    <span style="width:20px;height:20px;border-radius:50%;background:#242c3e;display:flex;align-items:center;justify-content:center;font:500 9.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.75)">{{ m.initial }}</span>
+                    <span style="font:500 11.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">{{ m.name }}</span>
+                  </div>
+                </sc-if>
+                <div style="padding:10px 14px 11px;border-radius:16px 16px 16px 4px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+                  <div style="font:400 14px/1.45 'DM Sans',sans-serif;color:rgba(243,238,227,.92);text-wrap:pretty">{{ m.text }}</div>
+                  <sc-if value="{{ m.flag }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ m.toggleFlag }}" style="margin-top:9px;display:flex;align-items:center;gap:7px;width:100%;text-align:left;padding:7px 9px;border:1px solid rgba(193,80,46,.45);border-radius:9px;background:rgba(193,80,46,.12);cursor:pointer">
+                      <span style="width:14px;height:14px;flex:none;border-radius:50%;background:#c1502e;display:flex;align-items:center;justify-content:center;font:500 9px/1 'DM Sans',sans-serif;color:#f3eee3">!</span>
+                      <span style="flex:1;font:500 10.5px/1.3 'IBM Plex Mono',monospace;color:#dd7a55;letter-spacing:.04em">{{ m.flagLabel }}</span>
+                      <span style="font:400 11px/1 'DM Sans',sans-serif;color:rgba(221,122,85,.7)">{{ m.flagChevron }}</span>
+                    </button>
+                    <sc-if value="{{ m.flagOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:8px;padding:11px 12px;border-radius:10px;background:rgba(15,19,28,.55);animation:rdIn .2s ease both">
+                        <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.1em">WIDERSPRUCH · {{ m.clueLabel }}</div>
+                        <div style="margin-top:9px;display:flex;flex-direction:column;gap:8px">
+                          <sc-for list="{{ m.flagSources }}" as="s" hint-placeholder-count="2">
+                            <div style="display:flex;gap:9px;align-items:flex-start">
+                              <span style="width:3px;align-self:stretch;border-radius:2px;background:#c1502e;flex:none"></span>
+                              <span style="flex:1">
+                                <span style="display:block;font:500 11px/1.2 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">{{ s.who }}</span>
+                                <span style="display:block;margin-top:3px;font:400 12px/1.45 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">{{ s.claim }}</span>
+                              </span>
+                            </div>
+                          </sc-for>
+                        </div>
+                        <div style="margin-top:11px;font:400 11px/1.5 'DM Sans',sans-serif;color:rgba(243,238,227,.4);text-wrap:pretty">Beide Aussagen sind in deiner Akte gespeichert. Eine davon ist falsch.</div>
+                      </div>
+                    </sc-if>
+                  </sc-if>
+                </div>
+                <div style="margin-top:4px;margin-left:3px;font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.3)">{{ m.time }}</div>
+              </div>
+            </sc-if>
+          </sc-for>
+
+          <sc-if value="{{ typing }}" hint-placeholder-val="{{ false }}">
+            <div style="align-self:flex-start;margin-top:8px;padding:12px 16px;border-radius:16px 16px 16px 4px;background:#1d2433;display:flex;gap:5px;align-items:center">
+              <span style="width:6px;height:6px;border-radius:50%;background:#f3eee3;animation:rdDot 1.1s ease-in-out infinite"></span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#f3eee3;animation:rdDot 1.1s ease-in-out .18s infinite"></span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#f3eee3;animation:rdDot 1.1s ease-in-out .36s infinite"></span>
+            </div>
+          </sc-if>
+          <div style="height:6px;flex:none"></div>
+        </div>
+
+        <div style="flex:none;border-top:1px solid rgba(243,238,227,.07);background:#151a26;padding:11px 14px 22px">
+          <div style="display:flex;gap:8px;overflow-x:auto;padding:0 0 11px">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.send }}" style="flex:none;padding:9px 14px;border:1px solid rgba(243,238,227,.16);border-radius:100px;background:rgba(243,238,227,.04);cursor:pointer;font:400 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8);white-space:nowrap" style-hover="background:rgba(193,80,46,.16);border-color:rgba(193,80,46,.5)">{{ c.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:9px;align-items:flex-end">
+            <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="Nachricht" style="flex:1;min-width:0;padding:13px 15px;border:1px solid rgba(243,238,227,.14);border-radius:100px;background:rgba(243,238,227,.05);font:400 14px/1 'DM Sans',sans-serif;color:#f3eee3;outline:none" style-focus="border-color:rgba(193,80,46,.6)">
+            <button onClick="{{ sendDraft }}" style="flex:none;width:46px;height:46px;border:0;border-radius:50%;background:#c1502e;cursor:pointer;font:400 17px/1 'DM Sans',sans-serif;color:#f3eee3" style-hover="background:#a8421f">↑</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ AWARDS / AKTE ============ -->
+    <sc-if value="{{ isAwards }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;padding-top:46px;display:flex;flex-direction:column;animation:rdFade .3s ease">
+        <div style="height:60px;flex:none;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(243,238,227,.07)">
+          <button onClick="{{ goRiddlon }}" style="border:0;background:transparent;padding:0;cursor:pointer;font:400 22px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">‹</button>
+          <div style="font:500 16px/1 'DM Sans',sans-serif;color:#f3eee3">Storyübersicht</div>
+          <span style="font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35)">{{ awardCount }}</span>
+        </div>
+        <div style="height:46px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.32)">LUCYS PORTMONNAIE · KAPITEL 3 VON 5</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:22px 22px 30px">
+          <div style="padding:16px 18px;border-radius:16px;background:#171d29;border:1px solid rgba(243,238,227,.08)">
+            <div style="display:flex;gap:13px;align-items:center">
+              <span style="width:54px;height:54px;flex:none;border-radius:11px;background:repeating-linear-gradient(115deg,#2a3346 0 7px,#212a3a 7px 14px)"></span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block;font:500 15px/1.2 'DM Sans',sans-serif;color:#f3eee3">Lucys Portmonnaie</span>
+                <span style="display:block;margin-top:5px;font:400 11.5px/1.35 'DM Sans',sans-serif;color:rgba(243,238,227,.45)">Krimi · Kapitel 3 von 5 · 4 Kontakte</span>
+              </span>
+            </div>
+            <div style="margin-top:15px;display:flex;align-items:flex-end;gap:12px">
+              <div style="font:400 32px/1 'Instrument Serif',serif;color:#f3eee3">{{ awardScore }}</div>
+              <div style="font:400 12px/1.4 'DM Sans',sans-serif;color:rgba(243,238,227,.45);padding-bottom:3px">Meilensteine erreicht</div>
+            </div>
+            <button onClick="{{ goChatLucy }}" style="margin-top:15px;width:100%;padding:13px;border:1px solid rgba(193,80,46,.5);border-radius:11px;background:rgba(193,80,46,.14);cursor:pointer;font:500 13px/1 'DM Sans',sans-serif;color:#f3eee3" style-hover="background:rgba(193,80,46,.24)">Weiterspielen · Kapitel 3</button>
+          </div>
+
+          <div style="margin-top:26px;position:relative;padding-left:30px">
+            <div style="position:absolute;left:9px;top:6px;bottom:12px;width:1.5px;background:linear-gradient(180deg,rgba(193,80,46,.7) 0%,rgba(193,80,46,.7) 62%,rgba(243,238,227,.12) 62%,rgba(243,238,227,.12) 100%)"></div>
+            <sc-for list="{{ milestones }}" as="ms" hint-placeholder-count="6">
+              <div style="position:relative;padding-bottom:24px">
+                <sc-if value="{{ ms.done }}" hint-placeholder-val="{{ true }}">
+                  <span style="position:absolute;left:-30px;top:2px;width:19px;height:19px;border-radius:50%;background:#c1502e;display:flex;align-items:center;justify-content:center;font:500 10px/1 'DM Sans',sans-serif;color:#f3eee3">✓</span>
+                </sc-if>
+                <sc-if value="{{ ms.open }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:absolute;left:-30px;top:2px;width:19px;height:19px;border-radius:50%;background:#0f131c;border:1.5px dashed rgba(243,238,227,.25)"></span>
+                </sc-if>
+                <div style="display:flex;align-items:baseline;gap:9px">
+                  <sc-if value="{{ ms.done }}" hint-placeholder-val="{{ true }}">
+                    <span style="font:500 14.5px/1.3 'DM Sans',sans-serif;color:#f3eee3">{{ ms.title }}</span>
+                  </sc-if>
+                  <sc-if value="{{ ms.open }}" hint-placeholder-val="{{ false }}">
+                    <span style="font:500 14.5px/1.3 'DM Sans',sans-serif;color:rgba(243,238,227,.38)">{{ ms.title }}</span>
+                  </sc-if>
+                  <span style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.3)">{{ ms.time }}</span>
+                </div>
+                <div style="margin-top:5px;font:400 12.5px/1.55 'DM Sans',sans-serif;color:rgba(243,238,227,.5);text-wrap:pretty">{{ ms.desc }}</div>
+                <sc-if value="{{ ms.badge }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:11px;display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:12px;background:rgba(193,80,46,.1);border:1px solid rgba(193,80,46,.3)">
+                    <span style="width:34px;height:34px;flex:none;border-radius:50%;border:1.5px solid #c1502e;display:flex;align-items:center;justify-content:center;font:400 15px/1 'Instrument Serif',serif;color:#c1502e">{{ ms.badgeGlyph }}</span>
+                    <span style="flex:1">
+                      <span style="display:block;font:500 12.5px/1.2 'DM Sans',sans-serif;color:#f3eee3">{{ ms.badge }}</span>
+                      <span style="display:block;margin-top:3px;font:400 11px/1.35 'DM Sans',sans-serif;color:rgba(243,238,227,.45)">{{ ms.badgeDesc }}</span>
+                    </span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ RIDDLON SYSTEM CHAT ============ -->
+    <sc-if value="{{ isRiddlon }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;padding-top:46px;display:flex;flex-direction:column;animation:rdFade .28s ease">
+        <div style="height:60px;flex:none;padding:0 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(243,238,227,.07);background:#151a26">
+          <button onClick="{{ goChats }}" style="border:0;background:transparent;padding:0;cursor:pointer;font:400 22px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">‹</button>
+          <svg width="36" height="36" viewBox="0 0 512 512" style="flex:none;border-radius:10px;display:block"><rect width="512" height="512" fill="#151a26" rx="72"></rect><g fill="#f3eee3"><path d="m169 376-58 87 135-87z"></path><path d="M130 48h252c53 0 96 43 96 97v135c0 54-43 97-96 97H130c-53 0-96-43-96-97V145c0-54 43-97 96-97"></path></g><g fill="#c1502e"><path d="M172 220h-38v-4q0-10 2-16l7-11 19-17q8-7 8-12t-3-9-10-3-11 5-6 16l-39-4q2-22 16-35 13-13 41-13 22 0 35 9 18 13 18 33 0 9-5 16-4 8-19 20-10 8-12 12-3 5-3 13m-39 10h40v36h-40Zm221-110h44v33l-9 67h-27l-8-67Zm2 110h40v36h-40Z" transform="translate(-51 -20)scale(1.213)"></path><path d="M206 259h50v44h-50zm86 0h50v44h-50z"></path></g></svg>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font:500 15px/1.2 'DM Sans',sans-serif;color:#f3eee3">Riddlon</span>
+            <span style="display:block;margin-top:3px;font:400 11px/1.3 'IBM Plex Mono',monospace;color:rgba(243,238,227,.42)">BIBLIOTHEK · IMPORT · UPDATES</span>
+          </span>
+        </div>
+
+        <div style="height:46px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.32)">OFFLINE-BEREIT · KEIN KONTO ERFORDERLICH</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:18px 18px 10px;display:flex;flex-direction:column;gap:4px">
+          <div style="align-self:center;margin-bottom:8px;padding:6px 12px;border-radius:8px;background:rgba(243,238,227,.06);font:400 10.5px/1.4 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45)">Systemkontakt · keine Story-Figur</div>
+
+          <div style="align-self:flex-start;max-width:82%;margin-top:6px">
+            <div style="padding:10px 14px 11px;border-radius:16px 16px 16px 4px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+              <div style="font:400 14px/1.45 'DM Sans',sans-serif;color:rgba(243,238,227,.92);text-wrap:pretty">Willkommen zurück, Alex. Du hast drei Geschichten installiert — alle vollständig offline spielbar.</div>
+            </div>
+            <div style="margin-top:4px;margin-left:3px;font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.3)">Di 19:40</div>
+          </div>
+
+          <div style="align-self:flex-start;width:100%;max-width:100%;margin-top:12px;display:flex;flex-direction:column;gap:9px">
+            <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35);letter-spacing:.1em;margin-left:3px">INSTALLIERT</div>
+
+            <button onClick="{{ goStory }}" style="border:0;padding:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+              <span style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px 14px 14px 4px;background:#1d2433;border:1px solid rgba(193,80,46,.4)">
+                <span style="width:52px;height:52px;flex:none;border-radius:10px;background:repeating-linear-gradient(115deg,#2a3346 0 7px,#212a3a 7px 14px)"></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:flex;align-items:baseline;gap:8px"><span style="font:500 14px/1.2 'DM Sans',sans-serif;color:#f3eee3">Lucys Portmonnaie</span><span style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:#c1502e">LÄUFT</span></span>
+                  <span style="display:block;margin-top:5px;font:400 11.5px/1.35 'DM Sans',sans-serif;color:rgba(243,238,227,.5)">Krimi · Kapitel 3 von 5 · 4 Kontakte</span>
+                  <span style="display:block;margin-top:8px;height:3px;border-radius:2px;background:rgba(243,238,227,.13);overflow:hidden"><span style="display:block;width:62%;height:100%;background:#c1502e"></span></span>
+                </span>
+                <span style="font:400 15px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.4)">›</span>
+              </span>
+            </button>
+
+            <button onClick="{{ goStory }}" style="border:0;padding:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+              <span style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+                <span style="width:52px;height:52px;flex:none;border-radius:10px;background:repeating-linear-gradient(115deg,#2a3346 0 7px,#212a3a 7px 14px)"></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font:500 14px/1.2 'DM Sans',sans-serif;color:rgba(243,238,227,.9)">Mitternacht in Rothenburg</span>
+                  <span style="display:block;margin-top:5px;font:400 11.5px/1.35 'DM Sans',sans-serif;color:rgba(243,238,227,.45)">Historie · noch nicht gestartet · 6 Kontakte</span>
+                </span>
+                <span style="font:400 15px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.35)">›</span>
+              </span>
+            </button>
+
+            <button onClick="{{ goStory }}" style="border:0;padding:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+              <span style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+                <span style="width:52px;height:52px;flex:none;border-radius:10px;background:repeating-linear-gradient(115deg,#2a3346 0 7px,#212a3a 7px 14px)"></span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:flex;align-items:baseline;gap:8px"><span style="font:500 14px/1.2 'DM Sans',sans-serif;color:rgba(243,238,227,.9)">Der letzte Zug</span><span style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4)">GELÖST</span></span>
+                  <span style="display:block;margin-top:5px;font:400 11.5px/1.35 'DM Sans',sans-serif;color:rgba(243,238,227,.45)">Krimi · 5 von 5 Auszeichnungen</span>
+                </span>
+                <span style="font:400 15px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.35)">›</span>
+              </span>
+            </button>
+          </div>
+
+          <div style="align-self:flex-start;max-width:82%;margin-top:16px">
+            <div style="padding:10px 14px 11px;border-radius:16px 16px 16px 4px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+              <div style="font:400 14px/1.45 'DM Sans',sans-serif;color:rgba(243,238,227,.92);text-wrap:pretty">Neue Geschichte hinzufügen? Schick mir eine ZIP-Datei oder eine URL.</div>
+            </div>
+            <div style="margin-top:4px;margin-left:3px;font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.3)">Di 19:41</div>
+          </div>
+
+          <div style="align-self:flex-start;width:100%;margin-top:10px;padding:14px;border-radius:14px;background:rgba(243,238,227,.04);border:1px dashed rgba(243,238,227,.2)">
+            <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.1em">IMPORT</div>
+            <div style="margin-top:11px;display:flex;gap:9px">
+              <button style="flex:1;padding:12px;border:1px solid rgba(193,80,46,.5);border-radius:10px;background:rgba(193,80,46,.14);cursor:pointer;font:500 12.5px/1 'DM Sans',sans-serif;color:#f3eee3" style-hover="background:rgba(193,80,46,.24)">ZIP wählen</button>
+              <button style="flex:1;padding:12px;border:1px solid rgba(243,238,227,.18);border-radius:10px;background:transparent;cursor:pointer;font:500 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.85)" style-hover="background:rgba(243,238,227,.07)">URL einfügen</button>
+            </div>
+            <div style="margin-top:11px;font:400 11px/1.5 'DM Sans',sans-serif;color:rgba(243,238,227,.4);text-wrap:pretty">Wird einmalig heruntergeladen und lokal installiert. Danach kein Netz nötig.</div>
+          </div>
+
+          <div style="align-self:center;margin:16px 0 4px;padding:6px 12px;border-radius:8px;background:rgba(243,238,227,.06);font:400 10.5px/1.4 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45);text-align:center">„Der letzte Zug“ installiert · 4,2 MB · Prüfsumme ok</div>
+          <div style="height:6px;flex:none"></div>
+        </div>
+
+        <div style="flex:none;border-top:1px solid rgba(243,238,227,.07);background:#151a26;padding:11px 14px 22px">
+          <div style="display:flex;gap:8px;overflow-x:auto">
+            <button style="flex:none;padding:9px 14px;border:1px solid rgba(243,238,227,.16);border-radius:100px;background:rgba(243,238,227,.04);cursor:pointer;font:400 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8);white-space:nowrap" style-hover="background:rgba(193,80,46,.16);border-color:rgba(193,80,46,.5)">Updates prüfen</button>
+            <button style="flex:none;padding:9px 14px;border:1px solid rgba(243,238,227,.16);border-radius:100px;background:rgba(243,238,227,.04);cursor:pointer;font:400 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8);white-space:nowrap" style-hover="background:rgba(193,80,46,.16);border-color:rgba(193,80,46,.5)">Speicher verwalten</button>
+            <button onClick="{{ goSettings }}" style="flex:none;padding:9px 14px;border:1px solid rgba(243,238,227,.16);border-radius:100px;background:rgba(243,238,227,.04);cursor:pointer;font:400 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8);white-space:nowrap" style-hover="background:rgba(193,80,46,.16);border-color:rgba(193,80,46,.5)">Einstellungen</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ SETTINGS / PROFIL ============ -->
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;padding-top:46px;display:flex;flex-direction:column;animation:rdFade .3s ease">
+        <div style="height:60px;flex:none;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(243,238,227,.07)">
+          <button onClick="{{ goChats }}" style="border:0;background:transparent;padding:0;cursor:pointer;font:400 22px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.55)">‹</button>
+          <div style="font:500 16px/1 'DM Sans',sans-serif;color:#f3eee3">Profil &amp; Einstellungen</div>
+          <span style="font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.3)">v0.1</span>
+        </div>
+        <div style="height:46px;flex:none;padding:0 18px;border-bottom:1px solid rgba(243,238,227,.07);display:flex;align-items:center;gap:10px">
+          <span style="font:400 9px/1 'IBM Plex Mono',monospace;letter-spacing:.11em;color:rgba(243,238,227,.32)">GILT FÜR ALLE GESCHICHTEN</span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:22px 22px 34px;display:flex;flex-direction:column;gap:28px">
+
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:64px;height:64px;flex:none;border-radius:50%;background:repeating-linear-gradient(115deg,#242c3e 0 7px,#1b2231 7px 14px);border:1px solid rgba(243,238,227,.12);display:flex;align-items:center;justify-content:center;font:400 9px/1.3 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);text-align:center">avatar</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.12em">SO SEHEN DICH DIE CHARAKTERE</div>
+              <input value="{{ nickname }}" onChange="{{ onNickname }}" placeholder="Anzeigename" style="margin-top:9px;width:100%;padding:11px 13px;border:1px solid rgba(243,238,227,.14);border-radius:11px;background:rgba(243,238,227,.05);font:500 15px/1 'DM Sans',sans-serif;color:#f3eee3;outline:none" style-focus="border-color:rgba(193,80,46,.6)">
+            </div>
+          </div>
+
+          <div>
+            <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.12em">ANREDE · PFLICHTFELD</div>
+            <div style="margin-top:11px;display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ pronounOptions }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.pick }}" style="flex:none;border:0;padding:0;background:transparent;cursor:pointer">
+                  <sc-if value="{{ p.active }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:block;padding:9px 14px;border-radius:100px;background:rgba(193,80,46,.18);border:1px solid #c1502e;font:500 12.5px/1 'DM Sans',sans-serif;color:#f3eee3;white-space:nowrap">{{ p.label }}</span>
+                  </sc-if>
+                  <sc-if value="{{ p.inactive }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:block;padding:9px 14px;border-radius:100px;background:rgba(243,238,227,.04);border:1px solid rgba(243,238,227,.14);font:400 12.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.7);white-space:nowrap">{{ p.label }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <div style="margin-top:13px;padding:12px 14px;border-radius:12px 12px 12px 4px;background:#1d2433;border:1px solid rgba(243,238,227,.07)">
+              <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35);letter-spacing:.1em">VORSCHAU · LUCY</div>
+              <div style="margin-top:7px;font:400 13.5px/1.45 'DM Sans',sans-serif;color:rgba(243,238,227,.9);text-wrap:pretty">{{ addressPreview }}</div>
+            </div>
+            <textarea value="{{ bio }}" onChange="{{ onBio }}" placeholder="Kurzbeschreibung (optional)" rows="2" style="margin-top:12px;width:100%;padding:11px 13px;border:1px solid rgba(243,238,227,.14);border-radius:11px;background:rgba(243,238,227,.05);font:400 13px/1.5 'DM Sans',sans-serif;color:#f3eee3;outline:none;resize:none" style-focus="border-color:rgba(193,80,46,.6)"></textarea>
+          </div>
+
+          <div>
+            <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.12em">SPIELGEFÜHL</div>
+            <div style="margin-top:5px;font:400 12px/1.55 'DM Sans',sans-serif;color:rgba(243,238,227,.5);text-wrap:pretty">Wie sichtbar darf das Spiel im Chat sein? Wirkt sofort in allen Geschichten.</div>
+            <div style="margin-top:13px;display:flex;flex-direction:column;gap:9px">
+              <sc-for list="{{ disguiseOptions }}" as="d" hint-placeholder-count="3">
+                <button onClick="{{ d.pick }}" style="border:0;padding:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+                  <sc-if value="{{ d.active }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border-radius:14px;background:rgba(193,80,46,.12);border:1px solid #c1502e">
+                      <span style="width:17px;height:17px;flex:none;margin-top:1px;border-radius:50%;border:1.5px solid #c1502e;display:flex;align-items:center;justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:#c1502e;display:block"></span></span>
+                      <span style="flex:1">
+                        <span style="display:block;font:500 14px/1.25 'DM Sans',sans-serif;color:#f3eee3">{{ d.title }}</span>
+                        <span style="display:block;margin-top:5px;font:400 12px/1.5 'DM Sans',sans-serif;color:rgba(243,238,227,.6);text-wrap:pretty">{{ d.desc }}</span>
+                      </span>
+                    </span>
+                  </sc-if>
+                  <sc-if value="{{ d.inactive }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border-radius:14px;background:rgba(243,238,227,.03);border:1px solid rgba(243,238,227,.1)">
+                      <span style="width:17px;height:17px;flex:none;margin-top:1px;border-radius:50%;border:1.5px solid rgba(243,238,227,.25)"></span>
+                      <span style="flex:1">
+                        <span style="display:block;font:500 14px/1.25 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">{{ d.title }}</span>
+                        <span style="display:block;margin-top:5px;font:400 12px/1.5 'DM Sans',sans-serif;color:rgba(243,238,227,.42);text-wrap:pretty">{{ d.desc }}</span>
+                      </span>
+                    </span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div>
+            <div style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.4);letter-spacing:.12em">LOKALES MODELL</div>
+            <div style="margin-top:11px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ modelOptions }}" as="mo" hint-placeholder-count="2">
+                <button onClick="{{ mo.pick }}" style="border:0;padding:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+                  <sc-if value="{{ mo.active }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:12px;background:rgba(193,80,46,.12);border:1px solid #c1502e">
+                      <span style="width:7px;height:7px;flex:none;border-radius:50%;background:#c1502e"></span>
+                      <span style="flex:1;font:500 13.5px/1.2 'DM Sans',sans-serif;color:#f3eee3">{{ mo.label }}</span>
+                      <span style="font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.45)">{{ mo.size }}</span>
+                    </span>
+                  </sc-if>
+                  <sc-if value="{{ mo.inactive }}" hint-placeholder-val="{{ false }}">
+                    <span style="display:flex;align-items:center;gap:11px;padding:13px 15px;border-radius:12px;background:rgba(243,238,227,.03);border:1px solid rgba(243,238,227,.1)">
+                      <span style="width:7px;height:7px;flex:none;border-radius:50%;background:rgba(243,238,227,.2)"></span>
+                      <span style="flex:1;font:500 13.5px/1.2 'DM Sans',sans-serif;color:rgba(243,238,227,.7)">{{ mo.label }}</span>
+                      <span style="font:400 10px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35)">{{ mo.size }}</span>
+                    </span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <div style="margin-top:12px;display:flex;flex-direction:column">
+              <button onClick="{{ toggleNotify }}" style="display:flex;align-items:center;gap:12px;padding:13px 2px;border:0;background:transparent;cursor:pointer;text-align:left;width:100%">
+                <span style="flex:1">
+                  <span style="display:block;font:500 13.5px/1.2 'DM Sans',sans-serif;color:#f3eee3">Benachrichtigungen</span>
+                  <span style="display:block;margin-top:4px;font:400 11.5px/1.4 'DM Sans',sans-serif;color:rgba(243,238,227,.42)">Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen.</span>
+                </span>
+                <sc-if value="{{ notify }}" hint-placeholder-val="{{ true }}">
+                  <span style="width:42px;height:25px;flex:none;border-radius:100px;background:#c1502e;display:flex;align-items:center;justify-content:flex-end;padding:3px"><span style="width:19px;height:19px;border-radius:50%;background:#f3eee3;display:block"></span></span>
+                </sc-if>
+                <sc-if value="{{ notifyOff }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:42px;height:25px;flex:none;border-radius:100px;background:rgba(243,238,227,.13);display:flex;align-items:center;justify-content:flex-start;padding:3px"><span style="width:19px;height:19px;border-radius:50%;background:rgba(243,238,227,.6);display:block"></span></span>
+                </sc-if>
+              </button>
+            </div>
+          </div>
+
+          </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ TOAST ============ -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:56px;left:16px;right:16px;z-index:40;animation:rdToast .38s cubic-bezier(.2,.9,.3,1) both">
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:15px;background:#242c3e;border:1px solid rgba(193,80,46,.45);box-shadow:0 14px 34px -10px rgba(0,0,0,.7)">
+          <span style="width:36px;height:36px;flex:none;border-radius:50%;background:rgba(193,80,46,.18);border:1.5px solid #c1502e;display:flex;align-items:center;justify-content:center;font:400 16px/1 'Instrument Serif',serif;color:#c1502e">{{ toastGlyph }}</span>
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font:400 9.5px/1 'IBM Plex Mono',monospace;color:#c1502e;letter-spacing:.12em">AUSZEICHNUNG</span>
+            <span style="display:block;margin-top:5px;font:500 13.5px/1.25 'DM Sans',sans-serif;color:#f3eee3">{{ toast }}</span>
+          </span>
+          <button onClick="{{ goAwards }}" style="flex:none;padding:7px 11px;border:1px solid rgba(243,238,227,.2);border-radius:8px;background:transparent;cursor:pointer;font:500 10.5px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">Übersicht</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CELEBRATION ============ -->
+    <sc-if value="{{ celebration }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:60;background:#151a26;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;animation:rdFade .35s ease both">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,rgba(193,80,46,.22) 0%,rgba(21,26,38,0) 62%)"></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:34px">
+          <div style="position:absolute;width:216px;height:216px;border-radius:50%;border:1px dashed rgba(193,80,46,.45);animation:rdRing 26s linear infinite"></div>
+          <div style="position:absolute;width:166px;height:166px;border-radius:50%;border:1px solid rgba(243,238,227,.1)"></div>
+          <div style="width:118px;height:118px;border-radius:50%;background:rgba(193,80,46,.14);border:1.5px solid #c1502e;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:rdPop .55s cubic-bezier(.2,.9,.3,1) both">
+            <span style="font:400 40px/1 'Instrument Serif',serif;color:#c1502e">✓</span>
+          </div>
+        </div>
+        <div style="position:relative;text-align:center">
+          <div style="font:400 10.5px/1 'IBM Plex Mono',monospace;color:#c1502e;letter-spacing:.16em">FALL ABGESCHLOSSEN</div>
+          <h2 style="margin:16px 0 0;font:400 38px/1.05 'Instrument Serif',serif;color:#f3eee3">Fall gelöst</h2>
+          <p style="margin:13px auto 0;max-width:280px;font:400 14px/1.6 'DM Sans',sans-serif;color:rgba(243,238,227,.6);text-wrap:pretty">Max hat gestanden. Lucy bekommt ihr Portmonnaie zurück — und du hast niemanden falsch beschuldigt.</p>
+          <div style="margin-top:26px;display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ earned }}" as="e" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:13px;background:rgba(243,238,227,.05);border:1px solid rgba(243,238,227,.1);animation:rdIn .4s ease both">
+                <span style="width:30px;height:30px;flex:none;border-radius:50%;border:1.4px solid #c1502e;display:flex;align-items:center;justify-content:center;font:400 14px/1 'Instrument Serif',serif;color:#c1502e">{{ e.glyph }}</span>
+                <span style="flex:1;text-align:left;font:500 12.5px/1.3 'DM Sans',sans-serif;color:#f3eee3">{{ e.title }}</span>
+                <span style="font:400 9.5px/1 'IBM Plex Mono',monospace;color:rgba(243,238,227,.35)">NEU</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:28px;display:flex;gap:10px">
+            <button onClick="{{ goAwards }}" style="flex:1;padding:15px;border:0;border-radius:13px;background:#c1502e;cursor:pointer;font:500 14px/1 'DM Sans',sans-serif;color:#f3eee3" style-hover="background:#a8421f">Fallakte ansehen</button>
+            <button onClick="{{ closeCelebration }}" style="flex:none;padding:15px 18px;border:1px solid rgba(243,238,227,.2);border-radius:13px;background:transparent;cursor:pointer;font:500 14px/1 'DM Sans',sans-serif;color:rgba(243,238,227,.8)">Später</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="width:250px;flex:none;position:sticky;top:40px;display:flex;flex-direction:column;gap:16px">
+    <div>
+      <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(21,26,38,.42)">ANNAHMEN</div>
+      <p style="margin:10px 0 0;font:400 11.5px/1.7 'DM Sans',sans-serif;color:rgba(21,26,38,.62);text-wrap:pretty">Farben und Formsprache kommen aus dem Icon: Nachtblau als Trägerfläche, Creme als Schrift, Terrakotta ausschließlich für Fortschritt, Widersprüche und Auszeichnungen — nichts anderes ist rot. Die App wirkt wie ein Messenger; alles Spielhafte sitzt in genau einer Farbe.</p>
+    </div>
+    <div>
+      <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(21,26,38,.42)">VARIANTEN (TWEAKS)</div>
+      <p style="margin:10px 0 0;font:400 11.5px/1.7 'DM Sans',sans-serif;color:rgba(21,26,38,.62);text-wrap:pretty">Start: Erststart mit Ersteinrichtungs-Fortschritt oder warmer Start mit kurzer Vorbereitung. Tarnung: rein Messenger / dezente Hinweise / sichtbares Spiel. Auszeichnung: Vollbild-Moment oder nur Toast.</p>
+    </div>
+    <div>
+      <div style="font:500 9.5px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(21,26,38,.42)">NÄCHSTE SCHRITTE</div>
+      <p style="margin:10px 0 0;font:400 11.5px/1.7 'DM Sans',sans-serif;color:rgba(21,26,38,.62);text-wrap:pretty">Identitätswechsel „Unbekannt → Lucy“ als Animation, echte Cover und Avatare statt Platzhalter, Push-Nachricht auf dem Sperrbildschirm, Fehlerfall beim Import (defektes ZIP, Version zu neu).</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;bootMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;first&quot;,&quot;warm&quot;],&quot;default&quot;:&quot;first&quot;,&quot;tsType&quot;:&quot;'first'|'warm'&quot;,&quot;section&quot;:&quot;Varianten&quot;},&quot;disguise&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pure&quot;,&quot;subtle&quot;,&quot;game&quot;],&quot;default&quot;:&quot;subtle&quot;,&quot;tsType&quot;:&quot;'pure'|'subtle'|'game'&quot;,&quot;section&quot;:&quot;Varianten&quot;},&quot;celebrationStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;fullscreen&quot;,&quot;toast&quot;],&quot;default&quot;:&quot;fullscreen&quot;,&quot;tsType&quot;:&quot;'fullscreen'|'toast'&quot;,&quot;section&quot;:&quot;Varianten&quot;}}">
+const T = { lucy: { name: "Lucy", initial: "L" }, max: { name: "Max", initial: "M" }, sabine: { name: "Sabine", initial: "S" } };
+
+const LUCY_SEED = [
+  { id: "s0", from: "system", text: "Kontakt „Unbekannt“ heißt jetzt Lucy" },
+  { id: "s1", from: "lucy", text: "Warst du letzten Samstag im Club? Ich glaube, ich hab dich an der Bar gesehen.", time: "20:12" },
+  { id: "s2", from: "me", text: "Ja, war da. Wer bist du?", time: "20:19" },
+  { id: "s3", from: "lucy", text: "Ich bin Lucy. Sorry für die Nummer aus dem Nichts. Mir wurde mein Portmonnaie geklaut und ich weiß nicht, wen ich sonst fragen soll.", time: "20:20" },
+  { id: "s4", from: "lucy", text: "Max und Sabine waren auch da. Frag die mal, bitte. Ich kann gerade mit keinem von beiden reden.", time: "20:21" },
+  { id: "s5", from: "me", text: "Hab beide gefragt. Ihre Aussagen passen nicht zusammen.", time: "20:58" },
+  { id: "s6", from: "lucy", text: "Wie meinst du das, passen nicht zusammen?", time: "21:00",
+    flag: true, flagLabel: "WIDERSPRUCH: TATZEIT", clueLabel: "UNGEFÄHRE TATZEIT",
+    sources: [
+      { who: "Max", claim: "„Kurz vor eins, ich stand noch draußen rauchen.“" },
+      { who: "Sabine", claim: "„Das war halb zwölf. Ich bin danach direkt gegangen.“" }
+    ] }
+];
+
+const LUCY_REPLIES = [
+  [{ from: "lucy", text: "Okay. Sabine hat ein Motiv, mich anzulügen — aber Max hat kein Alibi. Halb zwölf würde bedeuten, dass er noch drin war." }],
+  [{ from: "lucy", text: "Ich frag Hans. Der stand die halbe Nacht an der Garderobe." },
+   { from: "lucy", text: "Gib mir zwei Stunden." }],
+  [{ from: "lucy", text: "Hans sagt, Max war um halb zwölf an meiner Jacke. Ich mach eine Gruppe auf. Alle drin." }]
+];
+
+const GROUP_SEED = [
+  { id: "g0", from: "system", text: "Lucy hat die Gruppe „Samstagnacht“ erstellt · 4 Teilnehmende" },
+  { id: "g1", from: "lucy", text: "Ich mach das jetzt hier, damit niemand zwei Versionen erzählen kann.", time: "23:06" },
+  { id: "g2", from: "max", text: "Was soll das denn werden", time: "23:06" },
+  { id: "g3", from: "sabine", text: "Ich hab von Anfang an gesagt, dass es halb zwölf war.", time: "23:07" },
+  { id: "g4", from: "max", text: "Ich war zu der Zeit draußen. Frag wen du willst.", time: "23:07",
+    flag: true, flagLabel: "WIDERSPRUCH: AUFENTHALTSORT", clueLabel: "MAX' AUFENTHALTSORT",
+    sources: [
+      { who: "Max (jetzt)", claim: "„Ich war um halb zwölf draußen.“" },
+      { who: "Hans, Garderobe", claim: "„Max stand um halb zwölf an Lucys Jacke.“" }
+    ] },
+  { id: "g5", from: "lucy", text: "Hans sagt was anderes. Du weißt genau, was er sagt.", time: "23:08" }
+];
+
+const MILESTONES = [
+  { id: "m1", title: "Unbekannte Nummer", time: "20:12", done: true, desc: "Erster Kontakt angenommen, statt zu blocken." },
+  { id: "m2", title: "Zwei Quellen", time: "20:47", done: true, desc: "Max und Sabine unabhängig voneinander befragt.", badge: "Doppelt geprüft", badgeGlyph: "II", badgeDesc: "Jeden Hinweis von zwei Seiten bestätigt." },
+  { id: "m3", title: "Widerspruch entdeckt", time: "20:58", done: true, desc: "Die Aussagen zur Tatzeit passen nicht zusammen — du hast es bemerkt.", badge: "Erster Widerspruch", badgeGlyph: "!", badgeDesc: "Zwei Aussagen gegeneinander gestellt." },
+  { id: "m4", title: "Hans' Hinweis", time: "23:04", done: true, desc: "Lucys Nachfrage an der Garderobe brachte den entscheidenden Zeugen." },
+  { id: "m5", title: "Konfrontation", time: "—", done: false, desc: "Max im Gruppenchat mit der vollständigen Beweislage stellen." },
+  { id: "m6", title: "Fall gelöst", time: "—", done: false, desc: "Geständnis erreicht, ohne eine falsche Beschuldigung auszusprechen." }
+];
+
+const EARNED = [
+  { id: "e1", glyph: "✓", title: "Fall gelöst" },
+  { id: "e2", glyph: "◆", title: "Alle Hinweise gefunden" },
+  { id: "e3", glyph: "◇", title: "Ohne Falschbeschuldigung" }
+];
+
+class Component extends DCLogic {
+  state = {
+    screen: "start", convo: "lucy",
+    lucy: LUCY_SEED.slice(), group: GROUP_SEED.slice(),
+    replyIdx: 0, draft: "", typing: false,
+    openFlag: null, toast: null, cluesOpen: false,
+    solved: false, celebration: false, milestones: MILESTONES,
+    disguise: null, addressAs: "they/them", nickname: "Alex", bio: "Interessiert an Geschichte, Rätseln und alten Archiven.",
+    notify: true, gpu: true, model: "phi-3-mini"
+  };
+  scrollRef = React.createRef();
+  timers = [];
+
+  componentDidMount() { this.runBoot(); }
+
+  runBoot() {
+    const first = (this.props.bootMode || "first") === "first";
+    const steps = first
+      ? [[0, "Lokales Modell wird geladen · Phi-3 Mini (1,8 GB)"], [22, "Lokales Modell wird geladen · Phi-3 Mini (1,8 GB)"], [54, "Modell wird für dein Gerät vorbereitet"], [81, "Geschichte „Lucys Portmonnaie“ wird installiert"], [100, "Fertig"]]
+      : [[0, "GESCHICHTE WIRD VORBEREITET"], [100, "GESCHICHTE WIRD VORBEREITET"]];
+    this.setState({ firstRun: first, setupPct: 0, setupStep: steps[0][1] });
+    const span = first ? 900 : 700;
+    steps.forEach((st, i) => this.later(() => this.setState({ setupPct: st[0], setupStep: st[1] }), i * span));
+    this.later(() => { if (this.state.screen === "start") this.setState({ screen: "chats" }); }, steps.length * span + 300);
+  }
+
+  componentWillUnmount() { this.timers.forEach(clearTimeout); }
+  componentDidUpdate() {
+    const el = this.scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }
+  later(fn, ms) { this.timers.push(setTimeout(fn, ms)); }
+  now() { const d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+
+  showToast(text, glyph) {
+    this.setState({ toast: text, toastGlyph: glyph || "◆" });
+    this.later(() => this.setState({ toast: null }), 4200);
+  }
+
+  push(key, msg) { this.setState(s => ({ [key]: s[key].concat([Object.assign({ id: key + Math.random() }, msg)]) })); }
+
+  send(text) {
+    if (!text || !text.trim()) return;
+    const isGroup = this.state.convo === "group";
+    const key = isGroup ? "group" : "lucy";
+    this.push(key, { from: "me", text: text.trim(), time: this.now() });
+    this.setState({ draft: "" });
+    if (isGroup) this.groupBeat(text.trim()); else this.lucyBeat();
+  }
+
+  lucyBeat() {
+    const i = this.state.replyIdx;
+    const beat = LUCY_REPLIES[Math.min(i, LUCY_REPLIES.length - 1)];
+    this.setState({ replyIdx: i + 1 });
+    this.later(() => this.setState({ typing: true }), 500);
+    beat.forEach((m, n) => {
+      this.later(() => {
+        this.setState({ typing: n < beat.length - 1 });
+        this.push("lucy", { from: m.from, text: m.text, time: this.now() });
+      }, 1500 + n * 1400);
+    });
+    if (i === 0) this.later(() => this.showToast("Erster Widerspruch", "!"), 3600);
+    if (i >= 2) this.later(() => this.setState({ convo: "group", screen: "convo" }), 1500 + beat.length * 1400 + 900);
+  }
+
+  groupBeat(text) {
+    const evidence = /beweis|hans|garderobe|jacke|halb zwölf|halb zwoelf/i.test(text);
+    this.later(() => this.setState({ typing: true }), 400);
+    if (evidence) {
+      this.later(() => { this.setState({ typing: true }); this.push("group", { from: "max", text: "…", time: this.now() }); }, 1400);
+      this.later(() => {
+        this.setState({ typing: false });
+        this.push("group", { from: "max", text: " Okay. Ich war es. Ich wollte es zurückgeben, ich hab nur nicht gewusst wie.", time: this.now() });
+      }, 2900);
+      this.later(() => this.push("group", { from: "lucy", text: "Morgen, 18 Uhr, Café am Markt. Bring alles mit.", time: this.now() }), 4200);
+      this.later(() => this.setState(s => ({
+        solved: true, celebration: !this.solvedQuiet(),
+        toast: this.solvedQuiet() ? "Fall gelöst" : null, toastGlyph: "✓",
+        milestones: s.milestones.map(m => (m.id === "m5" || m.id === "m6") ? Object.assign({}, m, { done: true, time: m.id === "m5" ? "23:11" : "23:14", badge: m.id === "m6" ? "Ohne Falschbeschuldigung" : m.badge, badgeGlyph: m.id === "m6" ? "◇" : m.badgeGlyph, badgeDesc: m.id === "m6" ? "Gelöst, ohne eine unschuldige Person zu beschuldigen." : m.badgeDesc }) : m)
+      })), 5400);
+      if (this.solvedQuiet()) this.later(() => this.setState({ toast: null }), 9600);
+    } else {
+      this.later(() => {
+        this.setState({ typing: false });
+        this.push("group", { from: "sabine", text: "Sag doch einfach, was Hans gesehen hat.", time: this.now() });
+      }, 1700);
+    }
+  }
+
+  solvedQuiet() { return (this.props.celebrationStyle || "fullscreen") === "toast"; }
+
+  decorate(list, isGroup) {
+    let prev = null;
+    const out = list.map(m => {
+      const meta = T[m.from];
+      const showName = isGroup && m.from !== "me" && m.from !== "system" && prev !== m.from;
+      if (m.from !== "system") prev = m.from;
+      const open = this.state.openFlag === m.id;
+      return {
+        id: m.id, text: m.text, time: m.time,
+        isSystem: m.from === "system", isMe: m.from === "me",
+        isThem: m.from !== "me" && m.from !== "system",
+        showName: showName, name: meta ? meta.name : "", initial: meta ? meta.initial : "",
+        flag: !!m.flag, flagLabel: m.flagLabel, clueLabel: m.clueLabel,
+        flagSources: m.sources || [], flagOpen: open, flagChevron: open ? "▾" : "▸",
+        toggleFlag: () => this.setState(s => ({ openFlag: s.openFlag === m.id ? null : m.id }))
+      };
+    });
+    return out;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const disguise = s.disguise || this.props.disguise || "subtle";
+
+    const isGroup = s.convo === "group";
+    const nav = [
+      { key: "start", label: "Startbildschirm" },
+      { key: "chats", label: "Chat-Übersicht" },
+      { key: "convo:lucy", label: "Einzelchat · Lucy" },
+      { key: "convo:group", label: "Gruppenchat" },
+      { key: "riddlon", label: "Riddlon-Chat · Bibliothek" },
+      { key: "awards", label: "Storyübersicht" },
+      { key: "settings", label: "Profil & Einstellungen" }
+    ].map(n => {
+      const active = n.key === "convo:lucy" ? (s.screen === "convo" && !isGroup)
+        : n.key === "convo:group" ? (s.screen === "convo" && isGroup)
+        : s.screen === n.key;
+      return {
+        label: n.label, active: active, inactive: !active,
+        go: () => {
+          if (n.key === "convo:lucy") this.setState({ screen: "convo", convo: "lucy", celebration: false });
+          else if (n.key === "convo:group") this.setState({ screen: "convo", convo: "group", celebration: false });
+          else { this.setState({ screen: n.key, celebration: false }); if (n.key === "start") this.later(() => this.runBoot(), 40); }
+        }
+      };
+    });
+
+    const lastLucy = s.lucy[s.lucy.length - 1];
+    const lastGroup = s.group[s.group.length - 1];
+    const threads = [
+      { key: "group", name: "Samstagnacht", isGroup: true, isSolo: false, preview: (isGroup ? "" : "Lucy: ") + lastGroup.text, time: "23:08", unread: s.solved ? 0 : 2, open: () => this.setState({ screen: "convo", convo: "group" }) },
+      { key: "lucy", name: "Lucy", initial: "L", isGroup: false, isSolo: true, preview: lastLucy.text, time: "21:00", unread: 1, open: () => this.setState({ screen: "convo", convo: "lucy" }) },
+      { key: "sabine", name: "Sabine", initial: "S", isGroup: false, isSolo: true, preview: "Ich hab dir doch alles gesagt.", time: "20:44", unread: 0, open: () => this.setState({ screen: "convo", convo: "lucy" }) },
+      { key: "max", name: "Max", initial: "M", isGroup: false, isSolo: true, preview: "Kein Kommentar mehr dazu.", time: "20:39", unread: 0, open: () => this.setState({ screen: "convo", convo: "lucy" }) },
+      { key: "riddlon", name: "Riddlon", initial: "R", isGroup: false, isSolo: false, isSystem: true, preview: "Deine Bibliothek: 3 Geschichten. Neue importieren?", time: "Di", unread: 0, open: () => this.setState({ screen: "riddlon" }) }
+    ].map(t => Object.assign({ isSystem: false }, t, { unread: t.unread ? String(t.unread) : null, isSolo: t.isSolo && !t.isSystem }))
+     .filter(t => !s.query || (t.name + " " + t.preview).toLowerCase().indexOf(s.query.toLowerCase()) > -1);
+
+    const chips = (isGroup
+      ? ["Hans hat dich um halb zwölf an der Jacke gesehen.", "Beweise vorlegen", "Max, sag die Wahrheit."]
+      : ["Erzähl mir mehr.", "Wem glaubst du?", "Wer war noch da?"]
+    ).map((label, i) => ({ label: label, send: () => this.send(label) }));
+
+    const done = s.milestones.filter(m => m.done).length;
+
+    return {
+      navItems: nav,
+      resetDemo: () => { this.timers.forEach(clearTimeout); this.later(() => this.runBoot(), 60); this.setState({ screen: "start", convo: "lucy", lucy: LUCY_SEED.slice(), group: GROUP_SEED.slice(), replyIdx: 0, draft: "", typing: false, openFlag: null, toast: null, solved: false, celebration: false, milestones: MILESTONES }); },
+
+      isStart: s.screen === "start", isChats: s.screen === "chats",
+      isConvo: s.screen === "convo", isAwards: s.screen === "awards",
+      isSettings: s.screen === "settings",
+      isRiddlon: s.screen === "riddlon",
+      goRiddlon: () => this.setState({ screen: "riddlon", celebration: false, toast: null }),
+      goStory: () => this.setState({ screen: "awards", celebration: false, toast: null }),
+      goChatLucy: () => this.setState({ screen: "convo", convo: "lucy", celebration: false, toast: null }),
+      storyLog: s.milestones.map((m, i) => Object.assign({}, m, { open: !m.done, first: i === 0 })),
+      storyProgress: done + " von 6 Meilensteinen",
+      goSettings: () => this.setState({ screen: "settings", celebration: false, toast: null }),
+      disguiseOptions: [
+        { key: "pure", title: "Reiner Messenger", desc: "Keine Spielelemente. Nur Chats — Fortschritt bleibt unsichtbar." },
+        { key: "subtle", title: "Dezente Hinweise", desc: "Feine Fortschrittslinie und Hinweiszähler über dem Chat." },
+        { key: "game", title: "Sichtbares Spiel", desc: "Kapitelziel, Hinweisleiste und Fortschritt offen sichtbar." }
+      ].map(o => ({
+        title: o.title, desc: o.desc,
+        active: disguise === o.key, inactive: disguise !== o.key,
+        pick: () => this.setState({ disguise: o.key })
+      })),
+      pronounOptions: ["sie/ihr", "er/ihm", "they/them", "nur Vorname"].map(p => ({
+        label: p, active: s.addressAs === p, inactive: s.addressAs !== p,
+        pick: () => this.setState({ addressAs: p })
+      })),
+      nickname: s.nickname,
+      onNickname: e => this.setState({ nickname: e.target.value }),
+      bio: s.bio,
+      onBio: e => this.setState({ bio: e.target.value }),
+      addressPreview: s.addressAs === "nur Vorname" ? "„" + (s.nickname || "Du") + ", kannst du mir helfen?“" : "„Kannst du mir helfen? Ich schreibe " + (s.addressAs === "sie/ihr" ? "Sie" : s.addressAs === "er/ihm" ? "ihn" : "dich") + " an, weil ich niemanden sonst habe.“",
+      notify: s.notify, notifyOff: !s.notify,
+      toggleNotify: () => this.setState(st => ({ notify: !st.notify })),
+      gpu: s.gpu, gpuOff: !s.gpu,
+      toggleGpu: () => this.setState(st => ({ gpu: !st.gpu })),
+      modelOptions: [
+        { key: "phi-3-mini", label: "Phi-3 Mini", size: "1,8 GB · geladen" },
+        { key: "llama-3-8b", label: "Llama 3 8B", size: "4,6 GB · nicht geladen" }
+      ].map(m => ({
+        label: m.label, size: m.size,
+        active: s.model === m.key, inactive: s.model !== m.key,
+        pick: () => this.setState({ model: m.key })
+      })),
+      firstRun: s.firstRun !== false, warmRun: s.firstRun === false,
+      setupPct: (s.setupPct || 0) + " %",
+      setupWidth: (s.setupPct || 0) + "%",
+      setupStep: s.setupStep || "Lokales Modell wird geladen",
+
+      goStart: () => this.setState({ screen: "start" }),
+      goChats: () => this.setState({ screen: "chats", celebration: false, toast: null }),
+      goAwards: () => this.setState({ screen: "awards", celebration: false, toast: null }),
+
+      showChapterBar: disguise === "game",
+      showThinProgress: disguise === "subtle",
+      showClueStrip: disguise !== "pure",
+      pureMode: disguise === "pure",
+      toggleClues: () => this.setState({ screen: "awards" }),
+
+      threads: threads,
+      query: s.query || "",
+      onQuery: e => this.setState({ query: e.target.value }),
+      searchOpen: !!s.searchOpen, searchClosed: !s.searchOpen,
+      toggleSearch: () => this.setState(st => ({ searchOpen: !st.searchOpen, query: st.searchOpen ? "" : st.query })),
+      isGroupConvo: isGroup, isSoloConvo: !isGroup,
+      convoTitle: isGroup ? "Samstagnacht" : "Lucy",
+      convoSub: isGroup ? "Lucy, Max, Sabine, du" : "zuletzt online 21:01",
+      convoInitial: "L",
+      messages: this.decorate(isGroup ? s.group : s.lucy, isGroup),
+      typing: s.typing,
+      draft: s.draft,
+      onDraft: e => this.setState({ draft: e.target.value }),
+      onKey: e => { if (e.key === "Enter") this.send(this.state.draft); },
+      sendDraft: () => this.send(this.state.draft),
+      chips: chips,
+      scrollRef: this.scrollRef,
+
+      milestones: s.milestones.map(m => Object.assign({}, m, { open: !m.done })),
+      awardCount: done + "/6",
+      awardScore: done + " / 6",
+
+      toast: s.toast, toastGlyph: s.toastGlyph || "◆",
+      celebration: s.celebration, earned: EARNED,
+      closeCelebration: () => this.setState({ celebration: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -8,9 +8,9 @@
  * regardless of which component is using it. Retune the palette here for a new app.
  */
 @theme {
-	--color-accent: var(--color-sky-500);
-	--color-accent-strong: var(--color-sky-600);
-	--color-accent-soft: var(--color-sky-400);
+	--color-accent: #c1502e;
+	--color-accent-strong: #a53f22;
+	--color-accent-soft: #d97b52;
 
 	--color-success: var(--color-emerald-500);
 	--color-success-strong: var(--color-emerald-600);
@@ -21,12 +21,12 @@
 	--color-danger: var(--color-rose-400);
 	--color-danger-strong: var(--color-rose-600);
 
-	--color-surface: var(--color-slate-900);
-	--color-surface-raised: var(--color-slate-800);
-	--color-surface-sunken: var(--color-slate-950);
+	--color-surface: #151a26;
+	--color-surface-raised: #1e2436;
+	--color-surface-sunken: #0d1119;
 
-	--color-line: var(--color-slate-700);
-	--color-line-strong: var(--color-slate-600);
+	--color-line: #2a3142;
+	--color-line-strong: #384057;
 
 	/* Type scale — distinct names from Tailwind's default text-xs..2xl so usage stays semantic. */
 	--text-display: 1.5rem;
@@ -45,6 +45,12 @@
 	--radius-tile: 0.5rem;
 	--radius-panel: 1rem;
 	--radius-control: 0.375rem;
+
+	/* Loaded via the Google Fonts link in app.html. font-serif/font-mono utilities
+	   pick these up automatically; DM Sans replaces Tailwind's default font-sans stack. */
+	--font-sans: 'DM Sans', system-ui, sans-serif;
+	--font-serif: 'Instrument Serif', serif;
+	--font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 :root {
@@ -52,8 +58,10 @@
 }
 
 body {
-	background-color: #020617;
+	background-color: #0d1119;
 	min-height: 100vh;
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
 }
 
 /*
@@ -77,4 +85,76 @@ body {
 /* Every interactive control inside the drag strip needs this, or it becomes unclickable. */
 .app-header[data-wco='true'] .app-header-no-drag {
 	-webkit-app-region: no-drag;
+}
+
+/*
+ * Chat-screen motion — referenced from components via `animate-[rd-x_...]` arbitrary
+ * values (Tailwind can't see keyframes defined outside its own layer to generate
+ * them, so they're declared here instead of duplicated per-component).
+ */
+@keyframes rd-fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes rd-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes rd-pop {
+	0% {
+		opacity: 0;
+		transform: scale(0.82);
+	}
+	60% {
+		transform: scale(1.03);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes rd-ring {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes rd-dot {
+	0%,
+	60%,
+	100% {
+		opacity: 0.25;
+		transform: translateY(0);
+	}
+	30% {
+		opacity: 1;
+		transform: translateY(-3px);
+	}
+}
+
+@keyframes rd-toast {
+	0% {
+		opacity: 0;
+		transform: translateY(-24px) scale(0.96);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }

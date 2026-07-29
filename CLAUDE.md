@@ -4,14 +4,95 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A **client-only Progressive Web App template** (SvelteKit + Svelte 5 + Tailwind 4). It is the base
-setup for spinning up a new PWA: the toolchain, PWA plumbing (installable manifest, offline service
-worker, opt-in update flow), and CI are already wired together, so a new project starts from a green
-build. There is **no backend** — adapter-static emits a prerendered shell that hydrates and then runs
-entirely in the browser.
+**Riddlon** — an interactive chat-story platform. Players chat with characters; a plot unfolds
+through the conversation while the app looks and feels like an ordinary messenger. This repository
+is the **Player PWA** (the "App 2" from the concept doc): the end-user app that loads installed
+story packages and runs them, including local LLM inference, entirely client-side. The companion
+Authoring Studio (for creating/exporting story packages) is a separate, not-yet-built app.
 
-When a real app is built on top of this template, extend this file to describe that app's own
-architecture — the sections below document the base the app inherits.
+Full product concept — vision, package format, story/character data model, the reference story
+used to validate it — lives in [`docs/concept.md`](./docs/concept.md). Read it before working on
+turning any of the mock `$lib/story/*` content into the real `engine/`/`content/`/`llm/` modules
+described there.
+
+The UI has a pixel-reference prototype: [`docs/design/`](./docs/design/) — read its README first,
+then `riddlon-app-mockup.dc.html` before working on anything under `ui/` or a route/component.
+
+The repo started from a **client-only Progressive Web App template** (SvelteKit + Svelte 5 +
+Tailwind 4): the toolchain, PWA plumbing (installable manifest, offline service worker, opt-in
+update flow), and CI were already wired together. There is **no backend** — adapter-static emits a
+prerendered shell that hydrates and then runs entirely in the browser.
+
+On top of that template, the UI for the seven core screens is implemented (splash/boot, chat
+overview, solo + group chat, the "Riddlon" system/library chat, story overview, profile/settings),
+driven by scripted mock data for the reference story "Lucys Portmonnaie" — see "Chat UI" below.
+**Not yet real**: the story engine (scenes/flags are hardcoded beats, not a state graph), story
+package import (the ZIP/URL buttons in `/chat/riddlon` are decorative), local LLM inference (model
+list is static; nothing actually runs a model), and the character library. Those land per the
+concept doc's "App 2" module breakdown as the issue backlog works through them:
+
+| Module        | Responsibility                                                                | Status                                                                   |
+| ------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                        |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Mocked in `$lib/state/game.svelte.ts`                                    |
+| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                                        |
+| `characters/` | Local, story-independent character library                                    | Not started                                                              |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Not started (`$lib/state/profile.ts` lists model options as static data) |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload          |
+| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                              |
+
+## Chat UI
+
+Seven screens, each its own route so back/forward and reload work like a normal web app (the
+original design used a single fake "phone frame" with in-memory screen switching — see
+`chats/chat1.md` in the original design handoff if you need the full back-and-forth that produced
+this design):
+
+| Route            | Screen                                                                   |
+| ---------------- | ------------------------------------------------------------------------ |
+| `/`              | Splash + boot sequence, then auto-navigates to `/chats`                  |
+| `/chats`         | Chat overview / thread list                                              |
+| `/chat/[thread]` | Solo (`lucy`) or group (`group`) conversation — shared shell             |
+| `/chat/riddlon`  | The "Riddlon" system chat: installed-story library + import (decorative) |
+| `/story`         | Storyübersicht — milestone timeline + achievements for the active story  |
+| `/settings`      | Profile & settings (nickname, pronouns, disguise mode, model, notify)    |
+
+Notes on things that look like bugs but aren't:
+
+- Tapping the **Sabine** or **Max** thread in `/chats`, or any catalog entry in `/chat/riddlon`
+  other than "Lucys Portmonnaie", opens the same `lucy` thread / `/story` screen — there's only one
+  reference story with real content right now (see `docs/concept.md` §7). Search for `Only "Lucys
+Portmonnaie"` to find the call sites.
+- The **"Fallakte ansehen"** button on the case-solved celebration literally says that (not
+  "Storyübersicht") — that's the original design's wording; the screen it renamed to
+  "Storyübersicht" is `/story`.
+
+Building blocks:
+
+- **`$lib/state/game.svelte.ts`** — the `game` singleton: message threads, typing indicators,
+  contradiction-disclosure state, milestones, the achievement toast, and the case-solved
+  celebration overlay. A scripted timer sequence stands in for a real story engine — see
+  `#lucyBeat`/`#groupBeat`. Survives navigating between screens (like `toast.svelte.ts`).
+- **`$lib/state/profile.svelte.ts`** — the `profile` singleton: nickname, pronouns, disguise mode
+  (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and
+  `/chat/[thread]`), local model choice, notification toggle. In-memory only; no persistence.
+- **`$lib/story/*`** — mock "installed content package" data (seed messages, reply beats,
+  milestones, achievements, the library catalog). Deliberately **not** routed through i18n — a real
+  story package ships its own localized content, separate from the app's own UI chrome.
+- **`$lib/components/chat/*`** — shared screen chrome: `AppHeader` (60px) + `InfoBand` (46px) are
+  used on every screen so header height is identical everywhere (a specific piece of design
+  feedback — see chat1.md), `MessageBubble`, `Composer`, `Avatar`, etc.
+- **Pure logic lives in plain `.ts` files** next to their `.svelte.ts`/route consumers, so it's
+  Node-testable: `$lib/story/detect-evidence.ts`, `$lib/story/boot-steps.ts`,
+  `$lib/state/profile.ts`, `$lib/i18n/format.ts`.
+
+## i18n
+
+`$lib/i18n/` — German-only today, but every UI-chrome string goes through `t('some.key', vars)`
+(`$lib/i18n/i18n.svelte.ts`) against `$lib/i18n/de.json`, so adding a language is "add
+`en.json`, add one line to `dictionaries`" rather than a rewrite. `vars` does `{name}`-style
+interpolation (`$lib/i18n/format.ts`). Story content (character dialogue, clue text, achievement
+titles) is **not** in the dictionary — see "Chat UI" above.
 
 ## Commands
 
@@ -23,8 +104,8 @@ architecture — the sections below document the base the app inherits.
 | Type-check          | `npm run check` (runs `svelte-kit sync` + `svelte-check`)  |
 | Unit tests (once)   | `npm test`                                                 |
 | Unit tests (watch)  | `npm run test:unit`                                        |
-| Single test file    | `npx vitest run src/lib/utils/greeting.spec.ts`            |
-| Single test by name | `npx vitest run -t "greets a given name"`                  |
+| Single test file    | `npx vitest run src/lib/story/detect-evidence.spec.ts`     |
+| Single test by name | `npx vitest run -t "mentionsEvidence"`                     |
 | Lint                | `npm run lint` (prettier `--check` + eslint)               |
 | Format              | `npm run format`                                           |
 
@@ -59,10 +140,11 @@ The template is deliberately thin. Three areas:
      (installed Chromium-desktop only) for drawing the app header into the OS titlebar; paired with
      the `.app-header[data-wco='true']` block in `layout.css`. Inert everywhere else.
 
-3. **Example pure logic** — `src/lib/utils/greeting.{ts,spec.ts}`.
-   A trivial pure helper + its Vitest spec, showing the Node-testable pattern: pure, framework-free
-   logic lives in plain `.ts` files (matched by the `server` test project), while anything touching
-   the DOM/browser APIs stays in `.svelte.ts` / components. Delete both once you have real code.
+3. **Pure logic / Node-testable pattern** — e.g. `src/lib/story/detect-evidence.{ts,spec.ts}`,
+   `src/lib/story/boot-steps.{ts,spec.ts}`, `src/lib/i18n/format.{ts,spec.ts}`. Framework-free logic
+   (no runes, no browser APIs) lives in plain `.ts` files matched by the `server` test project;
+   anything touching the DOM/browser APIs or holding reactive state stays in `.svelte.ts` files or
+   components instead.
 
 ### State (Svelte 5 runes singletons)
 
@@ -78,8 +160,8 @@ in non-supporting environments (`browser` from `$app/environment`, plus feature 
   registration is off — see `vite.config.ts`); it precaches the shell and static assets cache-first.
   The manifest link and `theme-color` are in `src/app.html`; assets are `static/manifest.webmanifest`
   and `static/pwa-icon*`.
-- **Installable.** `static/manifest.webmanifest` declares name/icons/display; the icons are
-  **placeholders** — replace the SVG + maskable PNGs (192/512) for a real app.
+- **Installable.** `static/manifest.webmanifest` declares name/icons/display; the icon is the
+  Riddlon speech-bubble mark (`static/pwa-icon*`, sourced from `static/riddlon-icon-final.svg`).
 
 ## CI / release
 
@@ -101,7 +183,3 @@ workflow needs a `RELEASE_TOKEN` repository secret (a PAT) so a created release 
   Use the `$lib` alias for `src/lib`.
 - **Nothing touching the DOM may run at module top-level or during SSR/prerender.** Guard with
   `browser` from `$app/environment` and feature-detect optional browser APIs.
-- **Renaming for a new app:** `name` in `package.json`, `package-name` in `release-please-config.json`,
-  `name`/`short_name`/`description` in `static/manifest.webmanifest`, the `theme-color` in
-  `src/app.html` + manifest, the design tokens in `src/routes/layout.css`, and the cache prefix /
-  build-log tag (`pwa-` / `[pwa]`) in `service-worker.ts` / `+layout.svelte`.

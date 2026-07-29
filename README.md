@@ -1,8 +1,15 @@
-# pwa_template
+# Riddlon
 
-A Svelte-based **Progressive Web App** template — the base setup for spinning up a new
-client-only PWA. It ships with the toolchain, PWA plumbing, and CI already wired together,
-so a new project starts from a green build instead of a blank folder.
+An open-source platform for interactive chat stories: players chat with characters and the
+plot unfolds through the conversation, while the app looks and feels like an ordinary messenger.
+Riddlon is **offline-first** — after a story package is installed, it's fully playable without a
+network connection, including local LLM inference in the browser.
+
+This repository is the **Player PWA**, built on a client-only Progressive Web App base
+(SvelteKit + Svelte 5 + Tailwind 4). It ships with the toolchain, PWA plumbing, and CI already
+wired together, so the app starts from a green build instead of a blank folder. See
+[`CLAUDE.md`](./CLAUDE.md) for the concept and architecture, and the repo's issues for the
+build roadmap.
 
 ## Stack
 
@@ -41,22 +48,34 @@ Requires Node 22+ (CI runs on Node 26).
 
 ```
 src/
-  app.html                  # HTML shell: manifest link, theme-color, viewport
+  app.html                  # HTML shell: manifest link, theme-color, viewport, Google Fonts
   app.d.ts                  # ambient types (incl. Window Controls Overlay)
   service-worker.ts         # cache-first offline precache + update handshake
   routes/
-    +layout.svelte          # SW registration, update banner, global <Toast/>
+    +layout.svelte          # SW registration, update banner, global toast/achievement/celebration overlays
     +layout.ts              # ssr = false, prerender = true (client-only static)
-    +page.svelte            # placeholder starter page — replace this
-    layout.css              # Tailwind import + semantic design tokens
+    +page.svelte            # splash screen + first-run/warm boot sequence → /chats
+    layout.css              # Tailwind import + semantic design tokens + shared keyframes
+    chats/+page.svelte      # chat overview / thread list
+    chat/[thread]/+page.svelte  # solo ("lucy") + group ("group") conversation, shared shell
+    chat/riddlon/+page.svelte   # "Riddlon" system chat: installed-story library + import
+    story/+page.svelte      # Storyübersicht: milestone timeline + achievements
+    settings/+page.svelte   # profile & settings
   lib/
-    components/ui/Toast.svelte
+    components/
+      chat/                 # AppHeader, InfoBand, MessageBubble, Composer, Avatar, ThreadRow, …
+      icons/RiddlonMark.svelte
+      ui/Toast.svelte
     state/                  # Svelte 5 runes singletons (browser-guarded)
+      game.svelte.ts        #   active story session: messages, milestones, achievements
+      profile.svelte.ts     #   player profile & settings (pronouns, disguise mode, model, …)
       toast.svelte.ts       #   transient notifications
       update.svelte.ts      #   service-worker update detection
       windowChrome.svelte.ts#   Window Controls Overlay state
-    utils/greeting.{ts,spec.ts}  # example pure logic + test — delete when real code lands
-static/                     # manifest.webmanifest, placeholder icons, robots.txt
+      onboarding.ts         #   first-run vs. warm-boot detection (localStorage)
+    story/                  # mock installed-story-package content ("Lucys Portmonnaie")
+    i18n/                   # de.json dictionary + t() lookup — see CLAUDE.md "i18n"
+static/                     # manifest.webmanifest, icons, robots.txt
 .github/                    # CI, Dependabot, release-please, GitHub Pages deploy
 ```
 
@@ -75,19 +94,14 @@ static/                     # manifest.webmanifest, placeholder icons, robots.tx
 Tests run under Vitest's `server` (Node) project, which matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is on — every test must assert at least once.
 
-## Using this template
+## Status
 
-1. **Create a repo from this template** (or clone it) and `npm install`.
-2. **Rename the project** — update `name` in `package.json`, `package-name` in
-   `release-please-config.json`, the `name`/`short_name`/`description` in
-   `static/manifest.webmanifest`, and the cache prefix / build-log tag (`pwa-` / `[pwa]`) in
-   `src/service-worker.ts` and `src/routes/+layout.svelte`.
-3. **Replace the placeholder icons** in `static/` (`pwa-icon*.svg` / `pwa-icon*.png`) and the
-   `theme-color` in `src/app.html` + the manifest with your brand.
-4. **Retune the design tokens** at the top of `src/routes/layout.css` for your palette.
-5. **Start building** in `src/routes/+page.svelte` and `src/lib/`. Delete the example
-   `src/lib/utils/greeting.*`.
-6. **Update `CLAUDE.md`** to describe your app's own architecture as it grows.
+The chat UI (splash/boot, chat overview, solo + group chat, the Riddlon system/library chat, story
+overview, profile/settings) is implemented end-to-end against scripted mock data for the reference
+story "Lucys Portmonnaie". The real story engine, story-package import, character library, and
+local-LLM module described in `CLAUDE.md` are not implemented yet — all game/session state above is
+in-memory only and resets on reload. See `CLAUDE.md`'s "Project" table for what's mocked vs. real,
+and the repo's issues for the build roadmap.
 
 ### GitHub Pages / release flow
 

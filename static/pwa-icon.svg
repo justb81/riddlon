@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PWA">
-  <rect width="512" height="512" rx="112" fill="#0284c7"/>
-  <path d="M288 96 160 288h72l-24 128 168-208h-80z" fill="#ffffff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Riddlon"><rect width="512" height="512" fill="#151a26" rx="72"/><g fill="#f3eee3"><path d="m169 376-58 87 135-87z"/><path d="M130 48h252c53 0 96 43 96 97v135c0 54-43 97-96 97H130c-53 0-96-43-96-97V145c0-54 43-97 96-97"/></g><g fill="#c1502e"><path d="M172 220h-38v-4q0-10 2-16l7-11 19-17q8-7 8-12t-3-9-10-3-11 5-6 16l-39-4q2-22 16-35 13-13 41-13 22 0 35 9 18 13 18 33 0 9-5 16-4 8-19 20-10 8-12 12-3 5-3 13m-39 10h40v36h-40Zm221-110h44v33l-9 67h-27l-8-67Zm2 110h40v36h-40Z" style="text-wrap-mode:nowrap" transform="translate(-51 -20)scale(1.213)"/><path d="M206 259h50v44h-50zm86 0h50v44h-50z"/></g></svg>

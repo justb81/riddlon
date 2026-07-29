@@ -1,62 +1,103 @@
 <script lang="ts">
-	import { base } from '$app/paths';
-	import { toast } from '$lib/state/toast.svelte.js';
-	import { windowChrome } from '$lib/state/windowChrome.svelte.js';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import RiddlonMark from '$lib/components/icons/RiddlonMark.svelte';
+	import { t } from '$lib/i18n/i18n.svelte.js';
+	import { hasOnboarded, markOnboarded } from '$lib/state/onboarding.js';
+	import { bootSteps, bootStepSpanMs, type BootStep } from '$lib/story/boot-steps.js';
 
-	// Starter home page. Delete everything below and build your app — the shell
-	// (PWA manifest, offline service worker, update banner, toasts) is already wired up.
+	let firstRun = $state(true);
+	let percent = $state(0);
+	let currentStep = $state<BootStep | null>(null);
+
+	onMount(() => {
+		firstRun = !hasOnboarded();
+		const steps = bootSteps(firstRun);
+		const span = bootStepSpanMs(firstRun);
+		currentStep = steps[0] ?? null;
+
+		const timers = steps.map((step, i) =>
+			setTimeout(() => {
+				percent = step.percent;
+				currentStep = step;
+			}, i * span)
+		);
+		timers.push(
+			setTimeout(
+				() => {
+					markOnboarded();
+					void goto(resolve('/chats'));
+				},
+				steps.length * span + 300
+			)
+		);
+
+		return () => timers.forEach(clearTimeout);
+	});
 </script>
 
-<header
-	class="app-header flex items-center gap-3 border-b border-line bg-surface/80 px-5 py-3 backdrop-blur"
-	data-wco={windowChrome.visible}
->
-	<img src="{base}/pwa-icon.svg" alt="" class="app-header-no-drag size-7" />
-	<h1 class="app-header-no-drag text-h1 font-semibold text-slate-100">PWA Template</h1>
-</header>
+<svelte:head><title>Riddlon</title></svelte:head>
 
-<main class="mx-auto flex max-w-2xl flex-col gap-8 px-5 py-12">
-	<section class="flex flex-col gap-3">
-		<p class="text-display font-semibold text-slate-50">
-			A SvelteKit + Svelte 5 + Tailwind 4 PWA starter.
-		</p>
-		<p class="text-body text-slate-400">
-			Client-only, installable, offline-capable. Static-adapter build, forced runes mode, and a
-			service worker with an opt-in update banner — all preconfigured. Start editing
-			<code class="rounded-control bg-surface-raised px-1.5 py-0.5 text-caption text-accent-soft"
-				>src/routes/+page.svelte</code
-			>.
-		</p>
-	</section>
+<div class="relative flex h-dvh flex-col items-center justify-center overflow-hidden bg-surface">
+	<div
+		class="pointer-events-none absolute inset-0"
+		style="background:radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--color-accent) 14%, transparent) 0%, transparent 62%)"
+	></div>
 
-	<section class="grid gap-3 sm:grid-cols-3">
-		<div class="rounded-panel border border-line bg-surface p-4">
-			<p class="text-h2 font-semibold text-slate-100">Installable</p>
-			<p class="mt-1 text-caption text-slate-400">Web manifest + maskable icons.</p>
+	<div class="relative flex items-center justify-center">
+		<div
+			class="absolute size-[190px] rounded-full border border-dashed border-accent/40"
+			style="animation:rd-ring 22s linear infinite"
+		></div>
+		<div style="animation:rd-pop .6s ease both">
+			<RiddlonMark size={104} />
 		</div>
-		<div class="rounded-panel border border-line bg-surface p-4">
-			<p class="text-h2 font-semibold text-slate-100">Offline</p>
-			<p class="mt-1 text-caption text-slate-400">Cache-first service worker.</p>
-		</div>
-		<div class="rounded-panel border border-line bg-surface p-4">
-			<p class="text-h2 font-semibold text-slate-100">Tested</p>
-			<p class="mt-1 text-caption text-slate-400">Vitest + ESLint + Prettier + CI.</p>
-		</div>
-	</section>
+	</div>
 
-	<section class="flex flex-wrap gap-3">
-		<button
-			type="button"
-			onclick={() => toast.success('It works! Toasts are wired up.')}
-			class="rounded-control bg-accent-strong px-4 py-2 text-label font-medium text-white hover:bg-accent"
-		>
-			Show a toast
-		</button>
-		<a
-			href="https://svelte.dev/docs/kit"
-			class="rounded-control border border-line px-4 py-2 text-label font-medium text-slate-200 hover:bg-surface-raised"
-		>
-			SvelteKit docs
-		</a>
-	</section>
-</main>
+	<div class="relative mt-8.5 font-serif text-4xl text-slate-50">Riddlon</div>
+	<div class="relative mt-3 font-mono text-[11.5px] tracking-[0.14em] text-slate-500">
+		{t('boot.tagline')}
+	</div>
+
+	<div class="absolute inset-x-8.5 bottom-14 flex flex-col gap-3.5">
+		{#if firstRun}
+			<div class="flex items-baseline justify-between gap-2.5">
+				<span class="font-mono text-[10.5px] tracking-[0.12em] text-slate-500"
+					>{t('boot.setupLabel')}</span
+				>
+				<span class="font-mono text-[10.5px] text-accent">{percent} %</span>
+			</div>
+			<div class="h-[3px] overflow-hidden rounded-full bg-slate-100/12">
+				<div
+					class="h-full bg-accent transition-[width] duration-400 ease-linear"
+					style="width:{percent}%"
+				></div>
+			</div>
+			<div class="text-body leading-relaxed text-slate-400">
+				{currentStep ? t(currentStep.i18nKey, currentStep.vars) : ''}
+			</div>
+			<div class="font-mono text-[10px] tracking-[0.06em] text-slate-600">
+				{t('boot.setupOfflineNote')}
+			</div>
+		{:else}
+			<div class="flex items-center justify-center gap-2.5">
+				<span
+					class="size-1.5 rounded-full bg-accent"
+					style="animation:rd-dot 1.1s ease-in-out infinite"
+				></span>
+				<span
+					class="size-1.5 rounded-full bg-accent"
+					style="animation:rd-dot 1.1s ease-in-out .18s infinite"
+				></span>
+				<span
+					class="size-1.5 rounded-full bg-accent"
+					style="animation:rd-dot 1.1s ease-in-out .36s infinite"
+				></span>
+				<span class="ml-1 font-mono text-[10.5px] tracking-[0.1em] text-slate-500">
+					{currentStep ? t(currentStep.i18nKey, currentStep.vars) : ''}
+				</span>
+			</div>
+		{/if}
+	</div>
+</div>
