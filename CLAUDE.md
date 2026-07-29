@@ -14,6 +14,9 @@ Full product concept — vision, package format, story/character data model, the
 used to validate it — lives in [`docs/concept.md`](./docs/concept.md). Read it before working on
 anything under `engine/`, `content/`, `characters/`, or `llm/`.
 
+The UI has a pixel-reference prototype: [`docs/design/`](./docs/design/) — read its README first,
+then `riddlon-app-mockup.dc.html` before working on anything under `ui/` or a route/component.
+
 The repo started from a **client-only Progressive Web App template** (SvelteKit + Svelte 5 +
 Tailwind 4): the toolchain, PWA plumbing (installable manifest, offline service worker, opt-in
 update flow), and CI were already wired together, so the project started from a green build. There
