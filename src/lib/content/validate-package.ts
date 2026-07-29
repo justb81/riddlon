@@ -1,0 +1,276 @@
+import type { z } from 'zod';
+import { manifestSchema, type Manifest } from './schemas/manifest.js';
+import { characterIdentitySchema } from './schemas/character.js';
+import { storySchema } from './schemas/story.js';
+import { storyGraphSchema } from './schemas/sceneGraph.js';
+import { cluesFileSchema } from './schemas/clue.js';
+import { CURRENT_PLAYER_VERSION, SUPPORTED_FORMAT_MAJOR } from './player-version.js';
+import { compareSemver, parseSemver } from './semver.js';
+
+export type PackageValidationErrorCode =
+	| 'MISSING_FILE'
+	| 'SCHEMA_ERROR'
+	| 'UNSUPPORTED_FORMAT_VERSION'
+	| 'PLAYER_TOO_OLD'
+	| 'DUPLICATE_ID'
+	| 'DANGLING_REFERENCE'
+	| 'FILENAME_ID_MISMATCH';
+
+export interface PackageValidationError {
+	code: PackageValidationErrorCode;
+	/** e.g. "manifest.json#/minPlayerVersion" or "story/story.json#/castBindings/2/characterRef" */
+	path: string;
+	message: string;
+}
+
+export interface PackageValidationResult {
+	valid: boolean;
+	errors: PackageValidationError[];
+	manifest?: Manifest;
+}
+
+export interface ValidatePackageOptions {
+	playerVersion?: string;
+}
+
+const CHARACTER_FILENAME_RE = /(?:^|\/)([0-9a-f-]{36})\.character\.json$/i;
+
+function zodIssuesToErrors(filePath: string, error: z.ZodError): PackageValidationError[] {
+	return error.issues.map((issue) => ({
+		code: 'SCHEMA_ERROR',
+		path: `${filePath}#/${issue.path.join('/')}`,
+		message: `${filePath}: ${issue.message} at "${issue.path.join('.') || '(root)'}"`
+	}));
+}
+
+/**
+ * Validates a fully-unpacked story package. `files` maps manifest-relative paths to
+ * already-JSON.parse'd content — parsing raw ZIP bytes is a loader concern outside this
+ * function. Never throws; every problem becomes a specific, actionable
+ * PackageValidationError. Errors accumulate across steps rather than failing fast, so a
+ * single call surfaces every problem an author needs to fix.
+ */
+export function validatePackage(
+	files: Record<string, unknown>,
+	options: ValidatePackageOptions = {}
+): PackageValidationResult {
+	const errors: PackageValidationError[] = [];
+	const playerVersion = options.playerVersion ?? CURRENT_PLAYER_VERSION;
+
+	// Step 1: manifest presence + schema.
+	const rawManifest = files['manifest.json'];
+	if (rawManifest === undefined) {
+		return {
+			valid: false,
+			errors: [
+				{
+					code: 'MISSING_FILE',
+					path: 'manifest.json',
+					message: 'manifest.json is required and was not found in the package'
+				}
+			]
+		};
+	}
+
+	const manifestResult = manifestSchema.safeParse(rawManifest);
+	if (!manifestResult.success) {
+		return { valid: false, errors: zodIssuesToErrors('manifest.json', manifestResult.error) };
+	}
+	const manifest = manifestResult.data;
+
+	// Step 2: format/version compatibility.
+	const formatVersion = parseSemver(manifest.formatVersion)!;
+	if (formatVersion.major !== SUPPORTED_FORMAT_MAJOR) {
+		errors.push({
+			code: 'UNSUPPORTED_FORMAT_VERSION',
+			path: 'manifest.json#/formatVersion',
+			message: `formatVersion "${manifest.formatVersion}" is not supported (expected major version ${SUPPORTED_FORMAT_MAJOR})`
+		});
+	}
+	const minPlayerVersion = parseSemver(manifest.minPlayerVersion)!;
+	const runningPlayerVersion = parseSemver(playerVersion);
+	if (!runningPlayerVersion || compareSemver(minPlayerVersion, runningPlayerVersion) > 0) {
+		errors.push({
+			code: 'PLAYER_TOO_OLD',
+			path: 'manifest.json#/minPlayerVersion',
+			message: `this package requires player >= ${manifest.minPlayerVersion}, installed player is ${playerVersion}`
+		});
+	}
+
+	// Step 3: required files present.
+	const requiredPaths = [
+		manifest.entryStory,
+		manifest.entryGraph,
+		...manifest.characters,
+		...manifest.world
+	];
+	for (const path of requiredPaths) {
+		if (files[path] === undefined) {
+			errors.push({
+				code: 'MISSING_FILE',
+				path: `manifest.json#/${path}`,
+				message: `referenced file "${path}" is missing from the package`
+			});
+		}
+	}
+
+	// Step 4: parse story/graph/clues (only when present — absence was already reported above).
+	let story: z.infer<typeof storySchema> | undefined;
+	if (files[manifest.entryStory] !== undefined) {
+		const storyResult = storySchema.safeParse(files[manifest.entryStory]);
+		if (!storyResult.success) {
+			errors.push(...zodIssuesToErrors(manifest.entryStory, storyResult.error));
+		} else {
+			story = storyResult.data;
+		}
+	}
+
+	let graph: z.infer<typeof storyGraphSchema> | undefined;
+	if (files[manifest.entryGraph] !== undefined) {
+		const graphResult = storyGraphSchema.safeParse(files[manifest.entryGraph]);
+		if (!graphResult.success) {
+			errors.push(...zodIssuesToErrors(manifest.entryGraph, graphResult.error));
+		} else {
+			graph = graphResult.data;
+		}
+	}
+
+	for (const worldPath of manifest.world) {
+		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
+		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
+		if (!cluesResult.success) {
+			errors.push(...zodIssuesToErrors(worldPath, cluesResult.error));
+		}
+	}
+
+	// Step 5: parse character files; verify filename-embedded uuid matches the declared id.
+	const parsedCharacterIds = new Set<string>();
+	const characterIdOrigins = new Map<string, string>();
+	for (const charPath of manifest.characters) {
+		if (files[charPath] === undefined) continue; // already reported as MISSING_FILE above
+		const charResult = characterIdentitySchema.safeParse(files[charPath]);
+		if (!charResult.success) {
+			errors.push(...zodIssuesToErrors(charPath, charResult.error));
+			continue;
+		}
+		const character = charResult.data;
+		const filenameMatch = CHARACTER_FILENAME_RE.exec(charPath);
+		if (filenameMatch && filenameMatch[1].toLowerCase() !== character.id.toLowerCase()) {
+			errors.push({
+				code: 'FILENAME_ID_MISMATCH',
+				path: `${charPath}#/id`,
+				message: `filename declares uuid "${filenameMatch[1]}" but id field is "${character.id}"`
+			});
+		}
+		if (characterIdOrigins.has(character.id)) {
+			errors.push({
+				code: 'DUPLICATE_ID',
+				path: `${charPath}#/id`,
+				message: `character id "${character.id}" is also declared in "${characterIdOrigins.get(character.id)}"`
+			});
+		} else {
+			characterIdOrigins.set(character.id, charPath);
+		}
+		parsedCharacterIds.add(character.id);
+	}
+
+	// Step 6: duplicate-id checks — scene-node ids, clue ids.
+	if (graph) {
+		const sceneIdOrigins = new Map<string, string>();
+		for (const node of graph.nodes) {
+			if (sceneIdOrigins.has(node.id)) {
+				errors.push({
+					code: 'DUPLICATE_ID',
+					path: `${manifest.entryGraph}#/nodes`,
+					message: `scene id "${node.id}" is declared more than once`
+				});
+			} else {
+				sceneIdOrigins.set(node.id, node.id);
+			}
+		}
+	}
+
+	for (const worldPath of manifest.world) {
+		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
+		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
+		if (!cluesResult.success) continue; // already reported at step 4
+		const clueIds = new Set<string>();
+		for (const clue of cluesResult.data) {
+			if (clueIds.has(clue.id)) {
+				errors.push({
+					code: 'DUPLICATE_ID',
+					path: `${worldPath}#/`,
+					message: `clue id "${clue.id}" is declared more than once`
+				});
+			}
+			clueIds.add(clue.id);
+		}
+	}
+
+	// Step 7: referential integrity against the parsed character ids and scene graph.
+	if (story) {
+		story.castBindings.forEach((binding, index) => {
+			if (!parsedCharacterIds.has(binding.characterRef)) {
+				errors.push({
+					code: 'DANGLING_REFERENCE',
+					path: `${manifest.entryStory}#/castBindings/${index}/characterRef`,
+					message: `characterRef "${binding.characterRef}" does not match any shipped character file`
+				});
+			}
+			for (const relatedId of Object.keys(binding.relationships)) {
+				if (!parsedCharacterIds.has(relatedId)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${manifest.entryStory}#/castBindings/${index}/relationships/${relatedId}`,
+						message: `relationships references character "${relatedId}" with no shipped character file`
+					});
+				}
+			}
+		});
+	}
+
+	if (graph) {
+		const sceneIds = new Set(graph.nodes.map((node) => node.id));
+		graph.nodes.forEach((node, index) => {
+			node.participants.forEach((participantId) => {
+				if (!parsedCharacterIds.has(participantId)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${manifest.entryGraph}#/nodes/${index}/participants`,
+						message: `participant "${participantId}" does not match any shipped character file`
+					});
+				}
+			});
+			if (node.type === 'chat-scene') {
+				node.next.forEach((transition, transitionIndex) => {
+					if (!sceneIds.has(transition.target)) {
+						errors.push({
+							code: 'DANGLING_REFERENCE',
+							path: `${manifest.entryGraph}#/nodes/${index}/next/${transitionIndex}/target`,
+							message: `next.target "${transition.target}" does not match any scene id in this graph`
+						});
+					}
+				});
+			}
+		});
+	}
+
+	for (const worldPath of manifest.world) {
+		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
+		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
+		if (!cluesResult.success) continue;
+		cluesResult.data.forEach((clue, index) => {
+			clue.confirmedBy.forEach((characterId) => {
+				if (!parsedCharacterIds.has(characterId)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${worldPath}#/${index}/confirmedBy`,
+						message: `confirmedBy references character "${characterId}" with no shipped character file`
+					});
+				}
+			});
+		});
+	}
+
+	return { valid: errors.length === 0, errors, manifest };
+}

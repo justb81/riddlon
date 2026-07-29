@@ -1,0 +1,106 @@
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { CharacterIdentity, Manifest, PlayerProfile } from '$lib/content/index.js';
+
+export interface InstalledPackageRecord {
+	/** = manifest.id, the package's own UUID. */
+	id: string;
+	title: string;
+	version: string;
+	formatVersion: string;
+	status: 'installed' | 'installing' | 'error' | 'update-available';
+	installedAt: string;
+	coverAssetKey?: string;
+	sizeBytes: number;
+	/** Denormalized for quick uninstall/lookup without re-parsing manifest.characters[]. */
+	characterIds: string[];
+	manifest: Manifest;
+}
+
+export interface LibraryCharacterRecord extends CharacterIdentity {
+	/** Every currently-installed package whose manifest references this character. */
+	linkedPackageIds: string[];
+}
+
+export interface SaveChatMessage {
+	id: string;
+	sceneId: string;
+	from: string;
+	text: string;
+	sentAt: string;
+}
+
+export interface PendingDelayedEvent {
+	eventId: string;
+	dueAt: string;
+	fired: boolean;
+}
+
+export interface SaveRecord {
+	id: string;
+	packageId: string;
+	createdAt: string;
+	updatedAt: string;
+	flags: Record<string, boolean>;
+	unlockedSceneIds: string[];
+	chatHistory: SaveChatMessage[];
+	pendingDelayedEvents: PendingDelayedEvent[];
+}
+
+export interface PlayerProfileRecord extends PlayerProfile {
+	id: 'singleton';
+	updatedAt: string;
+}
+
+interface RiddlonDBSchema extends DBSchema {
+	packages: { key: string; value: InstalledPackageRecord; indexes: { 'by-status': string } };
+	characters: { key: string; value: LibraryCharacterRecord };
+	saves: { key: string; value: SaveRecord; indexes: { 'by-packageId': string } };
+	playerProfile: { key: string; value: PlayerProfileRecord };
+}
+
+export const DB_NAME = 'riddlon';
+export const DB_VERSION = 1;
+
+let dbPromise: Promise<IDBPDatabase<RiddlonDBSchema>> | undefined;
+
+/**
+ * Opens (and memoizes) the app's IndexedDB database. Assumes it's called from browser
+ * context — callers (the repository modules) are responsible for the `browser` SSR guard,
+ * matching the per-call-site convention already used by `$lib/state/onboarding.ts`.
+ */
+export function getDb(): Promise<IDBPDatabase<RiddlonDBSchema>> {
+	if (!dbPromise) {
+		dbPromise = openDB<RiddlonDBSchema>(DB_NAME, DB_VERSION, {
+			upgrade(db) {
+				if (!db.objectStoreNames.contains('packages')) {
+					const packages = db.createObjectStore('packages', { keyPath: 'id' });
+					packages.createIndex('by-status', 'status');
+				}
+				if (!db.objectStoreNames.contains('characters')) {
+					db.createObjectStore('characters', { keyPath: 'id' });
+				}
+				if (!db.objectStoreNames.contains('saves')) {
+					const saves = db.createObjectStore('saves', { keyPath: 'id' });
+					saves.createIndex('by-packageId', 'packageId');
+				}
+				if (!db.objectStoreNames.contains('playerProfile')) {
+					db.createObjectStore('playerProfile', { keyPath: 'id' });
+				}
+			}
+		});
+	}
+	return dbPromise;
+}
+
+/**
+ * Test-only: close the memoized connection (if any) so the next getDb() call re-opens
+ * fresh, and so a subsequent indexedDB.deleteDatabase() doesn't hang forever waiting for
+ * this connection to close (IndexedDB blocks deletion while any connection stays open).
+ */
+export async function resetDbConnectionForTests(): Promise<void> {
+	if (dbPromise) {
+		const db = await dbPromise;
+		db.close();
+		dbPromise = undefined;
+	}
+}

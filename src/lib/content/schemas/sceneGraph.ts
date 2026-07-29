@@ -1,0 +1,38 @@
+import { z } from 'zod';
+import { symbolicRefSchema, uuidV4Schema } from './common.js';
+
+const baseSceneFields = {
+	id: uuidV4Schema,
+	participants: z.array(uuidV4Schema),
+	goals: z.array(z.string()).default([]),
+	entryConditions: z.array(symbolicRefSchema).default([]),
+	exitConditions: z.array(symbolicRefSchema).default([]),
+	revealables: z.array(symbolicRefSchema).default([])
+};
+
+/** docs/concept.md §5.4 */
+export const chatSceneSchema = z.object({
+	...baseSceneFields,
+	type: z.literal('chat-scene'),
+	next: z
+		.array(z.object({ target: uuidV4Schema, when: z.array(symbolicRefSchema).default([]) }))
+		.default([])
+});
+
+/** docs/concept.md §5.7 — same base shape, but `playerRole` + `outcomes` replace `next`. */
+export const groupChatSceneSchema = z.object({
+	...baseSceneFields,
+	type: z.literal('group-chat-scene'),
+	playerRole: z.string().min(1),
+	outcomes: z.array(z.object({ id: symbolicRefSchema, condition: symbolicRefSchema })).default([])
+});
+
+export const sceneNodeSchema = z.discriminatedUnion('type', [
+	chatSceneSchema,
+	groupChatSceneSchema
+]);
+export type SceneNode = z.infer<typeof sceneNodeSchema>;
+
+/** story/graph.json's wrapper shape isn't given in docs/concept.md — designed as a flat node list. */
+export const storyGraphSchema = z.object({ nodes: z.array(sceneNodeSchema) });
+export type StoryGraph = z.infer<typeof storyGraphSchema>;
