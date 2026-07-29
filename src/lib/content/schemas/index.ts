@@ -4,6 +4,8 @@ export * from './character.js';
 export * from './castBinding.js';
 export * from './sceneGraph.js';
 export * from './clue.js';
+export * from './fact.js';
+export * from './secret.js';
 export * from './delayedEvent.js';
 export * from './story.js';
 export * from './playerProfile.js';

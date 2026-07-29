@@ -3,10 +3,12 @@ import { getDb, type SaveChatMessage, type SaveRecord } from './db.js';
 
 /**
  * Savegame shape isn't specified in docs/concept.md — designed from scratch to cover what
- * a future engine needs: `flags` (entry/exit-condition state), `unlockedSceneIds`,
- * `chatHistory`, and `pendingDelayedEvents` (persisted due-dates, checked opportunistically
- * on next app open/resume per §5.6 — no setTimeout/service-worker-alarm reliance; the
- * actual reconciliation loop is future engine work, out of scope here).
+ * a future engine needs: `flags` (entry/exit-condition state), `unlockedSceneIds` +
+ * `completedSceneIds` + `reachedOutcomeIds` (progress, #7), `unlockedCharacterIds` (explicit
+ * unlocks, #7), `clueStates` (multi-source claims, #8), `chatHistory`, and
+ * `pendingDelayedEvents` (persisted due-dates, checked opportunistically on next app
+ * open/resume per §5.6 — no setTimeout/service-worker-alarm reliance; `$lib/engine`
+ * implements the actual reconciliation loop, this module only persists the state it needs).
  */
 export const saveStore = {
 	async createForPackage(packageId: string): Promise<SaveRecord | undefined> {
@@ -20,8 +22,12 @@ export const saveStore = {
 			updatedAt: now,
 			flags: {},
 			unlockedSceneIds: [],
+			completedSceneIds: [],
+			reachedOutcomeIds: [],
+			unlockedCharacterIds: [],
 			chatHistory: [],
-			pendingDelayedEvents: []
+			pendingDelayedEvents: [],
+			clueStates: []
 		};
 		await db.put('saves', record);
 		return record;
@@ -42,7 +48,17 @@ export const saveStore = {
 	async update(
 		saveId: string,
 		patch: Partial<
-			Pick<SaveRecord, 'flags' | 'unlockedSceneIds' | 'chatHistory' | 'pendingDelayedEvents'>
+			Pick<
+				SaveRecord,
+				| 'flags'
+				| 'unlockedSceneIds'
+				| 'completedSceneIds'
+				| 'reachedOutcomeIds'
+				| 'unlockedCharacterIds'
+				| 'chatHistory'
+				| 'pendingDelayedEvents'
+				| 'clueStates'
+			>
 		>
 	): Promise<SaveRecord | undefined> {
 		if (!browser) return undefined;
