@@ -3,7 +3,9 @@ import { manifestSchema, type Manifest } from './schemas/manifest.js';
 import { characterIdentitySchema } from './schemas/character.js';
 import { storySchema } from './schemas/story.js';
 import { storyGraphSchema } from './schemas/sceneGraph.js';
-import { cluesFileSchema } from './schemas/clue.js';
+import { cluesFileSchema, type Clue } from './schemas/clue.js';
+import { factsFileSchema, type Fact } from './schemas/fact.js';
+import { secretsFileSchema, type Secret } from './schemas/secret.js';
 import { CURRENT_PLAYER_VERSION, SUPPORTED_FORMAT_MAJOR } from './player-version.js';
 import { compareSemver, parseSemver } from './semver.js';
 
@@ -27,6 +29,13 @@ export interface PackageValidationResult {
 	valid: boolean;
 	errors: PackageValidationError[];
 	manifest?: Manifest;
+	/** Parsed world/story content, present whenever the corresponding file parsed successfully. */
+	story?: z.infer<typeof storySchema>;
+	graph?: z.infer<typeof storyGraphSchema>;
+	/** Flattened across every `manifest.world` entry matching the respective filename suffix. */
+	clues?: Clue[];
+	facts?: Fact[];
+	secrets?: Secret[];
 }
 
 export interface ValidatePackageOptions {
@@ -41,6 +50,75 @@ function zodIssuesToErrors(filePath: string, error: z.ZodError): PackageValidati
 		path: `${filePath}#/${issue.path.join('/')}`,
 		message: `${filePath}: ${issue.message} at "${issue.path.join('.') || '(root)'}"`
 	}));
+}
+
+interface ParsedWorldFile<T> {
+	path: string;
+	data: T[];
+}
+
+/** Parses every `manifest.world` entry whose filename ends with `suffix` against `schema`. */
+function parseWorldFiles<T>(
+	manifestWorld: string[],
+	files: Record<string, unknown>,
+	suffix: string,
+	schema: z.ZodType<T[]>,
+	errors: PackageValidationError[]
+): ParsedWorldFile<T>[] {
+	const parsed: ParsedWorldFile<T>[] = [];
+	for (const worldPath of manifestWorld) {
+		if (!worldPath.endsWith(suffix) || files[worldPath] === undefined) continue;
+		const result = schema.safeParse(files[worldPath]);
+		if (!result.success) {
+			errors.push(...zodIssuesToErrors(worldPath, result.error));
+			continue;
+		}
+		parsed.push({ path: worldPath, data: result.data });
+	}
+	return parsed;
+}
+
+function checkDuplicateIds(
+	parsedFiles: ParsedWorldFile<{ id: string }>[],
+	label: string,
+	errors: PackageValidationError[]
+): void {
+	for (const { path, data } of parsedFiles) {
+		const seenIds = new Set<string>();
+		for (const item of data) {
+			if (seenIds.has(item.id)) {
+				errors.push({
+					code: 'DUPLICATE_ID',
+					path: `${path}#/`,
+					message: `${label} id "${item.id}" is declared more than once`
+				});
+			}
+			seenIds.add(item.id);
+		}
+	}
+}
+
+/** Verifies every character-uuid in `getRefs(item)` matches a shipped character file. */
+function checkCharacterRefs<T>(
+	parsedFiles: ParsedWorldFile<T & { id: string }>[],
+	getRefs: (item: T) => string[],
+	fieldName: string,
+	parsedCharacterIds: Set<string>,
+	errors: PackageValidationError[]
+): void {
+	for (const { path, data } of parsedFiles) {
+		data.forEach((item, index) => {
+			for (const characterId of getRefs(item)) {
+				if (!parsedCharacterIds.has(characterId)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${path}#/${index}/${fieldName}`,
+						message: `${fieldName} references character "${characterId}" with no shipped character file`
+					});
+				}
+			}
+		});
+	}
 }
 
 /**
@@ -114,7 +192,7 @@ export function validatePackage(
 		}
 	}
 
-	// Step 4: parse story/graph/clues (only when present — absence was already reported above).
+	// Step 4: parse story/graph/clues/facts/secrets (only when present — absence already reported).
 	let story: z.infer<typeof storySchema> | undefined;
 	if (files[manifest.entryStory] !== undefined) {
 		const storyResult = storySchema.safeParse(files[manifest.entryStory]);
@@ -135,13 +213,27 @@ export function validatePackage(
 		}
 	}
 
-	for (const worldPath of manifest.world) {
-		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
-		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
-		if (!cluesResult.success) {
-			errors.push(...zodIssuesToErrors(worldPath, cluesResult.error));
-		}
-	}
+	const parsedClueFiles = parseWorldFiles(
+		manifest.world,
+		files,
+		'clues.json',
+		cluesFileSchema,
+		errors
+	);
+	const parsedFactFiles = parseWorldFiles(
+		manifest.world,
+		files,
+		'facts.json',
+		factsFileSchema,
+		errors
+	);
+	const parsedSecretFiles = parseWorldFiles(
+		manifest.world,
+		files,
+		'secrets.json',
+		secretsFileSchema,
+		errors
+	);
 
 	// Step 5: parse character files; verify filename-embedded uuid matches the declared id.
 	const parsedCharacterIds = new Set<string>();
@@ -174,7 +266,7 @@ export function validatePackage(
 		parsedCharacterIds.add(character.id);
 	}
 
-	// Step 6: duplicate-id checks — scene-node ids, clue ids.
+	// Step 6: duplicate-id checks — scene-node ids, clue/fact/secret ids.
 	if (graph) {
 		const sceneIdOrigins = new Map<string, string>();
 		for (const node of graph.nodes) {
@@ -190,22 +282,9 @@ export function validatePackage(
 		}
 	}
 
-	for (const worldPath of manifest.world) {
-		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
-		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
-		if (!cluesResult.success) continue; // already reported at step 4
-		const clueIds = new Set<string>();
-		for (const clue of cluesResult.data) {
-			if (clueIds.has(clue.id)) {
-				errors.push({
-					code: 'DUPLICATE_ID',
-					path: `${worldPath}#/`,
-					message: `clue id "${clue.id}" is declared more than once`
-				});
-			}
-			clueIds.add(clue.id);
-		}
-	}
+	checkDuplicateIds(parsedClueFiles, 'clue', errors);
+	checkDuplicateIds(parsedFactFiles, 'fact', errors);
+	checkDuplicateIds(parsedSecretFiles, 'secret', errors);
 
 	// Step 7: referential integrity against the parsed character ids and scene graph.
 	if (story) {
@@ -255,22 +334,29 @@ export function validatePackage(
 		});
 	}
 
-	for (const worldPath of manifest.world) {
-		if (!worldPath.endsWith('clues.json') || files[worldPath] === undefined) continue;
-		const cluesResult = cluesFileSchema.safeParse(files[worldPath]);
-		if (!cluesResult.success) continue;
-		cluesResult.data.forEach((clue, index) => {
-			clue.confirmedBy.forEach((characterId) => {
-				if (!parsedCharacterIds.has(characterId)) {
-					errors.push({
-						code: 'DANGLING_REFERENCE',
-						path: `${worldPath}#/${index}/confirmedBy`,
-						message: `confirmedBy references character "${characterId}" with no shipped character file`
-					});
-				}
-			});
-		});
-	}
+	checkCharacterRefs(
+		parsedClueFiles,
+		(clue) => clue.confirmedBy,
+		'confirmedBy',
+		parsedCharacterIds,
+		errors
+	);
+	checkCharacterRefs(
+		parsedSecretFiles,
+		(secret) => secret.heldBy,
+		'heldBy',
+		parsedCharacterIds,
+		errors
+	);
 
-	return { valid: errors.length === 0, errors, manifest };
+	return {
+		valid: errors.length === 0,
+		errors,
+		manifest,
+		story,
+		graph,
+		clues: parsedClueFiles.length > 0 ? parsedClueFiles.flatMap((f) => f.data) : undefined,
+		facts: parsedFactFiles.length > 0 ? parsedFactFiles.flatMap((f) => f.data) : undefined,
+		secrets: parsedSecretFiles.length > 0 ? parsedSecretFiles.flatMap((f) => f.data) : undefined
+	};
 }

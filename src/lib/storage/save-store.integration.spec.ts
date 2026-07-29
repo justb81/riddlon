@@ -44,4 +44,26 @@ describe('saveStore (real IndexedDB via fake-indexeddb)', () => {
 		expect(updated?.flags).toEqual({ 'flag:a': true, 'flag:b': true });
 		expect(updated?.chatHistory).toHaveLength(1);
 	});
+
+	it('initializes and persists completedSceneIds + clueStates', async () => {
+		const { saveStore } = await import('./save-store.js');
+		const save = await saveStore.createForPackage('package-a');
+		expect(save?.completedSceneIds).toEqual([]);
+		expect(save?.clueStates).toEqual([]);
+
+		await saveStore.update(save!.id, {
+			completedSceneIds: ['scene-1'],
+			clueStates: [
+				{
+					clueId: 'clue:time-window',
+					claims: [{ characterId: 'max', value: '22:00' }],
+					resolved: false
+				}
+			]
+		});
+
+		const updated = await saveStore.get(save!.id);
+		expect(updated?.completedSceneIds).toEqual(['scene-1']);
+		expect(updated?.clueStates).toHaveLength(1);
+	});
 });
