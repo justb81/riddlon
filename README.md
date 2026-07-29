@@ -48,22 +48,34 @@ Requires Node 22+ (CI runs on Node 26).
 
 ```
 src/
-  app.html                  # HTML shell: manifest link, theme-color, viewport
+  app.html                  # HTML shell: manifest link, theme-color, viewport, Google Fonts
   app.d.ts                  # ambient types (incl. Window Controls Overlay)
   service-worker.ts         # cache-first offline precache + update handshake
   routes/
-    +layout.svelte          # SW registration, update banner, global <Toast/>
+    +layout.svelte          # SW registration, update banner, global toast/achievement/celebration overlays
     +layout.ts              # ssr = false, prerender = true (client-only static)
-    +page.svelte            # placeholder starter page — replace this
-    layout.css              # Tailwind import + semantic design tokens
+    +page.svelte            # splash screen + first-run/warm boot sequence → /chats
+    layout.css              # Tailwind import + semantic design tokens + shared keyframes
+    chats/+page.svelte      # chat overview / thread list
+    chat/[thread]/+page.svelte  # solo ("lucy") + group ("group") conversation, shared shell
+    chat/riddlon/+page.svelte   # "Riddlon" system chat: installed-story library + import
+    story/+page.svelte      # Storyübersicht: milestone timeline + achievements
+    settings/+page.svelte   # profile & settings
   lib/
-    components/ui/Toast.svelte
+    components/
+      chat/                 # AppHeader, InfoBand, MessageBubble, Composer, Avatar, ThreadRow, …
+      icons/RiddlonMark.svelte
+      ui/Toast.svelte
     state/                  # Svelte 5 runes singletons (browser-guarded)
+      game.svelte.ts        #   active story session: messages, milestones, achievements
+      profile.svelte.ts     #   player profile & settings (pronouns, disguise mode, model, …)
       toast.svelte.ts       #   transient notifications
       update.svelte.ts      #   service-worker update detection
       windowChrome.svelte.ts#   Window Controls Overlay state
-    utils/greeting.{ts,spec.ts}  # example pure logic + test — delete when real code lands
-static/                     # manifest.webmanifest, placeholder icons, robots.txt
+      onboarding.ts         #   first-run vs. warm-boot detection (localStorage)
+    story/                  # mock installed-story-package content ("Lucys Portmonnaie")
+    i18n/                   # de.json dictionary + t() lookup — see CLAUDE.md "i18n"
+static/                     # manifest.webmanifest, icons, robots.txt
 .github/                    # CI, Dependabot, release-please, GitHub Pages deploy
 ```
 
@@ -84,9 +96,12 @@ Tests run under Vitest's `server` (Node) project, which matches `src/**/*.{test,
 
 ## Status
 
-The PWA shell is rebranded (name, icons, theme, design tokens) but the app itself is still the
-starter page — the story engine, chat UI, content loader, character library and local-LLM module
-described in `CLAUDE.md` are tracked as GitHub issues, not yet implemented.
+The chat UI (splash/boot, chat overview, solo + group chat, the Riddlon system/library chat, story
+overview, profile/settings) is implemented end-to-end against scripted mock data for the reference
+story "Lucys Portmonnaie". The real story engine, story-package import, character library, and
+local-LLM module described in `CLAUDE.md` are not implemented yet — all game/session state above is
+in-memory only and resets on reload. See `CLAUDE.md`'s "Project" table for what's mocked vs. real,
+and the repo's issues for the build roadmap.
 
 ### GitHub Pages / release flow
 
