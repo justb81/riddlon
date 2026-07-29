@@ -28,7 +28,7 @@
 			</div>
 		</div>
 
-		<div class="relative">
+		<div class="relative w-full max-w-[26rem]">
 			<div class="font-mono text-[10.5px] tracking-[0.16em] text-accent">
 				{t('celebration.kicker')}
 			</div>

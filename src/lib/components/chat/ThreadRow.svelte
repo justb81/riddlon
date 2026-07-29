@@ -10,7 +10,8 @@
 		count = '',
 		preview,
 		time,
-		unread = 0
+		unread = 0,
+		active = false
 	}: {
 		href: ResolvedPathname;
 		name: string;
@@ -20,10 +21,18 @@
 		preview: string;
 		time: string;
 		unread?: number;
+		/** This thread is the one open in the right pane (desktop two-pane layout). */
+		active?: boolean;
 	} = $props();
 </script>
 
-<a {href} class="flex items-center gap-3.5 px-[22px] py-[13px] hover:bg-slate-100/4">
+<a
+	{href}
+	aria-current={active ? 'page' : undefined}
+	class="flex items-center gap-3.5 px-[22px] py-[13px] hover:bg-slate-100/4 {active
+		? 'lg:bg-slate-100/6 lg:shadow-[inset_2px_0_0_var(--color-accent)]'
+		: ''}"
+>
 	<Avatar {kind} {initial} {count} size={46} />
 	<span class="flex min-w-0 flex-1 flex-col gap-1">
 		<span class="flex items-baseline justify-between gap-2">

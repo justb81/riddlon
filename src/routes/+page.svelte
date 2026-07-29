@@ -60,7 +60,9 @@
 		{t('boot.tagline')}
 	</div>
 
-	<div class="absolute inset-x-8.5 bottom-14 flex flex-col gap-3.5">
+	<!-- Anchored to the bottom of the viewport on a phone, but capped and centred so it
+	     doesn't stretch into a 2000px-wide progress bar on a desktop monitor. -->
+	<div class="absolute inset-x-8.5 bottom-14 mx-auto flex max-w-[26rem] flex-col gap-3.5">
 		{#if firstRun}
 			<div class="flex items-baseline justify-between gap-2.5">
 				<span class="font-mono text-[10.5px] tracking-[0.12em] text-slate-500"

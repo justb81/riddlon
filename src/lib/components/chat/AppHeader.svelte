@@ -10,11 +10,18 @@
 	 */
 	let {
 		onBack,
+		backOnDesktop = true,
 		leading,
 		trailing,
 		children
 	}: {
 		onBack?: () => void;
+		/**
+		 * Keep the back chevron on the two-pane desktop layout. Set false where the
+		 * docked chat list already *is* the way back (the conversation screens) —
+		 * a back arrow next to a permanently visible list reads as a dead control.
+		 */
+		backOnDesktop?: boolean;
 		leading?: Snippet;
 		trailing?: Snippet;
 		children?: Snippet;
@@ -30,7 +37,9 @@
 			type="button"
 			onclick={onBack}
 			aria-label={t('common.back')}
-			class="app-header-no-drag flex-none bg-transparent p-0 font-sans text-2xl leading-none text-slate-400 hover:text-slate-200"
+			class="app-header-no-drag flex-none bg-transparent p-0 font-sans text-2xl leading-none text-slate-400 hover:text-slate-200 {backOnDesktop
+				? ''
+				: 'lg:hidden'}"
 		>
 			‹
 		</button>

@@ -46,6 +46,16 @@
 	--radius-panel: 1rem;
 	--radius-control: 0.375rem;
 
+	/*
+	 * Responsive width caps, so nothing runs the full width of an ultrawide monitor.
+	 * `frame` is how wide the whole desktop app window may get before it stops growing
+	 * and centres itself (<AppFrame>). Inside it, `chat` caps the message column and
+	 * `pane` the narrower reading columns (settings form, story overview, library).
+	 */
+	--container-frame: 1600px;
+	--container-chat: 60rem;
+	--container-pane: 46rem;
+
 	/* Loaded via the Google Fonts link in app.html. font-serif/font-mono utilities
 	   pick these up automatically; DM Sans replaces Tailwind's default font-sans stack. */
 	--font-sans: 'DM Sans', system-ui, sans-serif;
@@ -85,6 +95,30 @@ body {
 /* Every interactive control inside the drag strip needs this, or it becomes unclickable. */
 .app-header[data-wco='true'] .app-header-no-drag {
 	-webkit-app-region: no-drag;
+}
+
+/*
+ * …except once the two-pane desktop layout kicks in: there are two headers side by
+ * side then (sidebar + open route), and they can't both be the titlebar. The frame
+ * takes over instead — it drops its outer margin so it still reaches the window edge,
+ * and grows its own drag strip above both panes.
+ */
+.app-shell[data-wco='true'] {
+	padding: 0;
+}
+
+.app-frame-titlebar {
+	height: env(titlebar-area-height, 0px);
+	-webkit-app-region: drag;
+}
+
+@media (width >= 64rem) {
+	.app-frame[data-split='true'] .app-header[data-wco='true'] {
+		position: static;
+		width: auto;
+		height: 3.75rem;
+		-webkit-app-region: no-drag;
+	}
 }
 
 /*

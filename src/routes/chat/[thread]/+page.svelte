@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
+	import AppFrame from '$lib/components/chat/AppFrame.svelte';
 	import AppHeader from '$lib/components/chat/AppHeader.svelte';
 	import InfoBand from '$lib/components/chat/InfoBand.svelte';
 	import Avatar from '$lib/components/chat/Avatar.svelte';
@@ -73,8 +74,8 @@
 
 <svelte:head><title>{title} · Riddlon</title></svelte:head>
 
-<div class="flex h-dvh flex-col bg-surface">
-	<AppHeader onBack={() => goto(resolve('/chats'))}>
+<AppFrame>
+	<AppHeader onBack={() => goto(resolve('/chats'))} backOnDesktop={false}>
 		{#snippet leading()}
 			{#if isGroup}
 				<Avatar kind="group" count="4" size={36} fontSize={11} shape="tile" />
@@ -106,20 +107,22 @@
 		{/if}
 	</InfoBand>
 
-	<div bind:this={scrollEl} class="flex flex-1 flex-col overflow-y-auto px-4.5 pt-4.5 pb-2.5">
-		{#each messages as message, index (message.id)}
-			<MessageBubble
-				{message}
-				showName={showName(index)}
-				open={openFlagId === message.id}
-				onToggleFlag={() => game.toggleFlag(thread, message.id)}
-			/>
-		{/each}
-		{#if typing}
-			<TypingIndicator />
-		{/if}
-		<div class="h-1.5 flex-none"></div>
+	<div bind:this={scrollEl} class="min-h-0 flex-1 overflow-y-auto">
+		<div class="mx-auto flex w-full max-w-chat flex-col px-4.5 pt-4.5 pb-2.5 lg:px-6">
+			{#each messages as message, index (message.id)}
+				<MessageBubble
+					{message}
+					showName={showName(index)}
+					open={openFlagId === message.id}
+					onToggleFlag={() => game.toggleFlag(thread, message.id)}
+				/>
+			{/each}
+			{#if typing}
+				<TypingIndicator />
+			{/if}
+			<div class="h-1.5 flex-none"></div>
+		</div>
 	</div>
 
 	<Composer bind:draft {chips} placeholder={t('convo.messagePlaceholder')} onSend={send} />
-</div>
+</AppFrame>
