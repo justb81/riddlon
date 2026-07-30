@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2](https://github.com/justb81/riddlon/compare/riddlon-v0.7.1...riddlon-v0.7.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ui:** keep the app header at 60px when the OS titlebar is collapsed ([4902b16](https://github.com/justb81/riddlon/commit/4902b165ed2f35d829022f95759c93f994c6c028))
+* **ui:** keep the app header at 60px when the OS titlebar is collapsed ([7292ea8](https://github.com/justb81/riddlon/commit/7292ea873b299985e712c304425ea6b3d3ca5184))
+
 ## [0.7.1](https://github.com/justb81/riddlon/compare/riddlon-v0.7.0...riddlon-v0.7.1) (2026-07-30)
 
 
