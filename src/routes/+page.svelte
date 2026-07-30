@@ -65,6 +65,13 @@
 		// Fire-and-forget: a returning player's package/save already exist, so this resolves
 		// almost immediately, but `/chats` shouldn't have to wait for it to start loading.
 		void storySession.init();
+		// The model is only ever loaded here or in `runFirstRun()` — `send()`/`openThread()`
+		// refuse to trigger a load themselves (a multi-GB fetch must stay the boot screen's
+		// decision), so without this a returning player's `llm.status` would stay 'idle'
+		// forever and every reply would silently fail with `errorCode: 'no-model'`. A failure
+		// here just leaves the player in that same degraded mode, which the chat UI already
+		// surfaces per-thread.
+		void llm.ensureLoaded(profile.model).catch(() => {});
 
 		const steps = warmBootSteps();
 		const span = bootStepSpanMs();
