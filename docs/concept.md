@@ -228,12 +228,17 @@ Optional **später** möglich: ein Import-Adapter, der Basisfelder (Name, Beschr
 
 Die Story ist ein **Zustandsgraph**, keine reine Prompt-Kette. Jeder Knoten definiert Teilnehmer (über Charakter-UUID referenziert), Ein-/Ausstiegsbedingungen, freischaltbare Inhalte und optionale Zeitregeln. Auch Szenen, Clues und Achievements erhalten eigene UUIDs; im Folgenden werden zur Lesbarkeit teilweise sprechende Platzhalter-IDs verwendet — in der Implementierung sind dies reale UUIDv4-Werte.
 
+`autoOpen` (Default `true`) steuert, ob der Charakter beim Freischalten der Szene proaktiv eine
+Eröffnungsnachricht schickt, oder stumm bleibt, bis der Spieler zuerst schreibt (`autoOpen: false`).
+Die `goals` gelten in beiden Fällen — sie bestimmen nur, was der Charakter sagt, nicht wann.
+
 ```json
 {
 	"id": "b2e4f6a8-1c3d-4e5f-9a7b-0c1d2e3f4a5b",
 	"type": "chat-scene",
 	"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 	"goals": ["seed-timeline", "seed-suspect-description"],
+	"autoOpen": true,
 	"entryConditions": ["flag:max-contact-unlocked"],
 	"exitConditions": ["flag:max-questioned"],
 	"revealables": ["clue:time-window", "clue:suspect-description-a"],
@@ -282,6 +287,7 @@ Wichtige technische Festlegung: Solche Events sind **nicht garantiert exakt zeit
 		"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
 		"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
 	],
+	"autoOpen": true,
 	"entryConditions": ["flag:hans-info-confirmed"],
 	"playerRole": "confront-max-with-evidence",
 	"outcomes": [{ "id": "max-confesses", "condition": "flag:evidence-presented" }]

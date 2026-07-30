@@ -5,6 +5,9 @@ const baseSceneFields = {
 	id: uuidV4Schema,
 	participants: z.array(uuidV4Schema),
 	goals: z.array(z.string()).default([]),
+	/** Whether this scene proactively sends an opening message once unlocked, or stays silent
+	 *  until the player writes first. Defaults to `true` (today's behavior). */
+	autoOpen: z.boolean().default(true),
 	entryConditions: z.array(symbolicRefSchema).default([]),
 	exitConditions: z.array(symbolicRefSchema).default([]),
 	revealables: z.array(symbolicRefSchema).default([])
