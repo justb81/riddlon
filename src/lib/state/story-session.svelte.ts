@@ -279,16 +279,33 @@ class StorySession {
 		const bundle = storyRuntime.bundle;
 		if (!scene || !bundle) return;
 
-		const directorScene = {
+		const declaredScene = {
 			goals: scene.goals,
 			exitConditions: this.#exitConditionsFor(sceneId),
 			revealables: this.#revealablesFor(sceneId)
 		};
-		const flags = settableFlags(directorScene);
-		const clueIds = claimableClueIds(directorScene);
-		if (flags.length === 0 && clueIds.length === 0) return;
-
 		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
+
+		// Only what's still worth judging: a flag already true, or a clue every cast member has
+		// already claimed, gains nothing from asking again — and re-asking is how a clue that was
+		// claimed once ends up claimed a second time with a different value, i.e. a false
+		// contradiction the player never caused.
+		const openFlags = settableFlags(declaredScene).filter(
+			(flag) => !storyRuntime.isConditionMet(flag)
+		);
+		const openClueIds = claimableClueIds(declaredScene).filter((clueId) => {
+			const claimedBy = new Set(
+				(storyRuntime.clueDisplays[clueId]?.sources ?? []).map((source) => source.characterId)
+			);
+			return cast.some((c) => !claimedBy.has(c.id));
+		});
+		if (openFlags.length === 0 && openClueIds.length === 0) return;
+
+		const directorScene = {
+			goals: scene.goals,
+			exitConditions: openFlags,
+			revealables: openClueIds
+		};
 		const scenes = new Set(thread.sceneIds);
 		const turns = this.history
 			.filter((m) => scenes.has(m.sceneId))
@@ -322,8 +339,8 @@ class StorySession {
 		}
 
 		const verdict = parseDirectorVerdict(raw, {
-			flags,
-			clueIds,
+			flags: openFlags,
+			clueIds: openClueIds,
 			characters: cast.map((c) => ({ id: c.id, name: c.displayName }))
 		});
 		this.lastDirectorRaw = raw;

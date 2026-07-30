@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { LLM_MODELS } from './catalog.js';
 
@@ -12,7 +13,10 @@ import { LLM_MODELS } from './catalog.js';
  * of six months later.
  */
 
-const SRC = new URL('../../', import.meta.url).pathname;
+// `fileURLToPath` rather than `.pathname` — on Windows a `file://` URL's pathname keeps the
+// leading slash in front of the drive letter (`/C:/Users/...`), which `fs`/`path` then resolve
+// against the current drive, doubling it into `C:\C:\Users\...`.
+const SRC = fileURLToPath(new URL('../../', import.meta.url));
 const LLM_DIR = join('lib', 'llm');
 const BACKEND_PACKAGES = ['@mlc-ai/web-llm', 'prompt-api-polyfill'];
 const MLC_MODEL_IDS = Object.values(LLM_MODELS).map((model) => model.mlcModelId);
