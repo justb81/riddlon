@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/justb81/riddlon/compare/riddlon-v0.7.4...riddlon-v0.8.0) (2026-07-30)
+
+
+### Features
+
+* **engine:** add autoOpen scene field for cold vs. self-starting chats ([1c38632](https://github.com/justb81/riddlon/commit/1c38632628601cbd6825809d706e8938bdc667de))
+
+
+### Bug Fixes
+
+* **llm:** make model status read-only and native/backend-aware ([a9adc68](https://github.com/justb81/riddlon/commit/a9adc689940c5ac9f79468d73017524c358d0124))
+* **llm:** read-only, native-aware model status + Llama 3.2-only fallback ([073b707](https://github.com/justb81/riddlon/commit/073b70767c79edc6695318448647006b3bfc5fed))
+
 ## [0.7.4](https://github.com/justb81/riddlon/compare/riddlon-v0.7.3...riddlon-v0.7.4) (2026-07-30)
 
 
