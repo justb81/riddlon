@@ -26,20 +26,20 @@ prerendered shell that hydrates and then runs entirely in the browser.
 On top of that template, the UI for the seven core screens is implemented (splash/boot, chat
 overview, solo + group chat, the "Riddlon" system/library chat, story overview, profile/settings),
 driven by scripted mock data for the reference story "Lucys Portmonnaie" — see "Chat UI" below.
-**Not yet real**: the story engine (scenes/flags are hardcoded beats, not a state graph), story
-package import (the ZIP/URL buttons in `/chat/riddlon` are decorative), local LLM inference (model
-list is static; nothing actually runs a model), and the character library. Those land per the
-concept doc's "App 2" module breakdown as the issue backlog works through them:
+**Not yet real**: the ZIP/URL import _buttons in the `/chat/riddlon` chat UI_ are still decorative
+(the underlying import pipeline they'd call is implemented — see `content/`'s row below), and local
+LLM inference (model list is static; nothing actually runs a model). Those land per the concept
+doc's "App 2" module breakdown as the issue backlog works through them:
 
-| Module        | Responsibility                                                                | Status                                                                                                                |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                     |
-| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`) — `ui/` still runs on the `$lib/state/game.svelte.ts` mock until #14–#17 swap it over |
-| `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                                                                                     |
-| `characters/` | Local, story-independent character library                                    | Not started                                                                                                           |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                   |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload                                                       |
-| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                           |
+| Module        | Responsibility                                                                | Status                                                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                                                                     |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`) — `ui/` still runs on the `$lib/state/game.svelte.ts` mock until #14–#17 swap it over                                                 |
+| `content/`    | Validator/loader/importer/installer for story packages                        | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`) import both real; `/chat/riddlon`'s buttons not wired to them yet (#ui-riddlon-chat) |
+| `characters/` | Local, story-independent character library                                    | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                                                 |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                                                                   |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`)                                                   |
+| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                                           |
 
 ## Local LLM
 
@@ -191,6 +191,54 @@ titles) is **not** in the dictionary — see "Chat UI" above.
 Tests run under Vitest's `server` (Node) project, which only matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is enabled — every test must make at least one
 assertion.
+
+## Manual browser testing
+
+Vitest's `server` project runs in Node — no IndexedDB, no Cache Storage API, no WebGPU. Code that
+touches those (`storage/`'s Cache-backed `blob-store.ts`, `llm/`'s WebGPU/WebLLM path) only really
+runs in an actual browser. `fake-indexeddb` (a devDependency) covers IndexedDB in Node specs — see
+any `*.integration.spec.ts` for the `import 'fake-indexeddb/auto'` + `vi.mock('$app/environment', ()
+=> ({ browser: true }))` pattern — but there is **no** Node polyfill for Cache Storage, so
+`blob-store.ts` and anything downstream of it can only be exercised for real in a browser.
+
+That's what the dev-only `/dev/*` routes are for (`/dev/llm`, `/dev/import`, …, each documented at
+the top of its `+page.svelte` with which issue it exists for and when to delete it): a minimal UI to
+drive one module's real browser APIs by hand. Add a new one under `src/routes/dev/<name>/+page.svelte`
+rather than trying to make a Node test cover what only a browser can.
+
+To drive one from this sandbox (headless, no display):
+
+- **Start/stop the dev server** — poll the port, don't `sleep`:
+  ```bash
+  npm run dev &
+  timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done'
+  # ...
+  lsof -ti:5173 -sTCP:LISTEN | xargs -r kill
+  ```
+- **No `chromium-cli` here** — drive Playwright directly. It's installed globally, not as a project
+  devDependency, and the pre-installed Chromium binary path is a direct executable symlink, not a
+  directory (`/opt/pw-browsers/chromium/chrome-linux/chrome` does **not** exist — it's just
+  `/opt/pw-browsers/chromium`):
+  ```js
+  import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+  const browser = await chromium.launch({
+  	executablePath: '/opt/pw-browsers/chromium',
+  	args: ['--no-sandbox']
+  });
+  ```
+  Same gotcha applies if you ever fall back to a raw `require('playwright')` — it's not in this
+  repo's `node_modules`, only globally at `/opt/node22/lib/node_modules/playwright`.
+- **Building a test story-package ZIP** — `src/lib/content/__fixtures__/*.ts` (e.g.
+  `lucys-portmonnaie.ts`) are plain data objects behind the `$lib` alias, which a standalone Node
+  script run outside Vite can't resolve. `src/lib/content/__fixtures__/zip.ts`'s `zipPackageFiles()`
+  turns such a files-map into real ZIP bytes using `fflate`'s `zipSync` — either add a throwaway spec
+  that calls it and writes the result to disk with `node:fs`, or duplicate the handful of JSON
+  objects directly in a standalone script that imports `zipSync` from
+  `node_modules/fflate/esm/index.mjs` (its package.json doesn't expose a plain `fflate` subpath
+  outside a bundler, so a raw Node script needs the full path).
+- Always end with `console --errors`-equivalent (Playwright: listen for the page's `'console'` and
+  `'pageerror'` events) before declaring success — a route can render its shell while a promise
+  inside it silently rejects.
 
 ## Architecture
 
