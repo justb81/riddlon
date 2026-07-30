@@ -22,6 +22,26 @@
 		void llm.refreshCacheState();
 	});
 
+	// Persists every field this screen edits (#18) — reading each one here is what makes the
+	// effect re-run on any change; `profile.persist()` itself no-ops until the initial load
+	// (stored profile / app settings) has resolved, so this never clobbers a saved profile.
+	$effect(() => {
+		void profile.nickname;
+		void profile.bio;
+		void profile.addressAs;
+		void profile.disguise;
+		void profile.model;
+		void profile.notify;
+		profile.persist();
+	});
+
+	let customPronoun = $state('');
+
+	function useCustomPronoun(): void {
+		const trimmed = customPronoun.trim();
+		if (trimmed) profile.addressAs = trimmed;
+	}
+
 	/** Right-hand status for a model row: cached, unsupported, still being probed, or not yet local. */
 	function statusKey(id: LocalModelId): string {
 		if (usingBuiltIn) return 'settings.modelBuiltIn';
@@ -90,6 +110,21 @@
 							{option}
 						</button>
 					{/each}
+				</div>
+				<div class="mt-2 flex gap-2">
+					<input
+						bind:value={customPronoun}
+						onkeydown={(event) => event.key === 'Enter' && useCustomPronoun()}
+						placeholder={t('settings.pronounCustomPlaceholder')}
+						class="min-w-0 flex-1 rounded-full border border-line-strong bg-slate-100/4 px-3.5 py-2 text-label text-slate-200 placeholder:text-slate-500 focus:border-accent/60 focus:outline-none"
+					/>
+					<button
+						type="button"
+						onclick={useCustomPronoun}
+						class="flex-none rounded-full border border-line-strong px-3.5 py-2 text-label font-medium text-slate-200 hover:bg-slate-100/8"
+					>
+						{t('settings.pronounCustomApply')}
+					</button>
 				</div>
 				<div
 					class="mt-3 rounded-tile border border-line bg-surface-raised px-3.5 py-3"

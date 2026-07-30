@@ -89,6 +89,8 @@
 		"avatarLabel": "SO SEHEN DICH DIE CHARAKTERE",
 		"nicknamePlaceholder": "Anzeigename",
 		"pronounLabel": "ANREDE · PFLICHTFELD",
+		"pronounCustomPlaceholder": "Eigene Anrede eingeben …",
+		"pronounCustomApply": "Übernehmen",
 		"previewLabel": "VORSCHAU · {name}",
 		"previewFirstName": "„{nickname}, kannst du mir helfen?“",
 		"previewPronoun": "„Kannst du mir helfen? Ich schreibe {form} an, weil ich niemanden sonst habe.“",
