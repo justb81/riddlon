@@ -324,7 +324,7 @@ class StorySession {
 		const verdict = parseDirectorVerdict(raw, {
 			flags,
 			clueIds,
-			characterIds: cast.map((c) => c.id)
+			characters: cast.map((c) => ({ id: c.id, name: c.displayName }))
 		});
 		this.lastDirectorRaw = raw;
 		this.lastDirectorVerdict = verdict;

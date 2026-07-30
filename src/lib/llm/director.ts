@@ -15,6 +15,15 @@
  * invent ids, or return nothing at all — none of which may be allowed to move the story. Every
  * id is checked against what the *active scene* declared, so the worst case of a bad answer is
  * "nothing happens", never "some other flag got set".
+ *
+ * Two near-miss shapes are common enough (verified against a real local model — see
+ * `shared-handle.spec.ts` and manual runs against `/dev/story`'s director probe) that dropping
+ * them outright would make the story never advance in practice, not just in a rare bad case:
+ * the model reports a flag as a bare id (`"lucy-identified"` instead of `"flag:lucy-identified"`),
+ * sometimes even inside the `clues` array instead of `flags`; and it names a character by display
+ * name (`"Lucy"`) instead of the required uuid. Both are normalized before the allowlist check —
+ * never after, so the safety invariant above still holds: only refs/characters the *scene itself*
+ * declared can ever be accepted, just written in a shape the model actually produces.
  */
 
 export interface DirectorScene {
@@ -131,6 +140,28 @@ function asRecordArray(value: unknown): Record<string, unknown>[] {
 	);
 }
 
+/** `ref` as-is if it's already allowed, else `flag:${ref}` if *that* is allowed — never anything else. */
+function normalizeFlagRef(ref: string, allowedFlags: ReadonlySet<string>): string | null {
+	if (allowedFlags.has(ref)) return ref;
+	if (!ref.startsWith('flag:')) {
+		const prefixed = `flag:${ref}`;
+		if (allowedFlags.has(prefixed)) return prefixed;
+	}
+	return null;
+}
+
+/** `character` resolved to a scene uuid: exact id match first, then a case-insensitive name match. */
+function resolveCharacterId(
+	character: string,
+	characters: readonly DirectorCharacter[]
+): string | null {
+	const byId = characters.find((c) => c.id === character);
+	if (byId) return byId.id;
+	const needle = character.trim().toLowerCase();
+	const byName = characters.find((c) => c.name.trim().toLowerCase() === needle);
+	return byName?.id ?? null;
+}
+
 /**
  * Parses the model's answer and drops everything the scene didn't declare. Returns an empty
  * verdict for anything unparseable — a director that can't be understood must not be able to
@@ -141,7 +172,7 @@ export function parseDirectorVerdict(
 	allowed: {
 		flags: readonly string[];
 		clueIds: readonly string[];
-		characterIds: readonly string[];
+		characters: readonly DirectorCharacter[];
 	}
 ): DirectorVerdict {
 	const json = firstJsonObject(raw ?? '');
@@ -158,28 +189,40 @@ export function parseDirectorVerdict(
 	const record = parsed as Record<string, unknown>;
 	const allowedFlags = new Set(allowed.flags);
 	const allowedClues = new Set(allowed.clueIds);
-	const allowedCharacters = new Set(allowed.characterIds);
 
-	const flags = Array.isArray(record.flags)
-		? [
-				...new Set(
-					record.flags.filter((f): f is string => typeof f === 'string' && allowedFlags.has(f))
-				)
-			]
-		: [];
+	const flags = new Set<string>();
+	if (Array.isArray(record.flags)) {
+		for (const f of record.flags) {
+			if (typeof f !== 'string') continue;
+			const normalized = normalizeFlagRef(f, allowedFlags);
+			if (normalized) flags.add(normalized);
+		}
+	}
 
 	const clues: DirectorVerdict['clues'] = [];
 	for (const entry of asRecordArray(record.clues)) {
 		const { id, character, value } = entry;
-		if (typeof id !== 'string' || !allowedClues.has(id)) continue;
-		if (typeof character !== 'string' || !allowedCharacters.has(character)) continue;
-		if (typeof value !== 'string') continue;
+		if (typeof id !== 'string' || typeof character !== 'string' || typeof value !== 'string') {
+			continue;
+		}
+
+		// The model sometimes reports a flag-shaped event here instead of in `flags` — salvage it
+		// as a flag rather than silently dropping the whole entry (reproduced live: a scene whose
+		// only exit condition was `flag:lucy-identified` got `{"clues":[{"id":"lucy-identified",…}]}`).
+		if (!allowedClues.has(id)) {
+			const normalized = normalizeFlagRef(id, allowedFlags);
+			if (normalized) flags.add(normalized);
+			continue;
+		}
+
+		const characterId = resolveCharacterId(character, allowed.characters);
+		if (!characterId) continue;
 		const trimmed = value.trim();
 		// An empty value would record a claim that says nothing but still counts as a source,
 		// which is exactly how a clue would end up falsely "conflicting".
 		if (!trimmed) continue;
-		clues.push({ id, characterId: character, value: trimmed });
+		clues.push({ id, characterId, value: trimmed });
 	}
 
-	return { flags, clues };
+	return { flags: [...flags], clues };
 }
