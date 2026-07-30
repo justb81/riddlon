@@ -20,6 +20,7 @@ import {
 	ACH_ALL_CLUES,
 	ACH_CASE_SOLVED,
 	ACH_NO_FALSE_ACCUSATION,
+	CHARACTER_DISPLAY_NAMES,
 	CLUE_MAX_WHEREABOUTS,
 	CLUE_TIME_WINDOW,
 	FLAG_EVIDENCE_PRESENTED,
@@ -129,4 +130,39 @@ export function isAchievementEarned(
 	bundle: StoryBundle
 ): boolean {
 	return evaluateAll(def.conditions, buildEvaluationContext(state, bundle)).value;
+}
+
+export interface ClueDisplayClaim {
+	characterId: string;
+	who: string;
+	value: string;
+}
+
+export interface ClueDisplay {
+	clueLabel: string;
+	sources: ClueDisplayClaim[];
+}
+
+/**
+ * The "WIDERSPRUCH: ..." panel's contents, straight from `EngineState.clues[...].claims` —
+ * #35. Keyed by clue id so a `MessageBubble` only needs to know which clue its authored
+ * dialogue is about, never the claims themselves.
+ */
+export function resolveClueDisplays(
+	state: EngineState,
+	bundle: StoryBundle
+): Record<string, ClueDisplay> {
+	const displays: Record<string, ClueDisplay> = {};
+	for (const clue of bundle.clues) {
+		const runtime = state.clues[clue.id];
+		displays[clue.id] = {
+			clueLabel: clue.label,
+			sources: (runtime?.claims ?? []).map((claim) => ({
+				characterId: claim.characterId,
+				who: CHARACTER_DISPLAY_NAMES[claim.characterId] ?? claim.characterId,
+				value: claim.value
+			}))
+		};
+	}
+	return displays;
 }

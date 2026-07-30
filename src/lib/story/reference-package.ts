@@ -26,6 +26,13 @@ export const ACH_NO_FALSE_ACCUSATION = 'a10a1000-0000-4000-8000-000000000009';
 export const CLUE_TIME_WINDOW = 'clue:time-window';
 export const CLUE_MAX_WHEREABOUTS = 'clue:max-whereabouts';
 
+/** The one place a claim's `characterId` (a UUID) maps to a display name — #35. */
+export const CHARACTER_DISPLAY_NAMES: Record<string, string> = {
+	[LUCY_ID]: 'Lucy',
+	[MAX_ID]: 'Max',
+	[SABINE_ID]: 'Sabine'
+};
+
 export const FLAG_LUCY_BRIEFED = 'flag:lucy-briefed';
 export const FLAG_EVIDENCE_PRESENTED = 'flag:evidence-presented';
 export const FLAG_FALSE_ACCUSATION = 'flag:false-accusation';

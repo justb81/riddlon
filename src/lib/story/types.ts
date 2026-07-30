@@ -8,15 +8,15 @@ export interface StoryCharacter {
 	initial: string;
 }
 
-export interface ClueSource {
-	who: string;
-	claim: string;
-}
-
+/**
+ * References which clue a message's "WIDERSPRUCH: ..." panel is about — `label` is authored
+ * dialogue framing (the heading text), everything else (the clue's own label, the claimed
+ * sources) is resolved live from `EngineState.clues[clueId]` via `storyRuntime.clueDisplays`,
+ * never hardcoded here. See #35.
+ */
 export interface Contradiction {
 	label: string;
-	clueLabel: string;
-	sources: ClueSource[];
+	clueId: string;
 }
 
 export interface SeedMessage {

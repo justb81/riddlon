@@ -5,6 +5,7 @@
  * for that loader until the content-package format lands.
  */
 
+import { CLUE_MAX_WHEREABOUTS, CLUE_TIME_WINDOW } from './reference-package.js';
 import type {
 	Achievement,
 	ChatChip,
@@ -72,14 +73,7 @@ export const LUCY_SEED: SeedMessage[] = [
 		from: 'lucy',
 		text: 'Wie meinst du das, passen nicht zusammen?',
 		time: '21:00',
-		contradiction: {
-			label: 'WIDERSPRUCH: TATZEIT',
-			clueLabel: 'UNGEFÄHRE TATZEIT',
-			sources: [
-				{ who: 'Max', claim: '„Kurz vor eins, ich stand noch draußen rauchen.“' },
-				{ who: 'Sabine', claim: '„Das war halb zwölf. Ich bin danach direkt gegangen.“' }
-			]
-		}
+		contradiction: { label: 'WIDERSPRUCH: TATZEIT', clueId: CLUE_TIME_WINDOW }
 	}
 ];
 
@@ -126,14 +120,7 @@ export const GROUP_SEED: SeedMessage[] = [
 		from: 'max',
 		text: 'Ich war zu der Zeit draußen. Frag wen du willst.',
 		time: '23:07',
-		contradiction: {
-			label: 'WIDERSPRUCH: AUFENTHALTSORT',
-			clueLabel: "MAX' AUFENTHALTSORT",
-			sources: [
-				{ who: 'Max (jetzt)', claim: '„Ich war um halb zwölf draußen.“' },
-				{ who: 'Hans, Garderobe', claim: '„Max stand um halb zwölf an Lucys Jacke.“' }
-			]
-		}
+		contradiction: { label: 'WIDERSPRUCH: AUFENTHALTSORT', clueId: CLUE_MAX_WHEREABOUTS }
 	},
 	{
 		id: 'g5',

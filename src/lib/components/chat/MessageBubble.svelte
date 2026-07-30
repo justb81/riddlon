@@ -2,6 +2,7 @@
 	import Avatar from './Avatar.svelte';
 	import { CHARACTERS } from '$lib/story/lucys-portmonnaie.js';
 	import { t } from '$lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import type { SeedMessage } from '$lib/story/types.js';
 
 	let {
@@ -18,6 +19,12 @@
 
 	const character = $derived(
 		message.from !== 'me' && message.from !== 'system' ? CHARACTERS[message.from] : undefined
+	);
+
+	/** Real `EngineState.clues[...].claims`, not the message's own (now purely referential)
+	 *  `contradiction` field — see #35. */
+	const clueDisplay = $derived(
+		message.contradiction ? storyRuntime.clueDisplays[message.contradiction.clueId] : undefined
 	);
 </script>
 
@@ -71,19 +78,19 @@
 					>
 					<span class="text-label text-accent-soft/70">{open ? '▾' : '▸'}</span>
 				</button>
-				{#if open}
+				{#if open && clueDisplay}
 					<div class="mt-2 rounded-control bg-surface-sunken/60 p-3">
 						<div class="font-mono text-[9.5px] tracking-wide text-slate-400">
-							{t('convo.contradictionPrefix', { label: message.contradiction.clueLabel })}
+							{t('convo.contradictionPrefix', { label: clueDisplay.clueLabel })}
 						</div>
 						<div class="mt-2 flex flex-col gap-2">
-							{#each message.contradiction.sources as source (source.who)}
+							{#each clueDisplay.sources as source (source.characterId + source.value)}
 								<div class="flex items-start gap-2">
 									<span class="w-[3px] flex-none self-stretch rounded-full bg-accent"></span>
 									<span class="flex-1">
 										<span class="block text-label font-medium text-slate-200">{source.who}</span>
 										<span class="mt-0.5 block text-body leading-relaxed text-slate-400"
-											>{source.claim}</span
+											>{source.value}</span
 										>
 									</span>
 								</div>

@@ -19,7 +19,8 @@ import {
 	ACHIEVEMENT_DEFS,
 	MILESTONE_DEFS,
 	isAchievementEarned,
-	isMilestoneDone
+	isMilestoneDone,
+	resolveClueDisplays
 } from './reference-progress.js';
 
 function findMilestone(id: string) {
@@ -100,5 +101,42 @@ describe('reference story milestone/achievement bridging', () => {
 		expect(
 			isAchievementEarned(findAchievement(ACH_NO_FALSE_ACCUSATION), engine.state, engine.bundle)
 		).toBe(true);
+	});
+});
+
+describe('reference story clue-display bridging (#35)', () => {
+	it('a clue with no recorded claims yet resolves to an empty source list', () => {
+		const engine = makeEngine();
+		const displays = resolveClueDisplays(engine.state, engine.bundle);
+		expect(displays[CLUE_TIME_WINDOW]).toEqual({ clueLabel: 'Ungefähre Tatzeit', sources: [] });
+	});
+
+	it('both distinct claims on the time-window clue show up as separate, named sources', () => {
+		const engine = makeEngine();
+		engine.recordClueClaim(CLUE_TIME_WINDOW, MAX_ID, 'kurz vor eins');
+		engine.recordClueClaim(CLUE_TIME_WINDOW, SABINE_ID, 'halb zwölf');
+
+		const displays = resolveClueDisplays(engine.state, engine.bundle);
+		expect(displays[CLUE_TIME_WINDOW]).toEqual({
+			clueLabel: 'Ungefähre Tatzeit',
+			sources: [
+				{ characterId: MAX_ID, who: 'Max', value: 'kurz vor eins' },
+				{ characterId: SABINE_ID, who: 'Sabine', value: 'halb zwölf' }
+			]
+		});
+	});
+
+	it('recording a claim through a different path updates the resolved display with no code change', () => {
+		const engine = makeEngine();
+		engine.recordClueClaim(CLUE_MAX_WHEREABOUTS, LUCY_ID, 'an der Jacke, laut Hans');
+		expect(resolveClueDisplays(engine.state, engine.bundle)[CLUE_MAX_WHEREABOUTS].sources).toEqual([
+			{ characterId: LUCY_ID, who: 'Lucy', value: 'an der Jacke, laut Hans' }
+		]);
+
+		engine.recordClueClaim(CLUE_MAX_WHEREABOUTS, MAX_ID, 'draußen');
+		expect(resolveClueDisplays(engine.state, engine.bundle)[CLUE_MAX_WHEREABOUTS].sources).toEqual([
+			{ characterId: LUCY_ID, who: 'Lucy', value: 'an der Jacke, laut Hans' },
+			{ characterId: MAX_ID, who: 'Max', value: 'draußen' }
+		]);
 	});
 });
