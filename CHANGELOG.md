@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/justb81/riddlon/compare/riddlon-v0.7.0...riddlon-v0.7.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **llm:** re-apply a scene's persona to an ongoing session ([73da844](https://github.com/justb81/riddlon/commit/73da844e347902f0d10994c8afb9de52023c4dd8))
+* **llm:** re-apply a scene's persona to an ongoing session ([4f3a78e](https://github.com/justb81/riddlon/commit/4f3a78e3ec7e535bca70f513a9be1804f3b53906))
+
 ## [0.7.0](https://github.com/justb81/riddlon/compare/riddlon-v0.6.2...riddlon-v0.7.0) (2026-07-30)
 
 
