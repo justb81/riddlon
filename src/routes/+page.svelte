@@ -7,7 +7,7 @@
 	import { findModel } from '$lib/llm/catalog.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { profile } from '$lib/state/profile.svelte.js';
-	import { game } from '$lib/state/game.svelte.js';
+	import { storySession } from '$lib/state/story-session.svelte.js';
 	import { hasOnboarded, markOnboarded } from '$lib/state/onboarding.js';
 	import {
 		bootStepFor,
@@ -64,7 +64,7 @@
 	function runWarmSequence() {
 		// Fire-and-forget: a returning player's package/save already exist, so this resolves
 		// almost immediately, but `/chats` shouldn't have to wait for it to start loading.
-		void game.init();
+		void storySession.init();
 
 		const steps = warmBootSteps();
 		const span = bootStepSpanMs();
@@ -92,17 +92,17 @@
 		}
 		if (abort.signal.aborted) return;
 
-		const installing = bootStepFor({ kind: 'story-install' });
-		percent = installing.percent;
-		currentStep = installing;
+		const loading = bootStepFor({ kind: 'library-load' });
+		percent = loading.percent;
+		currentStep = loading;
 		try {
-			// Real install (validate → store assets → register), not a fixed-duration timer —
-			// see `$lib/story/bootstrap.ts`. No incremental progress to report mid-install, so
-			// the bar just holds at `installing.percent` until this resolves.
-			await game.init();
+			// Reads the local library and resumes the active package. On a genuinely first run this
+			// finds nothing — the library stays empty until the player imports a story, which is
+			// the only way content ever enters the app (docs/concept.md §4.1).
+			await storySession.init();
 		} catch {
-			// A failed story install shouldn't strand the player on the splash screen —
-			// `/chats` surfaces the gap instead of a silent retry loop here.
+			// A failed library read shouldn't strand the player on the splash screen — `/chats`
+			// surfaces the gap instead of a silent retry loop here.
 		}
 		finish();
 	}
@@ -117,7 +117,8 @@
 		void runFirstRun();
 	}
 
-	/** Degraded mode: scripted story beats still work, free-text LLM replies don't. */
+	/** Degraded mode: the library and case file still work, chat replies don't — every message in
+	 *  a story now comes from the local model, so the conversation screens say so. */
 	function continueWithoutLlm() {
 		void goto(resolve('/chats'));
 	}

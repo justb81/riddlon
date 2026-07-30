@@ -7,41 +7,54 @@
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import MilestoneItem from '$lib/components/chat/MilestoneItem.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { game } from '$lib/state/game.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { STORY_META } from '$lib/story/lucys-portmonnaie.js';
-	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
+	import type { Milestone } from '$lib/story/types.js';
 
-	// Authored milestones/chat content (`game.svelte.ts`) exist only for the reference story
-	// (#37) — any other active package still shows its own real scene/clue progress above, just
-	// without a milestone timeline or a "weiterspielen" button into a chat that doesn't exist yet.
-	const isReferenceStory = $derived(storyRuntime.packageId === REFERENCE_PACKAGE_ID);
+	/**
+	 * The case file for the active package. Everything here is engine state: the timeline is the
+	 * authored scene graph, the clue list is `EngineState.clues`, and the achievements are the
+	 * package's own declarations — shown as open, because `achievementSchema` still has no unlock
+	 * conditions (#32) and inventing them on the story's behalf is what this screen used to do.
+	 */
 
-	const total = $derived(game.milestones.length);
-	const done = $derived(game.milestones.filter((m) => m.done).length);
-	const donePercent = $derived(total > 0 ? (done / total) * 100 : 0);
+	const ready = $derived(storyRuntime.initialized);
+	const noStory = $derived(ready && storyRuntime.packageId === null);
 
-	// Real scene progress from the engine, not the mock's fixed chapter numbers — falls back
-	// to STORY_META's flavor numbers only until `storyRuntime` has finished loading.
-	const totalScenes = $derived(storyRuntime.progress?.totalSceneCount ?? STORY_META.totalChapters);
+	const progress = $derived(storyRuntime.progress);
+	const totalScenes = $derived(progress?.totalSceneCount ?? 0);
 	const currentScene = $derived(
-		storyRuntime.progress
-			? storyRuntime.progress.completedSceneCount + 1
-			: STORY_META.currentChapter
+		progress ? Math.min(progress.completedSceneCount + 1, Math.max(totalScenes, 1)) : 1
+	);
+	const doneScenes = $derived(progress?.completedSceneCount ?? 0);
+	const donePercent = $derived(totalScenes > 0 ? (doneScenes / totalScenes) * 100 : 0);
+
+	const title = $derived(storyRuntime.title ?? '');
+	const contactCount = $derived(storyRuntime.cast.length);
+
+	/** Scene → timeline row. The format has no scene titles, so the position is the title and the
+	 *  participants are the description — reported structure, not invented structure. */
+	const milestones = $derived.by((): Milestone[] =>
+		storyRuntime.scenes.map((scene) => ({
+			id: scene.id,
+			title: t('story.chapterN', { chapter: scene.index }),
+			time: storyRuntime.sceneTimes[scene.id] ?? (scene.current ? t('story.chapterNow') : '—'),
+			done: scene.done,
+			desc:
+				scene.participantIds.map((id) => storyRuntime.displayNameFor(id)).join(', ') ||
+				t('story.chapterNoParticipants')
+		}))
 	);
 
-	// Nothing installed (fresh device, or after a reset in /settings): there is no story to
-	// summarise, so this screen says so rather than rendering the reference story's numbers.
-	const noStory = $derived(storyRuntime.initialized && storyRuntime.packageId === null);
-
-	// `game.milestones` mirrors `storyRuntime`'s engine sync but resolves a moment after it —
-	// gate on both so a direct/reloaded visit doesn't flash "0/0" and an empty timeline while the
-	// save is still loading (#38).
-	const ready = $derived(storyRuntime.initialized && game.initialized);
-	const title = $derived(storyRuntime.bundle?.manifest.title ?? STORY_META.title);
-	const contactCount = $derived(
-		storyRuntime.bundle?.manifest.characters.length ?? STORY_META.contactCount
+	const clues = $derived.by(() =>
+		Object.entries(storyRuntime.clueDisplays)
+			.map(([id, display]) => ({ id, ...display }))
+			.filter((clue) => clue.sources.length > 0)
 	);
+
+	const firstThreadHref = $derived.by(() => {
+		const thread = storyRuntime.threads[0];
+		return thread ? `${resolve('/chat')}?thread=${encodeURIComponent(thread.key)}` : null;
+	});
 
 	$effect(() => {
 		void storyRuntime.init();
@@ -54,8 +67,8 @@
 	<AppHeader onBack={() => goto(resolve('/chat/riddlon'))}>
 		<span class="block text-center text-h1 font-medium text-slate-100">{t('story.title')}</span>
 		{#snippet trailing()}
-			{#if isReferenceStory && ready}
-				<span class="font-mono text-caption text-slate-500">{done}/{total}</span>
+			{#if ready && !noStory}
+				<span class="font-mono text-caption text-slate-500">{doneScenes}/{totalScenes}</span>
 			{/if}
 		{/snippet}
 	</AppHeader>
@@ -93,43 +106,102 @@
 						<span class="min-w-0 flex-1">
 							<span class="block text-h2 font-medium text-slate-100">{title}</span>
 							<span class="mt-1 block text-label text-slate-400">
-								{STORY_META.genre} · Kapitel {currentScene} von {totalScenes}
-								·
-								{contactCount} Kontakte
+								{t('story.chapterOf', { chapter: currentScene, total: totalScenes })} ·
+								{t('story.contactCount', { count: contactCount })}
 							</span>
 						</span>
 					</div>
-					{#if isReferenceStory && ready}
+					{#if ready}
 						<div class="mt-4 flex items-end gap-3">
-							<div class="font-serif text-[32px] leading-none text-slate-50">{done} / {total}</div>
-							<div class="pb-0.5 text-label text-slate-400">{t('story.milestonesReached')}</div>
+							<div class="font-serif text-[32px] leading-none text-slate-50">
+								{progress?.knownClueCount ?? 0} / {progress?.totalClueCount ?? 0}
+							</div>
+							<div class="pb-0.5 text-label text-slate-400">{t('story.cluesFound')}</div>
 						</div>
-						<button
-							type="button"
-							onclick={() => goto(resolve('/chat/[thread]', { thread: 'lucy' }))}
-							class="mt-4 w-full rounded-tile border border-accent/50 bg-accent/15 py-3.5 text-label font-medium text-slate-100 hover:bg-accent/25"
-						>
-							{t('story.continue', { chapter: currentScene })}
-						</button>
+						{#if firstThreadHref}
+							<!-- Built from resolve('/chat') plus the thread key; the rule can't see through
+							     the query string, so it is switched off for this one link. -->
+							<!-- eslint-disable svelte/no-navigation-without-resolve -->
+							<a
+								href={firstThreadHref}
+								class="mt-4 block w-full rounded-tile border border-accent/50 bg-accent/15 py-3.5 text-center text-label font-medium text-slate-100 hover:bg-accent/25"
+							>
+								{t('story.continue', { chapter: currentScene })}
+							</a>
+							<!-- eslint-enable svelte/no-navigation-without-resolve -->
+						{/if}
 					{/if}
 				</div>
 
-				{#if isReferenceStory && !ready}
+				{#if !ready}
 					<p class="mt-6.5 text-label leading-relaxed text-slate-500">{t('common.loading')}</p>
-				{:else if isReferenceStory}
+				{:else}
 					<div class="relative mt-6.5 pl-[30px]">
 						<div
 							class="absolute top-1.5 bottom-3 left-[9px] w-[1.5px]"
 							style="background:linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent) {donePercent}%, var(--color-line) {donePercent}%, var(--color-line) 100%)"
 						></div>
-						{#each game.milestones as milestone (milestone.id)}
+						{#each milestones as milestone (milestone.id)}
 							<MilestoneItem {milestone} />
 						{/each}
 					</div>
-				{:else}
-					<p class="mt-6.5 text-label leading-relaxed text-slate-500">
-						{t('story.noMilestonesYet')}
-					</p>
+
+					{#if clues.length > 0}
+						<h3 class="mt-2 font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
+							{t('story.cluesLabel')}
+						</h3>
+						<div class="mt-2.5 flex flex-col gap-2.5">
+							{#each clues as clue (clue.id)}
+								<div class="rounded-tile border border-line bg-surface-raised p-3">
+									<div class="flex items-baseline gap-2">
+										<span class="flex-1 text-label font-medium text-slate-100"
+											>{clue.clueLabel}</span
+										>
+										{#if clue.conflicting && !clue.resolved}
+											<span class="font-mono text-[9.5px] text-accent"
+												>{t('story.clueConflict')}</span
+											>
+										{/if}
+									</div>
+									{#each clue.sources as source (source.characterId + source.value)}
+										<div class="mt-1.5 text-label text-slate-400">
+											<span class="text-slate-200">{source.who}:</span>
+											{source.value}
+										</div>
+									{/each}
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<h3 class="mt-6 font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
+						{t('story.achievementsLabel')}
+					</h3>
+					{#if storyRuntime.achievements.length === 0}
+						<p class="mt-2 text-label leading-relaxed text-slate-500">
+							{t('story.noAchievementsInPackage')}
+						</p>
+					{:else}
+						<div class="mt-2.5 flex flex-col gap-2.5">
+							{#each storyRuntime.achievements as achievement (achievement.id)}
+								<div
+									class="rounded-tile border p-3 {achievement.earned
+										? 'border-accent/40 bg-accent/10'
+										: 'border-line bg-surface-raised'}"
+								>
+									<div class="text-label font-medium text-slate-100">{achievement.label}</div>
+									{#if achievement.description}
+										<div class="mt-1 text-label leading-relaxed text-slate-400">
+											{achievement.description}
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+						<p class="mt-2.5 text-label leading-relaxed text-slate-500">
+							{t('story.achievementsNoConditionsNote')}
+						</p>
+					{/if}
 				{/if}
 			</div>
 		</div>

@@ -12,7 +12,6 @@
 import { PHASE_BUDGET, percentForModelLoad, percentForPhase } from '$lib/llm/progress.js';
 import type { LlmErrorCode } from '$lib/llm/errors.js';
 import { formatSizeLabel, type LlmModelDescriptor } from '$lib/llm/catalog.js';
-import { STORY_META } from './lucys-portmonnaie.js';
 
 export interface BootStep {
 	percent: number;
@@ -26,7 +25,9 @@ export type BootPhase =
 	| { kind: 'checking' }
 	/** `fraction` is the adapter's raw 0..1 model-load progress. */
 	| { kind: 'model-load'; fraction: number; model: LlmModelDescriptor }
-	| { kind: 'story-install'; title?: string }
+	/** Reading the local library and resuming the active package's save. Nothing is installed
+	 *  here any more — a story only ever arrives through an explicit import. */
+	| { kind: 'library-load' }
 	| { kind: 'error'; code: LlmErrorCode }
 	| { kind: 'done' };
 
@@ -52,13 +53,12 @@ export function bootStepFor(phase: BootPhase): BootStep {
 			};
 		}
 
-		case 'story-install':
+		case 'library-load':
 			return {
-				// The real install (`$lib/story/bootstrap.ts`) doesn't report incremental
-				// progress mid-install, so the bar just holds here until it resolves.
+				// One IDB read plus an engine resume — no incremental progress to report, so the
+				// bar just holds here until it resolves.
 				percent: percentForPhase('storyInstall', 0.5),
-				i18nKey: 'boot.step.installingStory',
-				vars: { title: phase.title ?? STORY_META.title }
+				i18nKey: 'boot.step.loadingLibrary'
 			};
 
 		case 'error':

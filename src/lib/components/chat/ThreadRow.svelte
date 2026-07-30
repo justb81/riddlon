@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Avatar from './Avatar.svelte';
-	import type { ResolvedPathname } from '$app/types';
 
 	let {
 		href,
@@ -13,7 +12,9 @@
 		unread = 0,
 		active = false
 	}: {
-		href: ResolvedPathname;
+		/** Plain string rather than `ResolvedPathname`: story threads are identified by a package
+		 *  UUID in a query parameter, not by a prerenderable path segment. */
+		href: string;
 		name: string;
 		kind: 'solo' | 'group' | 'system';
 		initial?: string;
@@ -26,6 +27,9 @@
 	} = $props();
 </script>
 
+<!-- Callers pass an already-resolved path; the rule can't see through the query string a story
+     thread needs, so it is switched off for this one attribute. -->
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
 	{href}
 	aria-current={active ? 'page' : undefined}
@@ -51,3 +55,4 @@
 		</span>
 	</span>
 </a>
+<!-- eslint-enable svelte/no-navigation-without-resolve -->

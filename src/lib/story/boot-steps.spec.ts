@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PHASE_BUDGET } from '$lib/llm/progress.js';
 import { DEFAULT_MODEL_ID, findModel } from '$lib/llm/catalog.js';
-import { STORY_META } from './lucys-portmonnaie.js';
 import { bootStepFor, bootStepSpanMs, warmBootSteps, type BootPhase } from './boot-steps.js';
 
 const MODEL = findModel(DEFAULT_MODEL_ID);
@@ -59,10 +58,12 @@ describe('bootStepFor', () => {
 		expect(late.vars).toBeUndefined();
 	});
 
-	it('names the story being installed', () => {
-		const step = bootStepFor({ kind: 'story-install' });
-		expect(step.i18nKey).toBe('boot.step.installingStory');
-		expect(step.vars).toEqual({ title: STORY_META.title });
+	it('reports the library read without naming a story', () => {
+		// Nothing is auto-installed any more, so this phase is a local read — there is no story
+		// title to interpolate, and inventing one is exactly what this replaced.
+		const step = bootStepFor({ kind: 'library-load' });
+		expect(step.i18nKey).toBe('boot.step.loadingLibrary');
+		expect(step.vars).toBeUndefined();
 	});
 
 	it('ends at exactly 100 %', () => {
@@ -81,7 +82,7 @@ describe('bootStepFor', () => {
 			{ kind: 'model-load', fraction: 0.3, model: MODEL },
 			{ kind: 'model-load', fraction: 0.85, model: MODEL },
 			{ kind: 'model-load', fraction: 1, model: MODEL },
-			{ kind: 'story-install' },
+			{ kind: 'library-load' },
 			{ kind: 'done' }
 		];
 

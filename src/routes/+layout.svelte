@@ -1,7 +1,6 @@
 <script lang="ts">
 	import './layout.css';
 	import Toast from '$lib/components/ui/Toast.svelte';
-	import AchievementToast from '$lib/components/chat/AchievementToast.svelte';
 	import CelebrationOverlay from '$lib/components/chat/CelebrationOverlay.svelte';
 	import { browser, dev, version } from '$app/environment';
 	import { base } from '$app/paths';
@@ -47,6 +46,5 @@
 
 {@render children()}
 
-<AchievementToast />
 <CelebrationOverlay />
 <Toast />

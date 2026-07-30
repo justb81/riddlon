@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { base, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import AppFrame from '$lib/components/chat/AppFrame.svelte';
 	import AppHeader from '$lib/components/chat/AppHeader.svelte';
@@ -7,19 +7,21 @@
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import ChipRow from '$lib/components/chat/ChipRow.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { formatSizeLabel } from '$lib/llm/catalog.js';
 	import { profile } from '$lib/state/profile.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { importPackageFromZipFile, importPackageFromUrl } from '$lib/content/index.js';
-	import { installDemoStory } from '$lib/story/bootstrap.js';
-	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
-	import { type CatalogEntry } from '$lib/story/library.js';
-	import { ACHIEVEMENT_DEFS } from '$lib/story/reference-progress.js';
+	import {
+		formatPackageSize,
+		parseBundledStories,
+		type BundledStory,
+		type CatalogEntry
+	} from '$lib/story/library.js';
 
 	const statusKey = {
 		running: 'library.status.running',
 		solved: 'library.status.solved',
-		notStarted: 'library.status.notStarted'
+		notStarted: 'library.status.notStarted',
+		unknown: 'library.status.unknown'
 	} as const;
 
 	let notices = $state<{ id: string; text: string; failed: boolean }[]>([]);
@@ -27,13 +29,28 @@
 	let urlFieldOpen = $state(false);
 	let urlDraft = $state('');
 	let fileInput: HTMLInputElement | undefined = $state();
+	let bundled = $state<BundledStory[]>([]);
 
-	// One source for "what's installed" (shared with the chat overview's library preview) —
-	// this screen only asks it to re-read the registry after an import.
+	// One source for "what's installed" (shared with the chat overview's library preview) — this
+	// screen only asks it to re-read the registry after an import.
 	const installed = $derived(storyRuntime.installedPackages);
 
 	$effect(() => {
 		void storyRuntime.init();
+	});
+
+	$effect(() => {
+		// The example packages the app ships, listed from the generated index. Same install path as
+		// any other URL import — there is no privileged "demo" route into the registry any more.
+		void (async () => {
+			try {
+				const response = await fetch(`${base}/stories/index.json`);
+				if (response.ok) bundled = parseBundledStories(await response.json());
+			} catch {
+				// Nothing bundled (or an offline first run before the precache filled) — the ZIP and
+				// URL importers below are unaffected.
+			}
+		})();
 	});
 
 	function noteId(): string {
@@ -51,10 +68,12 @@
 					failed: false,
 					text: t('library.lastInstalledNote', {
 						title: result.summary.title,
-						size: formatSizeLabel(result.summary.sizeBytes)
+						size: formatPackageSize(result.summary.sizeBytes)
 					})
 				}
 			];
+			// Adopts the package as the active session when nothing was active yet, so a first
+			// import is immediately playable instead of waiting for a reload.
 			await storyRuntime.refreshLibrary();
 		} else {
 			const message = result.errors.map((e) => e.message).join(' · ');
@@ -101,9 +120,18 @@
 		}
 	}
 
-	// Every installed package gets its own live engine/save session (#37) — switching activates
-	// (and, on first visit, loads) that package's session before `/story` reads it, so opening a
-	// second story never shows or overwrites the reference story's progress.
+	async function installBundled(story: BundledStory): Promise<void> {
+		importing = true;
+		try {
+			await afterImport(await importPackageFromUrl(`${base}/stories/${story.zip}`));
+		} finally {
+			importing = false;
+		}
+	}
+
+	// Every installed package gets its own live engine/save session — switching activates (and, on
+	// first visit, loads) that package's session before `/story` reads it, so opening a second
+	// story never shows or overwrites another's progress.
 	function openStory(packageId: string): void {
 		void (async () => {
 			await storyRuntime.switchTo(packageId);
@@ -113,46 +141,34 @@
 
 	function noop(): void {
 		// Genuinely not built yet (update-checking, storage management) — tracked explicitly
-		// rather than faking success (see #16's acceptance criteria).
+		// rather than faking success (#36).
 	}
 
-	/** Re-installs the bundled demo after a factory reset. A full page load follows, because the
-	 *  engine runtime already resolved its (story-less) init — same reasoning as `state/reset.ts`. */
-	async function addDemoStory(): Promise<void> {
-		importing = true;
-		try {
-			await installDemoStory();
-			location.href = resolve('/');
-		} finally {
-			importing = false;
-		}
-	}
-
-	const displayEntries = $derived.by((): CatalogEntry[] => {
-		return installed.map((pkg) => {
-			const isReference = pkg.id === REFERENCE_PACKAGE_ID;
-			const progress = isReference ? storyRuntime.progress : null;
-			const solved = isReference && storyRuntime.solved;
-			const totalScenes = progress?.totalSceneCount ?? 0;
-			const doneScenes = progress?.completedSceneCount ?? 0;
+	const displayEntries = $derived.by((): CatalogEntry[] =>
+		installed.map((pkg) => {
+			// Progress exists only for the *active* session; claiming "LÄUFT · Kapitel 1 von 1" for
+			// every row is what made a story with no loaded session look like it was running.
+			const isActive = pkg.id === storyRuntime.packageId;
+			const progress = isActive ? storyRuntime.progress : null;
+			const solved = isActive && storyRuntime.solved;
+			const total = progress?.totalSceneCount ?? 0;
+			const done = progress?.completedSceneCount ?? 0;
 			return {
 				id: pkg.id,
 				title: pkg.title,
-				genre: 'Krimi',
-				status: solved ? 'solved' : 'running',
+				status: solved ? 'solved' : progress ? 'running' : 'unknown',
 				contactCount: pkg.characterIds.length,
-				...(solved
-					? {
-							achievements: {
-								earned: storyRuntime.earnedAchievements.length,
-								total: ACHIEVEMENT_DEFS.length
-							}
-						}
-					: { chapter: { current: doneScenes + 1, total: Math.max(totalScenes, 1) } }),
-				progressPercent: totalScenes > 0 ? Math.round((doneScenes / totalScenes) * 100) : undefined
+				...(progress && total > 0
+					? { chapter: { current: Math.min(done + 1, total), total } }
+					: {}),
+				progressPercent: total > 0 ? Math.round((done / total) * 100) : undefined
 			};
-		});
-	});
+		})
+	);
+
+	const notInstalled = $derived(
+		bundled.filter((story) => !installed.some((pkg) => pkg.id === story.id))
+	);
 
 	// A real registry means 0 or 1 installed stories most of the time, where the mock catalog always
 	// had three — so the plural-only greeting needs singular/empty variants (cf. `convo.*Plural`).
@@ -209,21 +225,6 @@
 				<div class="ml-0.5 font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
 					{displayEntries.length === 0 ? t('library.emptyLabel') : t('library.installedLabel')}
 				</div>
-				{#if displayEntries.length === 0}
-					<div class="rounded-tile border border-dashed border-line-strong bg-slate-100/3 p-3.5">
-						<p class="text-label leading-relaxed text-slate-400">
-							{t('library.installDemoNote')}
-						</p>
-						<button
-							type="button"
-							disabled={importing}
-							onclick={() => void addDemoStory()}
-							class="mt-2.5 w-full rounded-control border border-line-strong px-3 py-2.5 text-label font-medium text-slate-200 hover:bg-slate-100/8 disabled:opacity-50"
-						>
-							{t('library.installDemo')}
-						</button>
-					</div>
-				{/if}
 				{#each displayEntries as story (story.id)}
 					<button
 						type="button"
@@ -242,7 +243,7 @@
 											? 'text-slate-100'
 											: 'text-slate-200'}">{story.title}</span
 									>
-									{#if story.status !== 'notStarted'}
+									{#if story.status === 'running' || story.status === 'solved'}
 										<span
 											class="font-mono text-[9.5px] {story.status === 'running'
 												? 'text-accent'
@@ -251,15 +252,13 @@
 									{/if}
 								</span>
 								<span class="mt-1 block text-label text-slate-400">
-									{story.genre} ·
 									{#if story.chapter}
-										Kapitel {story.chapter.current} von {story.chapter.total}
-									{:else if story.achievements}
-										{story.achievements.earned} von {story.achievements.total} Auszeichnungen
-									{:else}
-										{t(statusKey.notStarted)}
+										{t('story.chapterOf', {
+											chapter: story.chapter.current,
+											total: story.chapter.total
+										})} ·
 									{/if}
-									· {story.contactCount} Kontakte
+									{t('story.contactCount', { count: story.contactCount })}
 								</span>
 								{#if story.progressPercent}
 									<span class="mt-2 block h-[3px] overflow-hidden rounded-full bg-slate-100/13">
@@ -273,6 +272,37 @@
 					</button>
 				{/each}
 			</div>
+
+			{#if notInstalled.length > 0}
+				<div class="mt-4 max-w-[82%] self-start">
+					<div
+						class="rounded-tr-2xl rounded-br-2xl rounded-bl-md border border-line bg-surface-raised px-3.5 pt-2.5 pb-2.5"
+					>
+						<div class="text-body leading-relaxed text-slate-100">{t('library.askBundled')}</div>
+					</div>
+				</div>
+				<div class="mt-2.5 flex w-full flex-col gap-2.5 self-start">
+					{#each notInstalled as story (story.id)}
+						<div class="rounded-tile border border-dashed border-line-strong bg-slate-100/3 p-3.5">
+							<div class="text-label font-medium text-slate-100">{story.title}</div>
+							<div class="mt-1 text-label text-slate-400">
+								{t('library.bundledMeta', {
+									version: story.version,
+									size: formatPackageSize(story.bytes)
+								})}
+							</div>
+							<button
+								type="button"
+								disabled={importing}
+								onclick={() => void installBundled(story)}
+								class="mt-2.5 w-full rounded-control border border-accent/50 bg-accent/15 px-3 py-2.5 text-label font-medium text-slate-100 hover:bg-accent/25 disabled:opacity-50"
+							>
+								{importing ? t('library.importing') : t('library.installBundled')}
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
 
 			<div class="mt-4 max-w-[82%] self-start">
 				<div

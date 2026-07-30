@@ -17,7 +17,7 @@
 			"checking": "Gerät wird geprüft",
 			"loadingModel": "Lokales Modell wird geladen · {model} ({size})",
 			"preparingDevice": "Modell wird für dein Gerät vorbereitet",
-			"installingStory": "Geschichte „{title}“ wird installiert",
+			"loadingLibrary": "Bibliothek wird gelesen",
 			"done": "Fertig"
 		}
 	},
@@ -37,8 +37,7 @@
 	"chats": {
 		"title": "Chats",
 		"searchPlaceholder": "Chats durchsuchen",
-		"chapterInfo": "KAPITEL {chapter} · {theme}",
-		"chapterGoal": "Ziel: {goal}",
+		"chapterProgress": "KAPITEL {chapter} VON {total}",
 		"progressPercent": "{percent} %",
 		"chatCount": "{count} CHATS",
 		"libraryPreview": "Deine Bibliothek: {count} Geschichten. Neue importieren?",
@@ -48,16 +47,22 @@
 		"emptyDesc": "Öffne links eine Unterhaltung, um weiterzuspielen. Die Geschichte läuft weiter, während du liest.",
 		"emptyNote": "LÄUFT VOLLSTÄNDIG AUF DEINEM GERÄT",
 		"noStoryBand": "KEINE GESCHICHTE INSTALLIERT",
-		"noStoryHint": "Noch keine Geschichte installiert. Öffne den Riddlon-Chat, um eine zu importieren."
+		"noStoryHint": "Noch keine Geschichte installiert. Öffne den Riddlon-Chat, um eine zu importieren.",
+		"noContactsYetHint": "Diese Geschichte hat noch niemanden vorgestellt. Sobald sie einen Kontakt freischaltet, erscheint er hier."
 	},
 	"convo": {
 		"clueCount": "HINWEISE {revealed}/{total}",
 		"contradictionsOpen": "{count} Widerspruch offen",
 		"contradictionsOpenPlural": "{count} Widersprüche offen",
-		"lastOnline": "ZULETZT ONLINE {time}",
+		"contradictionsNone": "Keine offenen Widersprüche",
+		"memberSummary": "{count} Teilnehmende",
 		"contradictionPrefix": "WIDERSPRUCH · {label}",
 		"contradictionExplainer": "Beide Aussagen sind in deiner Akte gespeichert. Eine davon ist falsch.",
-		"messagePlaceholder": "Nachricht"
+		"messagePlaceholder": "Nachricht",
+		"noModelNote": "Kein lokales Modell geladen — in dieser Geschichte schreibt jede Figur über das Modell auf deinem Gerät. Lade es in den Einstellungen.",
+		"unknownThreadTitle": "Chat nicht verfügbar",
+		"unknownThreadDesc": "Diesen Chat gibt es in der aktiven Geschichte nicht — vielleicht gehört er zu einer anderen oder ist noch nicht freigeschaltet.",
+		"backToChats": "Zu den Chats"
 	},
 	"library": {
 		"title": "Riddlon",
@@ -69,12 +74,14 @@
 		"welcomeEmpty": "Hallo {name}. Deine Bibliothek ist leer — importiere eine Geschichte als ZIP oder über eine URL.",
 		"installedLabel": "INSTALLIERT",
 		"emptyLabel": "NICHTS INSTALLIERT",
-		"installDemo": "Demo-Geschichte installieren",
-		"installDemoNote": "„Lucys Portmonnaie“ — die mitgelieferte Beispielgeschichte, jederzeit wieder entfernbar.",
+		"askBundled": "Ich habe eine Beispielgeschichte dabei — soll ich sie installieren?",
+		"installBundled": "Beispielgeschichte installieren",
+		"bundledMeta": "v{version} · {size} · liegt schon auf dem Gerät",
 		"status": {
 			"running": "LÄUFT",
 			"solved": "GELÖST",
-			"notStarted": "noch nicht gestartet"
+			"notStarted": "noch nicht gestartet",
+			"unknown": "nicht geladen"
 		},
 		"askImport": "Neue Geschichte hinzufügen? Schick mir eine ZIP-Datei oder eine URL.",
 		"importLabel": "IMPORT",
@@ -93,12 +100,21 @@
 	"story": {
 		"title": "Storyübersicht",
 		"chapterInfo": "{story} · KAPITEL {chapter} VON {total}",
-		"milestonesReached": "Meilensteine erreicht",
+		"chapterOf": "Kapitel {chapter} von {total}",
+		"chapterN": "Kapitel {chapter}",
+		"chapterNow": "läuft",
+		"chapterNoParticipants": "Keine Figuren in dieser Szene",
+		"contactCount": "{count} Kontakte",
+		"cluesFound": "Hinweise gefunden",
+		"cluesLabel": "HINWEISE",
+		"clueConflict": "WIDERSPRUCH",
+		"achievementsLabel": "AUSZEICHNUNGEN",
+		"noAchievementsInPackage": "Diese Geschichte bringt keine Auszeichnungen mit.",
+		"achievementsNoConditionsNote": "Das Paketformat kennt noch keine Bedingungen für Auszeichnungen — sie werden hier nur aufgeführt, nicht vergeben.",
 		"continue": "Weiterspielen · Kapitel {chapter}",
 		"emptyTitle": "Keine Geschichte aktiv",
-		"emptyDesc": "Sobald eine Geschichte installiert und gestartet ist, findest du hier ihre Meilensteine und Auszeichnungen.",
-		"emptyAction": "Bibliothek öffnen",
-		"noMilestonesYet": "Für dieses Paket sind noch keine Meilensteine oder Chatinhalte hinterlegt."
+		"emptyDesc": "Sobald eine Geschichte installiert ist, findest du hier ihre Kapitel, Hinweise und Auszeichnungen.",
+		"emptyAction": "Bibliothek öffnen"
 	},
 	"settings": {
 		"title": "Profil & Einstellungen",
@@ -142,19 +158,16 @@
 		"resetProgressTitle": "Fortschritt zurücksetzen",
 		"resetProgressDesc": "Löscht alle Spielstände und startet die Geschichte von vorn. Installierte Geschichten und dein Profil bleiben.",
 		"resetAllTitle": "Alles löschen",
-		"resetAllDesc": "Löscht installierte Geschichten, Figuren, Spielstände, Profil und Einstellungen. Die Demo-Geschichte wird danach nicht neu installiert.",
+		"resetAllDesc": "Löscht installierte Geschichten, Figuren, Spielstände, Profil und Einstellungen. Danach ist die Bibliothek leer, bis du wieder eine Geschichte importierst.",
 		"resetModelNote": "Das heruntergeladene Sprachmodell bleibt erhalten — es wird nicht erneut geladen.",
 		"resetConfirm": "Wirklich? Tippe erneut zum Bestätigen.",
 		"resetCancel": "Abbrechen",
 		"resetRunning": "Wird zurückgesetzt …"
 	},
-	"toast": {
-		"achievement": "AUSZEICHNUNG",
-		"overview": "Übersicht"
-	},
 	"celebration": {
 		"kicker": "FALL ABGESCHLOSSEN",
 		"title": "Fall gelöst",
+		"desc": "„{story}“ ist zu einem Ende gekommen. In der Fallakte siehst du, was du unterwegs herausgefunden hast.",
 		"viewStory": "Fallakte ansehen",
 		"later": "Später"
 	}

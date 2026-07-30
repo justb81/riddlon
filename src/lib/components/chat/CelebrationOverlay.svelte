@@ -1,10 +1,19 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { caseSolvedMessage, game } from '$lib/state/game.svelte.js';
+	import { storyRuntime } from '$lib/state/engine.svelte.js';
+	import { storySession } from '$lib/state/story-session.svelte.js';
+
+	/**
+	 * Shown when the engine reaches one of the active package's `outcomes` — the only
+	 * end-of-story signal that comes from real state. The closing text used to be an authored
+	 * string from the built-in demo; it is now the reached outcome plus the story's own title,
+	 * because a package cannot yet say what its ending should read like.
+	 */
+	const outcomes = $derived(storyRuntime.outcomes);
 </script>
 
-{#if game.celebrationVisible}
+{#if storySession.celebrationVisible}
 	<div
 		class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface px-7.5 py-10 text-center"
 		style="animation:rd-fade .35s ease both"
@@ -36,11 +45,11 @@
 				{t('celebration.title')}
 			</h2>
 			<p class="mx-auto mt-3 max-w-[280px] text-body leading-relaxed text-slate-400">
-				{caseSolvedMessage}
+				{t('celebration.desc', { story: storyRuntime.title ?? '' })}
 			</p>
 
 			<div class="mt-6 flex flex-col gap-2">
-				{#each game.earned as achievement (achievement.id)}
+				{#each outcomes as outcome (outcome.id)}
 					<div
 						class="flex items-center gap-2.5 rounded-tile border border-line bg-slate-100/5 px-3.5 py-3"
 						style="animation:rd-in .4s ease both"
@@ -48,11 +57,9 @@
 						<span
 							class="flex size-[30px] flex-none items-center justify-center rounded-full border-[1.4px] border-accent font-serif text-sm text-accent"
 						>
-							{achievement.glyph}
+							✓
 						</span>
-						<span class="flex-1 text-left text-label font-medium text-slate-100"
-							>{achievement.title}</span
-						>
+						<span class="flex-1 text-left text-label font-medium text-slate-100">{outcome.id}</span>
 						<span class="font-mono text-[9.5px] text-slate-500">{t('common.new')}</span>
 					</div>
 				{/each}
@@ -61,14 +68,14 @@
 			<div class="mt-7 flex gap-2.5">
 				<a
 					href={resolve('/story')}
-					onclick={() => game.closeCelebration()}
+					onclick={() => storySession.closeCelebration()}
 					class="flex-1 rounded-panel bg-accent px-4 py-4 text-center text-label font-medium text-white hover:bg-accent-strong"
 				>
 					{t('celebration.viewStory')}
 				</a>
 				<button
 					type="button"
-					onclick={() => game.closeCelebration()}
+					onclick={() => storySession.closeCelebration()}
 					class="flex-none rounded-panel border border-line-strong px-4.5 py-4 text-label font-medium text-slate-200"
 				>
 					{t('celebration.later')}
