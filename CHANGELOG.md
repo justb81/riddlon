@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/justb81/riddlon/compare/riddlon-v0.4.0...riddlon-v0.5.0) (2026-07-30)
+
+
+### Features
+
+* **chat:** drive conversations from the real engine and LLM ([#14](https://github.com/justb81/riddlon/issues/14), [#15](https://github.com/justb81/riddlon/issues/15)) ([2822a85](https://github.com/justb81/riddlon/commit/2822a85220a9b359f71a2b3ff2787072e4e624ed))
+* **riddlon:** wire ZIP/URL import to the real content pipeline ([#16](https://github.com/justb81/riddlon/issues/16)) ([ff1d96c](https://github.com/justb81/riddlon/commit/ff1d96c819bc75aeb28bdb8095332b05e2b9e26b))
+* **settings:** persist player profile and support free-text pronouns ([#18](https://github.com/justb81/riddlon/issues/18)) ([825621c](https://github.com/justb81/riddlon/commit/825621cf23494b68b78d0ac1912375d4d0238da7))
+* **story:** install a real reference package and drive boot from it ([#13](https://github.com/justb81/riddlon/issues/13)) ([344de69](https://github.com/justb81/riddlon/commit/344de697f3a1325e0ba315a976709394a0dd7bbb))
+* **story:** show real scene progress on the story overview ([#17](https://github.com/justb81/riddlon/issues/17)) ([80b515e](https://github.com/justb81/riddlon/commit/80b515eced266f9d066ded36da9c6397355b31f0))
+
 ## [0.4.0](https://github.com/justb81/riddlon/compare/riddlon-v0.3.0...riddlon-v0.4.0) (2026-07-30)
 
 
