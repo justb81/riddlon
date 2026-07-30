@@ -6,6 +6,7 @@
  *
  *   node scripts/build-stories.mjs           # validate + write dist/stories/*.zip
  *   node scripts/build-stories.mjs --check   # validate only, write nothing
+ *   node scripts/build-stories.mjs --static  # write static/stories/*.zip for the app to install
  *
  * The validator is the app's own `src/lib/content/validate-package.ts` — the exact code the
  * player runs on import (#10), loaded through Vite so the build step and the runtime can
@@ -22,7 +23,6 @@ import { createServer } from 'vite';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORIES_DIR = path.join(ROOT, 'stories');
-const OUT_DIR = path.join(ROOT, 'dist', 'stories');
 
 /** Repo-facing files that document a package for contributors but aren't part of it. */
 const NOT_PACKAGE_CONTENT = new Set(['README.md', '.DS_Store']);
@@ -31,6 +31,15 @@ const NOT_PACKAGE_CONTENT = new Set(['README.md', '.DS_Store']);
 const CHECKSUMS_PATH = 'signatures/checksums.json';
 
 const checkOnly = process.argv.includes('--check');
+/**
+ * `--static` packs into `static/stories/` instead of `dist/stories/`, so the app ships the same
+ * bytes the release publishes and can install them through the ordinary URL importer
+ * (`content/url-import.ts`) — the player has no second, privileged install path. Being under
+ * `static/` at build time also puts them in the service worker's precache list, which is what
+ * makes the first install work offline. Release artifacts stay in `dist/` untouched.
+ */
+const toStatic = process.argv.includes('--static');
+const OUT_DIR = path.join(ROOT, toStatic ? 'static' : 'dist', 'stories');
 
 // --- package discovery ------------------------------------------------------------------
 
@@ -286,9 +295,14 @@ async function main() {
 	await mkdir(OUT_DIR, { recursive: true });
 	for (const story of built) {
 		await writeFile(path.join(OUT_DIR, story.zip), story.archive);
-		await writeFile(path.join(OUT_DIR, `${story.zip}.sha256`), `${story.sha256}  ${story.zip}\n`);
+		// Sidecars are for release verification, not for shipping to a browser — `index.json`
+		// already carries the same digest for anything the app would want to check.
+		if (!toStatic) {
+			await writeFile(path.join(OUT_DIR, `${story.zip}.sha256`), `${story.sha256}  ${story.zip}\n`);
+		}
 	}
-	// Consumed by .github/workflows/stories.yml to decide which releases are still missing.
+	// Consumed by .github/workflows/stories.yml to decide which releases are still missing, and
+	// by `/chat/riddlon` (via `--static`) to offer the bundled packages as installable entries.
 	// `archive` is the zip bytes — metadata only in the index.
 	const index = built.map((story) =>
 		Object.fromEntries(Object.entries(story).filter(([key]) => key !== 'archive'))

@@ -1,52 +1,63 @@
 /**
- * The live `StoryEngine` runtime for installed stories — the real replacement for
- * `game.svelte.ts`'s old scripted timers (#13-#15). A singleton (like `llm.svelte.ts`) so
+ * The live `StoryEngine` runtime for installed stories. A singleton (like `llm.svelte.ts`) so
  * engines survive navigating between screens; `init()` is idempotent and safe to call from
  * every screen that needs engine data.
  *
- * Holds one `EngineSession` per installed package (#37) rather than a single fixed session —
- * each package gets its own `StoryEngine` + save, cached in `#sessions` once loaded, so
- * switching which story is "active" (`switchTo`) never cross-contaminates another package's
- * progress. The reactive fields below always mirror the *active* session; screens that only
- * ever care about the reference story (the real chat content lives nowhere else yet — see
- * `game.svelte.ts`) call `switchTo(REFERENCE_PACKAGE_ID)` on mount to pin it back regardless
- * of what another screen last switched to.
+ * Holds one `EngineSession` per installed package rather than a single fixed session — each
+ * package gets its own `StoryEngine` + save, cached in `#sessions` once loaded, so switching
+ * which story is active (`switchTo`) never cross-contaminates another package's progress. The
+ * reactive fields below always mirror the *active* session.
+ *
+ * Nothing in here knows a package id, a character or a scene: every field is derived from
+ * whatever is installed. The previous version was hardcoded to a built-in demo package, which
+ * is what made the app claim "no story installed" while the library listed one — see
+ * `active-package.ts` for the pointer that now survives a reload.
  */
 
 import { browser } from '$app/environment';
+import {
+	resolveEffectiveCharacterState,
+	type EffectiveCharacterState
+} from '$lib/characters/index.js';
+import { evaluateCondition } from '$lib/engine/conditions.js';
 import { StoryEngine } from '$lib/engine/engine.js';
+import { buildEvaluationContext } from '$lib/engine/state.js';
 import { watchForResume } from '$lib/engine/resume.svelte.js';
 import { saveRecordPatchFromState, stateFromSaveRecord } from '$lib/engine/persistence.js';
 import type { EngineEffect, ProgressSummary } from '$lib/engine/index.js';
 import type { StoryBundle } from '$lib/content/index.js';
-import { saveStore, storyRegistry, type InstalledPackageSummary } from '$lib/storage/index.js';
-import { ensureReferenceStoryInstalled } from '$lib/story/bootstrap.js';
 import {
-	OUTCOME_MAX_CONFESSES,
-	PACKAGE_ID as REFERENCE_PACKAGE_ID
-} from '$lib/story/reference-package.js';
+	characterLibrary,
+	saveStore,
+	storyRegistry,
+	type InstalledPackageSummary
+} from '$lib/storage/index.js';
 import {
-	ACHIEVEMENT_DEFS,
-	MILESTONE_DEFS,
-	isAchievementEarned,
-	isMilestoneDone,
+	achievementDisplays,
+	reachedOutcomes,
 	resolveClueDisplays,
-	type AchievementDef,
+	sceneProgress,
+	storyThreads,
+	type AchievementDisplay,
 	type ClueDisplay,
-	type MilestoneDef
-} from '$lib/story/reference-progress.js';
-
-export interface DisplayMilestone extends MilestoneDef {
-	done: boolean;
-	time: string;
-}
+	type ReachedOutcome,
+	type SceneProgress,
+	type StoryThread
+} from '$lib/story/story-display.js';
+import {
+	activationCandidateIds,
+	readActivePackageId,
+	writeActivePackageId
+} from './active-package.js';
 
 interface EngineSession {
 	packageId: string;
 	bundle: StoryBundle;
 	engine: StoryEngine;
 	saveId: string;
-	milestoneTimes: Record<string, string>;
+	cast: EffectiveCharacterState[];
+	/** When each scene was first seen as completed, for the story overview's timeline. */
+	sceneTimes: Record<string, string>;
 }
 
 function nowTime(): string {
@@ -61,26 +72,29 @@ class StoryRuntime {
 	 *  flashing it on every cold start. */
 	initialized = $state(false);
 	/** Every package in the registry — the library list in `/chat/riddlon` and the chat
-	 *  overview's "Deine Bibliothek: n Geschichten" both read this one source. */
+	 *  overview's library preview both read this one source. */
 	installedPackages = $state<InstalledPackageSummary[]>([]);
-	/** The *active* session's package, or `null` when nothing playable is installed (a fresh
-	 *  device with the demo opted out, see `story/demo-story.ts`). */
+	/** The *active* session's package, or `null` when nothing is installed. */
 	packageId = $state<string | null>(null);
 	saveId = $state<string | null>(null);
+	title = $state<string | null>(null);
 	progress = $state<ProgressSummary | null>(null);
 	visibleCharacterIds = $state<string[]>([]);
-	/** Authored only for the reference story (#32 tracks giving the package format itself real
-	 *  unlock conditions) — always empty for any other active package rather than showing that
-	 *  story's milestones grafted onto content they don't apply to. */
-	milestones = $state<DisplayMilestone[]>([]);
-	earnedAchievements = $state<AchievementDef[]>([]);
+	/** The active package's cast, identity merged with this story's binding only. */
+	cast = $state<EffectiveCharacterState[]>([]);
+	scenes = $state<SceneProgress[]>([]);
+	/** When each completed scene was first observed as done, keyed by scene id. */
+	sceneTimes = $state<Record<string, string>>({});
+	threads = $state<StoryThread[]>([]);
+	achievements = $state<AchievementDisplay[]>([]);
+	outcomes = $state<ReachedOutcome[]>([]);
 	clueDisplays = $state<Record<string, ClueDisplay>>({});
-	solved = $state(false);
 	lastEffects = $state<EngineEffect[]>([]);
 
 	#sessions = new Map<string, EngineSession>();
 	#active: EngineSession | null = null;
 	#initPromise: Promise<void> | null = null;
+	#activationListeners = new Set<() => void>();
 
 	get engine(): StoryEngine | null {
 		return this.#active?.engine ?? null;
@@ -90,8 +104,33 @@ class StoryRuntime {
 		return this.#active?.bundle ?? null;
 	}
 
-	/** Idempotent — safe to call from every screen that needs engine data. Loads the reference
-	 *  story (installing it on a first-ever run) as the initial active session. */
+	/** An outcome has been reached — the only end-of-story signal that comes from real engine
+	 *  state. Achievements can't say when they're earned yet (#32). */
+	get solved(): boolean {
+		return this.outcomes.length > 0;
+	}
+
+	displayNameFor(characterId: string): string {
+		return this.cast.find((c) => c.id === characterId)?.displayName ?? characterId;
+	}
+
+	threadFor(key: string): StoryThread | undefined {
+		return this.threads.find((thread) => thread.key === key);
+	}
+
+	sceneById(sceneId: string): SceneProgress | undefined {
+		return this.scenes.find((scene) => scene.id === sceneId);
+	}
+
+	/** Evaluates a package's own symbolic ref against live state — used to decide whether a
+	 *  character's secret may come out yet (docs/concept.md §5.5). */
+	isConditionMet(ref: string): boolean {
+		if (!this.#active) return false;
+		const { engine, bundle } = this.#active;
+		return evaluateCondition(ref, buildEvaluationContext(engine.state, bundle));
+	}
+
+	/** Idempotent — safe to call from every screen that needs engine data. */
 	init(): Promise<void> {
 		if (!browser) return Promise.resolve();
 		if (!this.#initPromise) {
@@ -102,16 +141,25 @@ class StoryRuntime {
 		return this.#initPromise;
 	}
 
+	/** Fires after every activation, including one that happens long after `init()` (an import
+	 *  into an empty library, or `switchTo` from another screen). `story-session.svelte.ts`
+	 *  listens here rather than being called directly, which would be an import cycle. */
+	onActivate(listener: () => void): void {
+		this.#activationListeners.add(listener);
+	}
+
 	/** Re-reads the registry after an install/uninstall. Cheap (one IDB `getAll`), so callers
 	 *  don't have to reason about whether anything actually changed. */
 	async refreshLibrary(): Promise<void> {
 		this.installedPackages = await storyRegistry.list();
+		// A first import into an empty library becomes playable immediately, instead of waiting
+		// for the next boot to notice it.
+		if (this.initialized && !this.#active) await this.#activateBest();
 	}
 
-	/** Switches the active session to a different installed package (#37) — loads it (and
-	 *  creates its save) on first visit, then reuses the same live `StoryEngine` on every later
-	 *  switch, so progress in one package is never lost or mixed into another's. A no-op if
-	 *  that package is already active. */
+	/** Switches the active session to a different installed package — loads it (and creates its
+	 *  save) on first visit, then reuses the same live `StoryEngine` on every later switch, so
+	 *  progress in one package is never lost or mixed into another's. */
 	async switchTo(packageId: string): Promise<void> {
 		await this.init();
 		if (this.packageId === packageId) return;
@@ -121,23 +169,32 @@ class StoryRuntime {
 	}
 
 	async #doInit(): Promise<void> {
-		const summary = await ensureReferenceStoryInstalled();
-		await this.refreshLibrary();
-		if (!summary) {
-			// Nothing playable installed — `ready` stays false and every screen falls back to its
-			// empty state instead of rendering a story that isn't there.
-			return;
-		}
+		this.installedPackages = await storyRegistry.list();
 
-		const session = await this.#loadSession(summary.id);
-		if (!session) return;
-		this.#activate(session);
-
+		// Registered unconditionally: a session activated later must get resume handling too, and
+		// the callback is a no-op while nothing is active.
 		watchForResume(() => {
 			if (this.#active) this.#sync(this.#active.engine.resume());
 		});
 
-		this.ready = true;
+		if (await this.#activateBest()) this.ready = true;
+	}
+
+	/**
+	 * Activates the first installed package that actually yields a bundle. Walking a candidate
+	 * list rather than trusting one id is what keeps a single unloadable record from leaving the
+	 * runtime with no session at all while the library still shows the story.
+	 */
+	async #activateBest(): Promise<boolean> {
+		const ids = activationCandidateIds(readActivePackageId(), this.installedPackages);
+		for (const id of ids) {
+			const session = await this.#loadSession(id);
+			if (session) {
+				this.#activate(session);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	async #loadSession(packageId: string): Promise<EngineSession | null> {
@@ -161,7 +218,8 @@ class StoryRuntime {
 			bundle,
 			engine,
 			saveId: save.id,
-			milestoneTimes: {}
+			cast: await loadCast(bundle),
+			sceneTimes: {}
 		};
 		this.#sessions.set(packageId, session);
 		return session;
@@ -171,7 +229,13 @@ class StoryRuntime {
 		this.#active = session;
 		this.packageId = session.packageId;
 		this.saveId = session.saveId;
+		this.title = session.bundle.manifest.title;
+		this.cast = session.cast;
+		// The single choke point for "which story is active", so `switchTo` and the boot fallback
+		// both persist the choice without having to remember to.
+		writeActivePackageId(session.packageId);
 		this.#sync(session.engine.resume());
+		for (const listener of this.#activationListeners) listener();
 	}
 
 	setFlag(flag: string): EngineEffect[] {
@@ -180,6 +244,12 @@ class StoryRuntime {
 
 	recordClueClaim(clueId: string, characterId: string, value: string): EngineEffect[] {
 		return this.#mutate((engine) => engine.recordClueClaim(clueId, characterId, value));
+	}
+
+	/** Closes a contradiction the story has settled, so the "n Widerspruch offen" counter can
+	 *  actually go down again. */
+	resolveClue(clueId: string): EngineEffect[] {
+		return this.#mutate((engine) => engine.resolveClue(clueId));
 	}
 
 	#mutate(fn: (engine: StoryEngine) => EngineEffect[]): EngineEffect[] {
@@ -194,31 +264,37 @@ class StoryRuntime {
 		const session = this.#active;
 		const { state } = session.engine;
 		const { bundle } = session;
-		const isReferenceStory = session.packageId === REFERENCE_PACKAGE_ID;
 
 		this.lastEffects = effects;
 		this.progress = session.engine.progress();
 		this.visibleCharacterIds = [...session.engine.visibleCharacterIds()];
-
-		if (isReferenceStory) {
-			this.milestones = MILESTONE_DEFS.map((def) => {
-				const done = isMilestoneDone(def, state, bundle);
-				if (done && !session.milestoneTimes[def.id]) session.milestoneTimes[def.id] = nowTime();
-				return { ...def, done, time: session.milestoneTimes[def.id] ?? '—' };
-			});
-			this.earnedAchievements = ACHIEVEMENT_DEFS.filter((def) =>
-				isAchievementEarned(def, state, bundle)
-			);
-			this.solved = state.reachedOutcomeIds.has(OUTCOME_MAX_CONFESSES);
-		} else {
-			this.milestones = [];
-			this.earnedAchievements = [];
-			this.solved = false;
+		this.scenes = sceneProgress(bundle, state);
+		for (const scene of this.scenes) {
+			if (scene.done && !session.sceneTimes[scene.id]) session.sceneTimes[scene.id] = nowTime();
 		}
-		this.clueDisplays = resolveClueDisplays(state, bundle);
+		this.sceneTimes = { ...session.sceneTimes };
+		this.threads = storyThreads(bundle, state, this.visibleCharacterIds);
+		this.achievements = achievementDisplays(bundle);
+		this.outcomes = reachedOutcomes(bundle, state);
+		this.clueDisplays = resolveClueDisplays(state, bundle, (id) => this.displayNameFor(id));
 
 		if (session.saveId) void saveStore.update(session.saveId, saveRecordPatchFromState(state));
 	}
+}
+
+/**
+ * Merges each cast binding with the character identity from the local library. Identity fields
+ * come from the library, story-scoped fields from this package's binding only — cross-story
+ * leakage is impossible by construction (see `characters/resolve.ts`).
+ */
+async function loadCast(bundle: StoryBundle): Promise<EffectiveCharacterState[]> {
+	const cast: EffectiveCharacterState[] = [];
+	for (const binding of bundle.story.castBindings) {
+		const record = await characterLibrary.getById(binding.characterRef);
+		if (!record) continue;
+		cast.push(resolveEffectiveCharacterState(record, binding));
+	}
+	return cast;
 }
 
 export const storyRuntime = new StoryRuntime();

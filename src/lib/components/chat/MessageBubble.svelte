@@ -1,31 +1,31 @@
 <script lang="ts">
 	import Avatar from './Avatar.svelte';
-	import { CHARACTERS } from '$lib/story/lucys-portmonnaie.js';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import type { SeedMessage } from '$lib/story/types.js';
+	import { type ChatMessage } from '$lib/story/types.js';
 
 	let {
 		message,
+		speakerName = '',
 		showName = false,
 		open = false,
 		onToggleFlag
 	}: {
-		message: SeedMessage;
+		message: ChatMessage;
+		/** Resolved from the active package's cast by the caller — this component knows no
+		 *  characters of its own. */
+		speakerName?: string;
 		showName?: boolean;
 		open?: boolean;
 		onToggleFlag?: () => void;
 	} = $props();
 
-	const character = $derived(
-		message.from !== 'me' && message.from !== 'system' ? CHARACTERS[message.from] : undefined
-	);
-
-	/** Real `EngineState.clues[...].claims`, not the message's own (now purely referential)
-	 *  `contradiction` field — see #35. */
+	/** Real `EngineState.clues[...].claims`; the message only carries the clue reference (#35).
+	 *  Shown only while the contradiction is actually open, so a settled case stops flagging it. */
 	const clueDisplay = $derived(
-		message.contradiction ? storyRuntime.clueDisplays[message.contradiction.clueId] : undefined
+		message.clueId ? storyRuntime.clueDisplays[message.clueId] : undefined
 	);
+	const showContradiction = $derived(!!clueDisplay?.conflicting && !clueDisplay.resolved);
 </script>
 
 {#if message.from === 'system'}
@@ -52,10 +52,15 @@
 		class="mt-1.5 max-w-[80%] self-start sm:max-w-[74%] lg:max-w-[68%]"
 		style="animation:rd-in .26s ease both"
 	>
-		{#if showName && character}
+		{#if showName && speakerName}
 			<div class="mb-1.5 flex items-center gap-1.5 pl-0.5">
-				<Avatar kind="solo" initial={character.initial} size={20} fontSize={9.5} />
-				<span class="text-label font-medium text-slate-400">{character.name}</span>
+				<Avatar
+					kind="solo"
+					initial={speakerName.slice(0, 1).toUpperCase()}
+					size={20}
+					fontSize={9.5}
+				/>
+				<span class="text-label font-medium text-slate-400">{speakerName}</span>
 			</div>
 		{/if}
 		<div
@@ -63,7 +68,7 @@
 			class="border border-line bg-surface-raised px-3.5 pt-2.5 pb-2.5"
 		>
 			<div class="text-body leading-relaxed text-slate-100">{message.text}</div>
-			{#if message.contradiction}
+			{#if showContradiction && clueDisplay}
 				<button
 					type="button"
 					onclick={onToggleFlag}
@@ -74,16 +79,13 @@
 						>!</span
 					>
 					<span class="flex-1 font-mono text-[10.5px] font-medium tracking-wide text-accent-soft"
-						>{message.contradiction.label}</span
+						>{t('convo.contradictionPrefix', { label: clueDisplay.clueLabel })}</span
 					>
 					<span class="text-label text-accent-soft/70">{open ? '▾' : '▸'}</span>
 				</button>
-				{#if open && clueDisplay}
+				{#if open}
 					<div class="mt-2 rounded-control bg-surface-sunken/60 p-3">
-						<div class="font-mono text-[9.5px] tracking-wide text-slate-400">
-							{t('convo.contradictionPrefix', { label: clueDisplay.clueLabel })}
-						</div>
-						<div class="mt-2 flex flex-col gap-2">
+						<div class="flex flex-col gap-2">
 							{#each clueDisplay.sources as source (source.characterId + source.value)}
 								<div class="flex items-start gap-2">
 									<span class="w-[3px] flex-none self-stretch rounded-full bg-accent"></span>

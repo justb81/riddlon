@@ -12,8 +12,7 @@ Authoring Studio (for creating/exporting story packages) is a separate, not-yet-
 
 Full product concept — vision, package format, story/character data model, the reference story
 used to validate it — lives in [`docs/concept.md`](./docs/concept.md). Read it before working on
-turning any of the mock `$lib/story/*` content into the real `engine/`/`content/`/`llm/` modules
-described there.
+anything under `engine/`, `content/` or `llm/`.
 
 The UI has a pixel-reference prototype: [`docs/design/`](./docs/design/) — read its README first,
 then `riddlon-app-mockup.dc.html` before working on anything under `ui/` or a route/component.
@@ -24,27 +23,30 @@ update flow), and CI were already wired together. There is **no backend** — ad
 prerendered shell that hydrates and then runs entirely in the browser.
 
 On top of that template, the UI for the seven core screens is implemented (splash/boot, chat
-overview, solo + group chat, the "Riddlon" system/library chat, story overview, profile/settings),
-driven by scripted mock data for the reference story "Lucys Portmonnaie" — see "Chat UI" below.
-**Not yet real**: the ZIP/URL import _buttons in the `/chat/riddlon` chat UI_ are still decorative
-(the underlying import pipeline they'd call is implemented — see `content/`'s row below), and local
-LLM inference (model list is static; nothing actually runs a model). Those land per the concept
-doc's "App 2" module breakdown as the issue backlog works through them:
+overview, solo + group chat, the "Riddlon" system/library chat, story overview, profile/settings)
+— see "Chat UI" below.
 
-| Module        | Responsibility                                                                | Status                                                                                                                                                                |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                                                                     |
-| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`) — `ui/` still runs on the `$lib/state/game.svelte.ts` mock until #14–#17 swap it over                                                 |
-| `content/`    | Validator/loader/importer/installer for story packages                        | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`) import both real; `/chat/riddlon`'s buttons not wired to them yet (#ui-riddlon-chat) |
-| `characters/` | Local, story-independent character library                                    | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                                                 |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                                                                   |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`), reset in `clear-data.ts`                         |
-| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                                           |
+**The app ships no story content of its own.** There is no built-in demo, no mock cast and no
+authored dialogue anywhere under `src/lib/`: every thread, message, contact, clue and chapter is
+derived from whatever package the player installed, and content only ever enters through the ZIP
+or URL importer (docs/concept.md §4.1). An example package is bundled under `static/stories/` and
+installed through that same URL importer — see "Story packages" below. Searching for `Lucy` in
+`src/lib/` should find nothing but the content-module test fixtures.
+
+| Module        | Responsibility                                                                | Status                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                                             |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`), driving the UI through `$lib/state/engine.svelte.ts`                                                         |
+| `content/`    | Validator/loader/importer/installer for story packages                        | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`), both wired to `/chat/riddlon`                               |
+| `characters/` | Local, story-independent character library                                    | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                         |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                                           |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`), reset in `clear-data.ts` |
+| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                   |
 
 ## Story packages (`stories/`)
 
-Story content is **not** part of the app bundle — it's authored under `stories/<slug>/` as the
-unzipped package layout from `docs/concept.md` §5 and released separately. Read
+Story content is **not** authored in the app — it lives under `stories/<slug>/` as the unzipped
+package layout from `docs/concept.md` §5 and releases separately. Read
 [`stories/README.md`](./stories/README.md) before touching any of it.
 
 - `stories/lucys-portmonnaie/` is the concept §7 reference story (#19) — manifest, three character
@@ -55,6 +57,13 @@ unzipped package layout from `docs/concept.md` §5 and released separately. Read
   with the app's own `src/lib/content/validate-package.ts` — loaded through Vite's SSR module
   runner, which is why validating shipped content needs no separate TS runner or new dependency —
   and packs a reproducible zip into `dist/stories/`.
+- **`npm run stories:bundle` (`--static`) writes the same zips plus `index.json` into
+  `static/stories/`**, and `predev`/`prebuild` run it, so the directory is generated and
+  gitignored — `stories/` stays the only place a story is edited. `/chat/riddlon` reads that
+  `index.json` and installs an entry with `importPackageFromUrl()`: a bundled example takes the
+  exact same path as a package the player fetches themselves, so there is no privileged install
+  route into the registry. Being under `static/` at build time also puts the zip in the service
+  worker's precache, which is what makes the first install work offline.
 - `.github/workflows/stories.yml` publishes one GitHub release per package version, tagged
   `story-<slug>-v<version>` — each package releases independently, so editing one story never
   re-releases the others. **Bumping `version` in a `manifest.json` and merging to `main` is the
@@ -93,6 +102,18 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
 - **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — the polyfill can also
   reach Firebase/Gemini/OpenAI/Transformers.js. Those four SDKs are aliased to a throwing stub, so
   "no cloud calls" (concept §2/§8) is enforced by the build, not by convention.
+- **`persona.ts`** — pure prompt building for one character in one scene: identity/voice from the
+  character file, role and knowledge from this story's cast binding, `goals` from the scene, and
+  concept §5.5's canon rule (facts must not be contradicted; a secret stays back until its
+  `revealCondition` holds — which is why revealable and withheld secrets are separate lists).
+  Also `pickResponder()`, the documented app-side choice of who answers in a group chat, since the
+  package format has no turn-taking rules.
+- **`director.ts`** — the `engine/` ↔ `llm/` interface concept §9 left open. After each reply a
+  second, short model call judges whether the active scene's `exitConditions` are met and which
+  `revealables` were claimed, and the verdict is applied through the engine. Packages ship no
+  dialogue and no keyword triggers, so **this is the only thing that advances the graph.** Both
+  halves are pure and spec'd; the parser filters every id against what that scene declared, so a
+  hallucinated answer can only ever mean "nothing happens", never "some other flag got set".
 
 Things that look wrong but aren't:
 
@@ -105,12 +126,18 @@ Things that look wrong but aren't:
   provider does get a real session each.
 - Inference runs on the **main thread** — the polyfill's WebLLM backend has no worker variant. Keep
   typing/spinner animations CSS-only so they survive the decode loop.
+- A player turn costs **two** decode passes: the character reply, then the director verdict. Under
+  the polyfill both share the one backend handle, so it is a decode cost, not a model reload. The
+  director session is created with `maxHistoryTurns: 0` and destroyed after each call — it must
+  judge this exchange, not accumulate its own past verdicts.
 - `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker. The
   polyfill's `availability()` always reports `'available'`, so it can't answer this; each fallback is
   wrong in a different way, and together the worst case is one unnecessary progress bar.
 - Automated tests cannot run real inference — CI and the dev sandbox have no GPU. `npm test` covers
   the adapter against a fake; a real conversation turn is verified by hand via the dev-only
-  `/dev/llm` harness route (delete it once #15 streams replies for real).
+  `/dev/llm` and `/dev/story` harness routes — the latter also shows the last raw director answer
+  next to what survived the allowlist, since a verdict that silently sets nothing is otherwise
+  invisible (the story just stops advancing).
 
 ## Chat UI
 
@@ -119,61 +146,84 @@ original design used a single fake "phone frame" with in-memory screen switching
 `chats/chat1.md` in the original design handoff if you need the full back-and-forth that produced
 this design):
 
-| Route            | Screen                                                                   |
-| ---------------- | ------------------------------------------------------------------------ |
-| `/`              | Splash + boot sequence, then auto-navigates to `/chats`                  |
-| `/chats`         | Chat overview / thread list                                              |
-| `/chat/[thread]` | Solo (`lucy`) or group (`group`) conversation — shared shell             |
-| `/chat/riddlon`  | The "Riddlon" system chat: installed-story library + import (decorative) |
-| `/story`         | Storyübersicht — milestone timeline + achievements for the active story  |
-| `/settings`      | Profile & settings (nickname, pronouns, disguise mode, model, notify)    |
+| Route                | Screen                                                                |
+| -------------------- | --------------------------------------------------------------------- |
+| `/`                  | Splash + boot sequence, then auto-navigates to `/chats`               |
+| `/chats`             | Chat overview / thread list                                           |
+| `/chat?thread=<key>` | Solo or group conversation — shared shell                             |
+| `/chat/riddlon`      | The "Riddlon" system chat: installed-story library + ZIP/URL import   |
+| `/story`             | Storyübersicht — chapter timeline, clues and achievements             |
+| `/settings`          | Profile & settings (nickname, pronouns, disguise mode, model, notify) |
+
+**The conversation route takes its thread as a query parameter, not a path segment.** Thread keys
+are character/scene UUIDs from the installed package, and `adapter-static` (configured without a
+fallback) can only prerender a fixed set of path segments — the old `/chat/[thread]` had an
+`EntryGenerator` listing two hardcoded ids. One prerendered `/chat` keeps arbitrary keys working
+offline without an SPA fallback or a service-worker navigation handler. A solo thread's key is the
+**character** id, a group thread's is the **scene** id.
 
 Notes on things that look like bugs but aren't:
 
-- Tapping the **Sabine** or **Max** thread in `/chats`, or any catalog entry in `/chat/riddlon`
-  other than "Lucys Portmonnaie", opens the same `lucy` thread / `/story` screen — there's only one
-  reference story with real content right now (see `docs/concept.md` §7). Search for `Only "Lucys
-Portmonnaie"` to find the call sites.
-- **An imported package shows up in the library but does not become playable.** `storyRuntime`
-  runs `reference-package.ts`'s `PACKAGE_ID` and nothing else, and `game.svelte.ts` keys its
-  authored beats off that package's scene/clue/flag ids — so importing a ZIP registers it, and
-  the chats keep playing the built-in demo. Making an arbitrary package playable is the
-  remaining piece of the `ui/` ↔ `engine/` wiring, not a bug in `content/`.
-- The built-in demo (`story/bootstrap.ts`) is **auto-installed on a fresh device**, which is why
-  the app looks like it only ever has demo content. `/settings`' "Alles löschen" sets
-  `riddlon:skip-demo-story` (see `story/demo-story.ts`) so the demo is _not_ re-seeded on the next
-  boot; the then-empty library in `/chat/riddlon` offers it back explicitly.
+- **A fresh device has an empty chat list.** Nothing is auto-installed; the Riddlon system chat is
+  the only row until a package is imported. That is the concept's model (§4.1 knows ZIP and URL
+  import and nothing else), and the bundled example under `static/stories/` is offered there.
+- **A story can be installed and still show no contacts.** `/chats` lists only what the engine
+  reports as visible, so a character whose cast binding is `hidden` until some flag appears exactly
+  when the story unlocks them. In `stories/lucys-portmonnaie` that means Lucy only, until
+  `flag:witnesses-named`.
+- **Without a loaded model a thread is empty and says so.** Every message — including a scene's
+  opening line — is generated, so the conversation screen shows an explicit note rather than going
+  mysteriously quiet. Opening a thread never _starts_ a model download; that is the boot screen's
+  decision.
+- **The story overview lists achievements but never awards them.** `achievementSchema` is
+  id/label/description only (#32), so a package can name an achievement but not say when it is
+  earned. They are listed as open with a note; only reached `outcomes` are real engine state.
+- **Chapter numbers are scene positions.** The format has no scene titles or chapter numbering, so
+  the timeline reports authored order and the participants' names, rather than inventing structure.
 - The **"Fallakte ansehen"** button on the case-solved celebration literally says that (not
   "Storyübersicht") — that's the original design's wording; the screen it renamed to
   "Storyübersicht" is `/story`.
 
 Building blocks:
 
-- **`$lib/state/game.svelte.ts`** — the `game` singleton: message threads, typing indicators,
-  contradiction-disclosure state, milestones, the achievement toast, and the case-solved
-  celebration overlay. A scripted timer sequence stands in for a real story engine — see
-  `#lucyBeat`/`#groupBeat`. Survives navigating between screens (like `toast.svelte.ts`).
+- **`$lib/state/engine.svelte.ts`** — the `storyRuntime` singleton: one live `StoryEngine` + save
+  per installed package, and every reactive field the UI reads (progress, cast, scenes, threads,
+  clue panels, achievements, outcomes). Which package is active is persisted by
+  `$lib/state/active-package.ts` (`riddlon:active-package`) and restored on boot; `#doInit` walks a
+  candidate list and activates the first package that yields a loadable bundle, so one bad record
+  can never leave the runtime with no session while the library still lists a story. `onActivate()`
+  is how the chat session hears about an activation that happens after init (an import into an
+  empty library, or a `switchTo` from the library screen) — a direct call would be an import cycle.
+- **`$lib/state/story-session.svelte.ts`** — the `storySession` singleton: chat history per thread,
+  typing state, streaming reply, the contradiction panel's open row, the case-solved overlay, and
+  the send loop (persist → stream a reply → director pass → apply verdict). History loads **per
+  save id** through a serialised queue, so two activations can't interleave into one thread.
+  Survives navigating between screens (like `toast.svelte.ts`).
 - **`$lib/state/profile.svelte.ts`** — the `profile` singleton: nickname, pronouns, disguise mode
-  (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and
-  `/chat/[thread]`), local model choice, notification toggle. In-memory only; no persistence.
-- **`$lib/story/*`** — mock "installed content package" data (seed messages, reply beats,
-  milestones, achievements). Deliberately **not** routed through i18n — a real story package ships
-  its own localized content, separate from the app's own UI chrome. `library.ts` is types only: the
-  catalog rows come from the real registry via `storyRuntime.installedPackages`, so an empty library
-  renders as empty instead of showing invented "also installed" stories.
+  (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and `/chat`),
+  local model choice, notification toggle. In-memory only; no persistence.
+- **`$lib/story/*`** — no story content, only generic derivations and display types.
+  `story-display.ts` is the pure heart of it: scene timeline, clue panels, achievements, reached
+  outcomes, and `storyThreads()` — which folds several scenes with the same character into **one**
+  solo chat (a messenger shows one conversation per person, and a story has many scenes with the
+  same figure) while giving every unlocked group scene its own thread. `library.ts` holds the
+  catalog/bundled-story shapes; `types.ts` the message shape.
 - **`$lib/state/reset.ts`** — the two "frisch starten" actions behind `/settings`:
   `resetStoryProgress()` (savegames only) and `resetEverything()` (packages, characters, saves,
   profile, settings, package assets). Both end in a full page load, because the state singletons
   memoize their `init()`. Downloaded LLM weights survive on purpose — `appKeysToClear()` (pure,
-  spec'd) keeps the `riddlon:llm:*` markers so no multi-GB re-download is triggered.
+  spec'd) keeps the `riddlon:llm:*` markers so no multi-GB re-download is triggered, and clears
+  `riddlon:active-package` so no pointer outlives the package it named.
 - **`$lib/components/chat/*`** — shared screen chrome: `AppHeader` (60px) + `InfoBand` (46px) are
   used on every screen so header height is identical everywhere (a specific piece of design
   feedback — see chat1.md), `MessageBubble`, `Composer`, `Avatar`, etc.
 - **`AppFrame` + `ChatList`** — the responsive shell (see "Responsive layout" below). Every screen
   except the splash renders its content inside `<AppFrame>`.
 - **Pure logic lives in plain `.ts` files** next to their `.svelte.ts`/route consumers, so it's
-  Node-testable: `$lib/story/detect-evidence.ts`, `$lib/story/boot-steps.ts`,
-  `$lib/state/profile.ts`, `$lib/i18n/format.ts`.
+  Node-testable: `$lib/story/story-display.ts`, `$lib/story/boot-steps.ts`,
+  `$lib/state/active-package.ts`, `$lib/llm/{persona,director}.ts`, `$lib/state/profile.ts`,
+  `$lib/i18n/format.ts`. The runes singletons themselves are deliberately thin over these — they
+  had zero coverage before, which is how "the runtime activates nothing" shipped unnoticed.
 
 ## Responsive layout
 
@@ -227,12 +277,13 @@ titles) is **not** in the dictionary — see "Chat UI" above.
 | Type-check          | `npm run check` (runs `svelte-kit sync` + `svelte-check`)  |
 | Unit tests (once)   | `npm test`                                                 |
 | Unit tests (watch)  | `npm run test:unit`                                        |
-| Single test file    | `npx vitest run src/lib/story/detect-evidence.spec.ts`     |
-| Single test by name | `npx vitest run -t "mentionsEvidence"`                     |
+| Single test file    | `npx vitest run src/lib/story/story-display.spec.ts`       |
+| Single test by name | `npx vitest run -t "storyThreads"`                         |
 | Lint                | `npm run lint` (prettier `--check` + eslint)               |
 | Format              | `npm run format`                                           |
 | Validate stories    | `npm run stories:validate`                                 |
 | Pack stories        | `npm run stories:build` → zips in `dist/stories/`          |
+| Bundle for the app  | `npm run stories:bundle` → zips in `static/stories/`       |
 
 Tests run under Vitest's `server` (Node) project, which only matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is enabled — every test must make at least one
@@ -313,7 +364,7 @@ The template is deliberately thin. Three areas:
      (installed Chromium-desktop only) for drawing the app header into the OS titlebar; paired with
      the `.app-header[data-wco='true']` block in `layout.css`. Inert everywhere else.
 
-3. **Pure logic / Node-testable pattern** — e.g. `src/lib/story/detect-evidence.{ts,spec.ts}`,
+3. **Pure logic / Node-testable pattern** — e.g. `src/lib/story/story-display.{ts,spec.ts}`,
    `src/lib/story/boot-steps.{ts,spec.ts}`, `src/lib/i18n/format.{ts,spec.ts}`. Framework-free logic
    (no runes, no browser APIs) lives in plain `.ts` files matched by the `server` test project;
    anything touching the DOM/browser APIs or holding reactive state stays in `.svelte.ts` files or

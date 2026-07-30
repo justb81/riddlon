@@ -1,0 +1,445 @@
+/**
+ * The live chat session for whatever story package is active: threads, messages, typing state,
+ * and the loop that turns a player message into a character reply and story progress.
+ *
+ * This replaces `game.svelte.ts`, which was a scripted timer sequence over hardcoded German
+ * dialogue for one built-in demo story. Nothing here knows a character, a scene or a package —
+ * personas, goals, facts and secrets all come from the installed package via `storyRuntime`,
+ * replies come from `$lib/llm`, and progress comes from the director pass (`llm/director.ts`)
+ * feeding the engine.
+ *
+ * A singleton (like `toast.svelte.ts`) so a conversation survives navigating between screens.
+ */
+
+import { browser } from '$app/environment';
+import { llm } from '$lib/llm/llm.svelte.js';
+import {
+	buildDirectorPrompt,
+	claimableClueIds,
+	parseDirectorVerdict,
+	settableFlags,
+	type DirectorVerdict
+} from '$lib/llm/director.js';
+import { buildOpeningInstruction, buildPersonaPrompt, pickResponder } from '$lib/llm/persona.js';
+import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
+import {
+	isCharacterSpeaker,
+	SPEAKER_ME,
+	type ChatMessage,
+	type SpeakerId
+} from '$lib/story/types.js';
+import type { StoryThread } from '$lib/story/story-display.js';
+import { storyRuntime } from './engine.svelte.js';
+import { profile } from './profile.svelte.js';
+
+/** How much conversation the director sees. Enough for a claim to be in view, short enough that
+ *  a 3B model still answers with JSON. */
+const DIRECTOR_WINDOW = 6;
+
+function nowTime(sentAt: string): string {
+	const d = new Date(sentAt);
+	return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function toChatMessage(message: SaveChatMessage): ChatMessage {
+	return {
+		id: message.id,
+		from: message.from,
+		text: message.text,
+		time: nowTime(message.sentAt),
+		sentAt: message.sentAt,
+		clueId: message.clueId
+	};
+}
+
+interface StreamingMessage {
+	sceneId: string;
+	id: string;
+	from: SpeakerId;
+	text: string;
+}
+
+class StorySession {
+	/** `init()` has finished, successfully or not — lets screens tell "still loading the resumed
+	 *  thread" apart from "genuinely empty" instead of flashing an empty conversation. */
+	initialized = $state(false);
+	/** A newly activated package's history is still loading. */
+	syncing = $state(false);
+	history = $state<SaveChatMessage[]>([]);
+	/** Scenes currently waiting on the model. */
+	typingSceneIds = $state<string[]>([]);
+	streaming = $state<StreamingMessage | null>(null);
+	openClueMessageId = $state<string | null>(null);
+	celebrationVisible = $state(false);
+	/** Set when a reply couldn't be produced (no model, load failure, aborted stream), so the
+	 *  thread says so instead of going quiet. */
+	errorCode = $state<string | null>(null);
+	/** The director's last raw answer and what survived the allowlist — read by `/dev/story`,
+	 *  because a wrong verdict is otherwise invisible. */
+	lastDirectorRaw = $state<string | null>(null);
+	lastDirectorVerdict = $state<DirectorVerdict | null>(null);
+
+	#initPromise: Promise<void> | null = null;
+	#loadedSaveId: string | null = null;
+	#loadQueue: Promise<void> = Promise.resolve();
+	#openedScenes = new Set<string>();
+	#busyScenes = new Set<string>();
+
+	constructor() {
+		if (browser) {
+			// Activation can happen long after init (an import into an empty library, or a
+			// `switchTo` from the library screen). The old game store memoised its "no save yet"
+			// early return forever and therefore never caught up — that was half of the
+			// "chats are empty after a reload" bug.
+			storyRuntime.onActivate(() => void this.#syncWithActiveSave());
+			void this.init();
+		}
+	}
+
+	/** Idempotent — safe to call from every screen that reads chat state. */
+	init(): Promise<void> {
+		if (!this.#initPromise) {
+			this.#initPromise = this.#doInit().finally(() => {
+				this.initialized = true;
+			});
+		}
+		return this.#initPromise;
+	}
+
+	get threads(): StoryThread[] {
+		return storyRuntime.threads;
+	}
+
+	messagesFor(threadKey: string): ChatMessage[] {
+		const thread = storyRuntime.threadFor(threadKey);
+		if (!thread) return [];
+		const scenes = new Set(thread.sceneIds);
+		const messages = this.history.filter((m) => scenes.has(m.sceneId)).map(toChatMessage);
+		const streaming = this.streaming;
+		if (streaming && scenes.has(streaming.sceneId)) {
+			messages.push({ id: streaming.id, from: streaming.from, text: streaming.text });
+		}
+		return messages;
+	}
+
+	lastMessageFor(threadKey: string): ChatMessage | undefined {
+		return this.messagesFor(threadKey).at(-1);
+	}
+
+	typingFor(threadKey: string): boolean {
+		const thread = storyRuntime.threadFor(threadKey);
+		if (!thread) return false;
+		return thread.sceneIds.some((id) => this.typingSceneIds.includes(id));
+	}
+
+	toggleClue(messageId: string): void {
+		this.openClueMessageId = this.openClueMessageId === messageId ? null : messageId;
+	}
+
+	closeCelebration(): void {
+		this.celebrationVisible = false;
+	}
+
+	async #doInit(): Promise<void> {
+		await storyRuntime.init();
+		await this.#syncWithActiveSave();
+	}
+
+	/**
+	 * Loads the active package's chat history. Idempotent per save id and serialised through
+	 * `#loadQueue`, so two activations in quick succession can never interleave into one thread.
+	 */
+	#syncWithActiveSave(): Promise<void> {
+		const saveId = storyRuntime.saveId;
+		if (saveId !== null && saveId !== this.#loadedSaveId) {
+			this.syncing = true;
+			this.#loadQueue = this.#loadQueue
+				.then(() => this.#loadSave(saveId))
+				.finally(() => {
+					this.syncing = false;
+				});
+		}
+		return this.#loadQueue;
+	}
+
+	async #loadSave(saveId: string): Promise<void> {
+		if (saveId === this.#loadedSaveId) return;
+		const existing = await saveStore.get(saveId);
+		if (!existing) return;
+		// Claimed before anything else awaits, so a second call can't load the same save twice.
+		this.#loadedSaveId = saveId;
+		this.history = existing.chatHistory;
+		this.#openedScenes = new Set(existing.chatHistory.map((m) => m.sceneId));
+		this.#busyScenes.clear();
+		this.typingSceneIds = [];
+		this.streaming = null;
+		this.errorCode = null;
+	}
+
+	/**
+	 * Writes a scene's first message if it has none yet. A package ships no authored dialogue,
+	 * so without this a newly unlocked contact would sit in an empty thread forever — the
+	 * "why doesn't anyone write to me" half of the reported bug.
+	 */
+	async openThread(threadKey: string): Promise<void> {
+		await this.init();
+		const thread = storyRuntime.threadFor(threadKey);
+		const sceneId = thread?.activeSceneId;
+		if (!thread || !sceneId) return;
+		if (this.#openedScenes.has(sceneId) || this.#busyScenes.has(sceneId)) return;
+		// Never triggers a model download from a thread open — `llm.session()` would call
+		// `ensureLoaded()`, and a multi-GB fetch is the boot screen's decision, not a side effect
+		// of tapping a chat.
+		if (!llm.ready) {
+			this.errorCode = 'no-model';
+			return;
+		}
+
+		const speakerId = thread.participantIds[0];
+		if (!speakerId) return;
+
+		this.#busyScenes.add(sceneId);
+		this.#setTyping(sceneId, true);
+		try {
+			const session = await llm.session(`${threadKey}:${speakerId}`, {
+				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread)
+			});
+			const text = (await session.prompt(buildOpeningInstruction(profile.nickname))).trim();
+			if (!text) return;
+			this.#openedScenes.add(sceneId);
+			await this.#persist(sceneId, speakerId, text);
+		} catch {
+			this.errorCode = 'opening-failed';
+		} finally {
+			this.#setTyping(sceneId, false);
+			this.#busyScenes.delete(sceneId);
+		}
+	}
+
+	/** The player sends a message: persist it, get a reply, then let the director move the story. */
+	async send(threadKey: string, text: string): Promise<void> {
+		const trimmed = text.trim();
+		if (!trimmed) return;
+		const thread = storyRuntime.threadFor(threadKey);
+		const sceneId = thread?.activeSceneId;
+		if (!thread || !sceneId || this.#busyScenes.has(sceneId)) return;
+
+		// The player's own message is theirs either way — it is kept even when no reply can be
+		// produced, so nothing they typed silently disappears.
+		await this.#persist(sceneId, SPEAKER_ME, trimmed);
+		if (!llm.ready) {
+			this.errorCode = 'no-model';
+			return;
+		}
+
+		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
+		const speakerId = pickResponder(cast, trimmed);
+		if (!speakerId) return;
+
+		this.#busyScenes.add(sceneId);
+		this.#setTyping(sceneId, true);
+		this.errorCode = null;
+		let reply = '';
+		try {
+			const session = await llm.session(`${threadKey}:${speakerId}`, {
+				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread)
+			});
+			const id = crypto.randomUUID();
+			for await (const delta of session.stream(trimmed)) {
+				reply += delta;
+				this.streaming = { sceneId, id, from: speakerId, text: reply };
+			}
+		} catch {
+			this.errorCode = 'reply-failed';
+		} finally {
+			this.streaming = null;
+			this.#setTyping(sceneId, false);
+			this.#busyScenes.delete(sceneId);
+		}
+
+		const answer = reply.trim();
+		if (!answer) return;
+		const message = await this.#persist(sceneId, speakerId, answer);
+		await this.#runDirector(sceneId, thread, message);
+	}
+
+	/**
+	 * Asks the model whether the scene's own exit conditions are met and which clue claims were
+	 * made, then applies the verdict through the engine. This is what advances the graph: a
+	 * package declares `exitConditions: ["flag:…"]` but ships nothing that could ever set them.
+	 */
+	async #runDirector(
+		sceneId: string,
+		thread: StoryThread,
+		lastMessage: SaveChatMessage | undefined
+	): Promise<void> {
+		const scene = storyRuntime.sceneById(sceneId);
+		const bundle = storyRuntime.bundle;
+		if (!scene || !bundle) return;
+
+		const directorScene = {
+			goals: scene.goals,
+			exitConditions: this.#exitConditionsFor(sceneId),
+			revealables: this.#revealablesFor(sceneId)
+		};
+		const flags = settableFlags(directorScene);
+		const clueIds = claimableClueIds(directorScene);
+		if (flags.length === 0 && clueIds.length === 0) return;
+
+		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
+		const scenes = new Set(thread.sceneIds);
+		const turns = this.history
+			.filter((m) => scenes.has(m.sceneId))
+			.slice(-DIRECTOR_WINDOW)
+			.map((m) => ({
+				who: m.from === SPEAKER_ME ? profile.nickname : storyRuntime.displayNameFor(m.from),
+				text: m.text
+			}));
+
+		let raw: string;
+		try {
+			// A fresh, historyless session each time: the director must judge this exchange, not
+			// accumulate its own past verdicts. Under the polyfill this shares the one backend
+			// handle, so it costs a decode pass but no model reload.
+			const session = await llm.session('director', {
+				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
+				maxHistoryTurns: 0
+			});
+			raw = await session.prompt(
+				buildDirectorPrompt({
+					scene: directorScene,
+					clues: bundle.clues.map((clue) => ({ id: clue.id, label: clue.label })),
+					characters: cast.map((c) => ({ id: c.id, name: c.displayName })),
+					turns
+				})
+			);
+			await session.destroy();
+		} catch {
+			// No verdict is a valid outcome: the story simply doesn't advance this turn.
+			return;
+		}
+
+		const verdict = parseDirectorVerdict(raw, {
+			flags,
+			clueIds,
+			characterIds: cast.map((c) => c.id)
+		});
+		this.lastDirectorRaw = raw;
+		this.lastDirectorVerdict = verdict;
+		this.#applyVerdict(verdict, lastMessage);
+	}
+
+	#applyVerdict(verdict: DirectorVerdict, lastMessage: SaveChatMessage | undefined): void {
+		let solved = false;
+		for (const claim of verdict.clues) {
+			const effects = storyRuntime.recordClueClaim(claim.id, claim.characterId, claim.value);
+			if (effects.length > 0 && lastMessage && !lastMessage.clueId) {
+				// Pin the panel to the message that actually revealed it, so it survives a reload.
+				void this.#attachClue(lastMessage.id, claim.id);
+			}
+			solved ||= effects.some((effect) => effect.type === 'outcome-reached');
+		}
+		for (const flag of verdict.flags) {
+			const effects = storyRuntime.setFlag(flag);
+			solved ||= effects.some((effect) => effect.type === 'outcome-reached');
+		}
+		if (solved) {
+			// An outcome ends the story; a settled case leaves no contradiction open.
+			for (const [clueId, display] of Object.entries(storyRuntime.clueDisplays)) {
+				if (display.conflicting && !display.resolved) storyRuntime.resolveClue(clueId);
+			}
+			this.celebrationVisible = true;
+		}
+	}
+
+	async #attachClue(messageId: string, clueId: string): Promise<void> {
+		const saveId = storyRuntime.saveId;
+		if (!saveId) return;
+		const chatHistory = this.history.map((m) => (m.id === messageId ? { ...m, clueId } : m));
+		this.history = chatHistory;
+		await saveStore.update(saveId, { chatHistory });
+	}
+
+	#personaPromptFor(characterId: string, sceneId: string, thread: StoryThread): string {
+		const bundle = storyRuntime.bundle;
+		const character = storyRuntime.cast.find((c) => c.id === characterId);
+		const scene = storyRuntime.sceneById(sceneId);
+		const knownFacts = new Set(character?.knowledge.publicFacts ?? []);
+		const heldSecrets = new Set(character?.knowledge.secrets ?? []);
+		const secrets = (bundle?.secrets ?? []).filter((secret) => heldSecrets.has(secret.id));
+
+		return buildPersonaPrompt({
+			character: {
+				id: characterId,
+				displayName: character?.displayName ?? characterId,
+				voiceStyle: character?.voiceStyle,
+				corePersonality: character?.corePersonality,
+				roleInStory: character?.roleInStory
+			},
+			storyTitle: storyRuntime.title ?? '',
+			scene: {
+				goals: scene?.goals ?? [],
+				playerRole: this.#playerRoleFor(sceneId),
+				isGroup: thread.kind === 'group',
+				otherParticipants: thread.participantIds
+					.filter((id) => id !== characterId)
+					.map((id) => storyRuntime.displayNameFor(id))
+			},
+			knowledge: {
+				facts: (bundle?.facts ?? [])
+					.filter((fact) => knownFacts.has(fact.id))
+					.map((fact) => fact.statement),
+				revealableSecrets: secrets
+					.filter((secret) => storyRuntime.isConditionMet(secret.revealCondition))
+					.map((secret) => secret.label),
+				withheldSecrets: secrets
+					.filter((secret) => !storyRuntime.isConditionMet(secret.revealCondition))
+					.map((secret) => secret.label)
+			},
+			playerName: profile.nickname
+		});
+	}
+
+	#sceneNode(sceneId: string) {
+		return storyRuntime.bundle?.graph.nodes.find((node) => node.id === sceneId);
+	}
+
+	#exitConditionsFor(sceneId: string): string[] {
+		return [...(this.#sceneNode(sceneId)?.exitConditions ?? [])];
+	}
+
+	#revealablesFor(sceneId: string): string[] {
+		return [...(this.#sceneNode(sceneId)?.revealables ?? [])];
+	}
+
+	#playerRoleFor(sceneId: string): string | undefined {
+		const node = this.#sceneNode(sceneId);
+		return node?.type === 'group-chat-scene' ? node.playerRole : undefined;
+	}
+
+	#setTyping(sceneId: string, typing: boolean): void {
+		const others = this.typingSceneIds.filter((id) => id !== sceneId);
+		this.typingSceneIds = typing ? [...others, sceneId] : others;
+	}
+
+	async #persist(
+		sceneId: string,
+		from: SpeakerId,
+		text: string
+	): Promise<SaveChatMessage | undefined> {
+		const message: SaveChatMessage = {
+			id: crypto.randomUUID(),
+			sceneId,
+			from,
+			text,
+			sentAt: new Date().toISOString()
+		};
+		this.history = [...this.history, message];
+		if (isCharacterSpeaker(from)) this.#openedScenes.add(sceneId);
+		const saveId = storyRuntime.saveId;
+		if (saveId) await saveStore.appendChatMessage(saveId, message);
+		return message;
+	}
+}
+
+export const storySession = new StorySession();

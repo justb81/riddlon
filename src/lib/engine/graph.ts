@@ -1,4 +1,5 @@
 import type { StoryBundle } from '$lib/content/index.js';
+import { isClueConflicting } from './clues.js';
 import { evaluateAll, evaluateCondition } from './conditions.js';
 import { buildEvaluationContext, type EngineEffect, type EngineState } from './state.js';
 
@@ -104,15 +105,34 @@ export interface ProgressSummary {
 	totalSceneCount: number;
 	completedSceneCount: number;
 	reachedOutcomeIds: string[];
+	/** Clues with at least one recorded claim — `createInitialState` pre-creates an empty entry
+	 *  for every clue in the bundle, so the claim count is what distinguishes "known" from
+	 *  "declared". Drives the conversation view's "HINWEISE x/y" strip. */
+	knownClueCount: number;
+	totalClueCount: number;
+	/** Conflicting (≥2 distinct claimed values) and not yet resolved — the "n Widerspruch offen"
+	 *  counter, which used to be a literal in the UI. */
+	openContradictionCount: number;
 }
 
 /** Feeds the "Storyübersicht" milestone screen (#ui-story-overview) and chat-overview progress bar. */
 export function progress(state: EngineState, bundle: StoryBundle): ProgressSummary {
+	let knownClueCount = 0;
+	let openContradictionCount = 0;
+	for (const clue of bundle.clues) {
+		const runtime = state.clues[clue.id];
+		if (!runtime || runtime.claims.length === 0) continue;
+		knownClueCount++;
+		if (!runtime.resolved && isClueConflicting(state, clue.id)) openContradictionCount++;
+	}
 	return {
 		unlockedSceneIds: [...state.unlockedSceneIds],
 		completedSceneIds: [...state.completedSceneIds],
 		totalSceneCount: bundle.graph.nodes.length,
 		completedSceneCount: state.completedSceneIds.size,
-		reachedOutcomeIds: [...state.reachedOutcomeIds]
+		reachedOutcomeIds: [...state.reachedOutcomeIds],
+		knownClueCount,
+		totalClueCount: bundle.clues.length,
+		openContradictionCount
 	};
 }
