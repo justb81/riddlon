@@ -103,9 +103,14 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
   reach Firebase/Gemini/OpenAI/Transformers.js. Those four SDKs are aliased to a throwing stub, so
   "no cloud calls" (concept §2/§8) is enforced by the build, not by convention.
 - **`persona.ts`** — pure prompt building for one character in one scene: identity/voice from the
-  character file, role and knowledge from this story's cast binding, `goals` from the scene, and
-  concept §5.5's canon rule (facts must not be contradicted; a secret stays back until its
-  `revealCondition` holds — which is why revealable and withheld secrets are separate lists).
+  character file, role and knowledge from this story's cast binding, `goals` from the scene,
+  `relationships` resolved to names (a solo scene has no `otherParticipants`, so this is the only
+  thing that lets a character name someone who isn't in the room — a goal like
+  `name-max-and-sabine-as-witnesses` is unreachable without it), and concept §5.5's canon rule
+  (facts must not be contradicted; a secret stays back until its `revealCondition` holds — which is
+  why revealable and withheld secrets are separate lists). `buildOpeningInstruction()` repeats the
+  scene's **first** goal in the turn instruction: goals sit in the system prompt, but an unanchored
+  "write the first message" reliably produces filler, so goal order is prompt order for openers.
   Also `pickResponder()`, the documented app-side choice of who answers in a group chat, since the
   package format has no turn-taking rules.
 - **`director.ts`** — the `engine/` ↔ `llm/` interface concept §9 left open. After each reply a
@@ -117,6 +122,14 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
 
 Things that look wrong but aren't:
 
+- **`createSession(key, config)` returns the existing session but adopts the new `config`.** A
+  thread keeps one session per character for the whole story while the _scene_ driving their goals
+  advances underneath it, so the persona has to be re-applied on every turn; the conversation
+  history is kept, and `seedTurns` only ever applies to the first call. Under the polyfill the new
+  instruction just travels in the next prompt; on the native provider the backend handle carries it,
+  so that handle is destroyed and rebuilt from `historyForReplay()`. Skipping this is what made a
+  character replay the goals of the scene they were first spoken to in, forever — and since only the
+  director advances the graph, the story then stopped dead.
 - The `boot.step.loadingModel` → `boot.step.preparingDevice` switch is a **threshold heuristic**
   (fraction ≥ 0.85). The polyfill collapses download and shader-compile into one 0..1 fraction and
   doesn't forward WebLLM's progress text, so there is no real phase boundary to read.
@@ -203,6 +216,10 @@ Building blocks:
   (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and `/chat`),
   local model choice, notification toggle. In-memory only; no persistence.
 - **`$lib/story/*`** — no story content, only generic derivations and display types.
+  `persona-input.ts` composes "this character, in this scene, of this package" into
+  `buildPersonaPrompt`'s input — pure and spec'd against the package under `stories/` rather than a
+  fixture, because anything it forgets to pass is knowledge the model can never have, and that
+  failure is invisible at runtime (the story just stops advancing).
   `story-display.ts` is the pure heart of it: scene timeline, clue panels, achievements, reached
   outcomes, and `storyThreads()` — which folds several scenes with the same character into **one**
   solo chat (a messenger shows one conversation per person, and a story has many scenes with the
@@ -220,7 +237,7 @@ Building blocks:
 - **`AppFrame` + `ChatList`** — the responsive shell (see "Responsive layout" below). Every screen
   except the splash renders its content inside `<AppFrame>`.
 - **Pure logic lives in plain `.ts` files** next to their `.svelte.ts`/route consumers, so it's
-  Node-testable: `$lib/story/story-display.ts`, `$lib/story/boot-steps.ts`,
+  Node-testable: `$lib/story/story-display.ts`, `$lib/story/persona-input.ts`, `$lib/story/boot-steps.ts`,
   `$lib/state/active-package.ts`, `$lib/llm/{persona,director}.ts`, `$lib/state/profile.ts`,
   `$lib/i18n/format.ts`. The runes singletons themselves are deliberately thin over these — they
   had zero coverage before, which is how "the runtime activates nothing" shipped unnoticed.

@@ -124,6 +124,11 @@ export interface LlmAdapter {
 	availability(): Promise<LlmAvailability>;
 	/** Loads the model, reporting progress. Creates the one warm backend handle. */
 	load(opts?: { onProgress?: (p: LlmProgress) => void; signal?: AbortSignal }): Promise<void>;
+	/**
+	 * The session for `key`, created on first use. Calling it again with the same key returns the
+	 * *same* conversation but adopts the new `config` — a character's persona changes as the story
+	 * advances, while their chat history does not. `seedTurns` only applies to the first call.
+	 */
 	createSession(key: string, config: LlmSessionConfig): Promise<LlmSession>;
 	dispose(): Promise<void>;
 }

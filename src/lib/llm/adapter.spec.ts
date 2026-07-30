@@ -168,6 +168,80 @@ describe('session pooling under the polyfill (inline persona)', () => {
 	});
 });
 
+/**
+ * A thread keeps one session for a character's whole story, but the *scene* driving their goals
+ * advances underneath it. `createSession` therefore has to re-apply its config to an existing
+ * session — the bug this covers made Lucy replay the goals of scene 1 for the rest of the story,
+ * so she never named Max and Sabine and the graph never left "Lucy bittet um Hilfe".
+ */
+describe('a scene change on an ongoing session', () => {
+	const LUCY_SCENE_2: LlmSessionConfig = { systemPrompt: 'Du bist Lucy. Nenne Max und Sabine.' };
+
+	it('inlines the new persona on the next turn, under the polyfill', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+		const first = await adapter.createSession('lucy', LUCY);
+		await first.prompt('Wer bist du?');
+
+		const second = await adapter.createSession('lucy', LUCY_SCENE_2);
+		await second.prompt('Und jetzt?');
+
+		const input = provider.LanguageModel.calls.at(-1)?.input ?? '';
+		expect(input).toContain('Nenne Max und Sabine.');
+	});
+
+	it('rebuilds the backend handle with the new system prompt, on the native provider', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native', chunks: ['ok'] });
+		const first = await adapter.createSession('lucy', LUCY);
+		await first.prompt('Wer bist du?');
+
+		const second = await adapter.createSession('lucy', LUCY_SCENE_2);
+		await second.prompt('Und jetzt?');
+
+		// The instruction lives inside the handle here, so the swap has to recreate it — and replay
+		// what was already said, or the character would forget the conversation mid-scene.
+		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
+			{ role: 'system', content: 'Du bist Lucy. Nenne Max und Sabine.' },
+			{ role: 'user', content: 'Wer bist du?' },
+			{ role: 'assistant', content: 'ok' }
+		]);
+	});
+
+	it('is the same session, with its history intact', async () => {
+		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+		const first = await adapter.createSession('lucy', LUCY);
+		await first.prompt('Wer bist du?');
+
+		const second = await adapter.createSession('lucy', LUCY_SCENE_2);
+		expect(second).toBe(first);
+		expect(second.turns.map((t) => t.content)).toEqual(['Wer bist du?', 'ok']);
+	});
+
+	it('does not rebuild the handle when the persona is unchanged', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native', chunks: ['ok'] });
+		const first = await adapter.createSession('lucy', LUCY);
+		await first.prompt('Wer bist du?');
+		const createCount = provider.LanguageModel.createCount;
+
+		await adapter.createSession('lucy', { systemPrompt: LUCY.systemPrompt });
+		await first.prompt('Und jetzt?');
+
+		expect(provider.LanguageModel.createCount).toBe(createCount);
+	});
+
+	it('ignores seedTurns on a session that already exists', async () => {
+		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+		const first = await adapter.createSession('lucy', LUCY);
+		await first.prompt('Wer bist du?');
+
+		// Re-seeding would duplicate history the session has since extended.
+		const second = await adapter.createSession('lucy', {
+			...LUCY_SCENE_2,
+			seedTurns: [{ role: 'user', content: 'Alte Nachricht' }]
+		});
+		expect(second.turns.map((t) => t.content)).toEqual(['Wer bist du?', 'ok']);
+	});
+});
+
 describe('session pooling on the native provider', () => {
 	it('gives each character its own backend session', async () => {
 		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native' });

@@ -52,6 +52,17 @@ All 15 steps of §7, and the scene each one runs in:
   list would unlock it at story start, so the sentinel makes the delayed event the _only_ way in.
 - **Group chat** as its own scene type, with `playerRole: confront-max-with-evidence` and the
   `max-confesses` outcome gated on `flag:evidence-presented`.
+- **Facts as the only way a character learns anything.** `buildPersonaPrompt` shows a character
+  exactly the facts their own `knowledge.publicFacts` lists, so a fact no binding claims never
+  reaches the model. All three know `fact:lucy-max-sabine-are-friends` — without it Lucy cannot
+  carry out her own scene goal `name-max-and-sabine-as-witnesses`, because nothing would tell her
+  Max and Sabine exist. Both witnesses additionally know `fact:cloakroom-unstaffed`, which is what
+  lets them place the jacket (`clue:location`) instead of inventing a coat check.
+  `src/lib/content/story-packages.spec.ts` fails on a fact nobody knows.
+- **Goal order is prompt order.** `buildOpeningInstruction` repeats a scene's _first_ goal in the
+  turn instruction, so the opener actually opens the scene. `ask-whether-player-was-at-the-club`
+  therefore comes first in "Unbekannter Erstkontakt" — that is literally §7 step 1's
+  „Warst du letzten Samstag im Club?", and `open-as-unknown-contact` alone produced small talk.
 - **Secrets** unlock progressively: `secret:hans-tip` (Lucy, after the first report),
   `secret:sabine-saw-max` (Sabine, once the suspicion is relayed), `secret:max-took-wallet`
   (Max, only once confronted with evidence — step 14's confession).

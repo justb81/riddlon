@@ -35,6 +35,19 @@ export interface PersonaKnowledge {
 	withheldSecrets: readonly string[];
 }
 
+/**
+ * One entry of the cast binding's `relationships` map, resolved to a name.
+ *
+ * Without this a character cannot name anyone they aren't currently chatting with, which makes a
+ * goal like "name-max-and-sabine-as-witnesses" unreachable: the package states who Lucy knows,
+ * but the model was never told. `relation` is the package's own value (`"friend"`, …), passed
+ * through verbatim like `roleInStory`.
+ */
+export interface PersonaRelationship {
+	displayName: string;
+	relation: string;
+}
+
 function section(heading: string, lines: readonly string[]): string[] {
 	if (lines.length === 0) return [];
 	return ['', heading, ...lines.map((line) => `- ${line}`)];
@@ -45,6 +58,7 @@ export function buildPersonaPrompt(input: {
 	storyTitle: string;
 	scene: PersonaScene;
 	knowledge: PersonaKnowledge;
+	relationships?: readonly PersonaRelationship[];
 	playerName: string;
 }): string {
 	const { character, scene, knowledge } = input;
@@ -64,6 +78,10 @@ export function buildPersonaPrompt(input: {
 			: '',
 		scene.playerRole ? `${input.playerName} will gerade: ${scene.playerRole}.` : '',
 		...section('Worauf du in diesem Gespräch hinauswillst:', scene.goals),
+		...section(
+			'Diese Leute kennst du und darfst du beim Namen nennen:',
+			(input.relationships ?? []).map((r) => `${r.displayName} (${r.relation})`)
+		),
 		...section('Das ist wahr und darfst du nicht widersprechen:', knowledge.facts),
 		...section('Das darfst du jetzt preisgeben, wenn es passt:', knowledge.revealableSecrets),
 		...section('Das weißt du, behältst es aber noch für dich:', knowledge.withheldSecrets)
@@ -75,13 +93,23 @@ export function buildPersonaPrompt(input: {
 /**
  * The prompt for a scene's first message. A package ships no authored dialogue, so a newly
  * unlocked contact would otherwise sit in an empty thread — the model writes the opener.
+ *
+ * The scene's first goal is repeated here, not just left in the system prompt: an unanchored
+ * "write the first message" reliably produces filler ("Hey, bist du noch online?"), because
+ * small talk is the safest completion. Naming the goal in the turn instruction is what makes the
+ * opener actually open the scene.
  */
-export function buildOpeningInstruction(playerName: string): string {
+export function buildOpeningInstruction(playerName: string, goals: readonly string[] = []): string {
+	const firstGoal = goals[0];
 	return [
 		`Schreib die erste Nachricht an ${playerName}. Du beginnst das Gespräch.`,
-		'Ein bis zwei Sätze, kein Gruß-Monolog, keine Zusammenfassung der Lage.',
-		'Antworte nur mit der Nachricht selbst.'
-	].join('\n');
+		firstGoal ? `Verfolge dabei sofort dein erstes Ziel: ${firstGoal}.` : '',
+		'Komm direkt zur Sache: sag oder frag schon im ersten Satz, worum es dir geht.',
+		'Keine Begrüßungsfloskel, kein Smalltalk, kein „wie geht es dir“, keine Vorgeschichte.',
+		'Ein bis zwei Sätze. Antworte nur mit der Nachricht selbst.'
+	]
+		.filter((line) => line !== '')
+		.join('\n');
 }
 
 /**

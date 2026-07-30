@@ -56,18 +56,45 @@ interface AdapterRuntime {
 
 class AdapterSession implements LlmSession {
 	#turns: LlmTurn[];
+	#config: LlmSessionConfig;
 
 	constructor(
 		readonly key: string,
 		readonly modelId: LocalModelId,
-		readonly config: LlmSessionConfig,
+		config: LlmSessionConfig,
 		private readonly runtime: AdapterRuntime
 	) {
+		this.#config = config;
 		this.#turns = [...(config.seedTurns ?? [])];
+	}
+
+	get config(): LlmSessionConfig {
+		return this.#config;
 	}
 
 	get turns(): readonly LlmTurn[] {
 		return this.#turns;
+	}
+
+	/**
+	 * Adopts a new instruction for an ongoing conversation and reports whether anything actually
+	 * changed. `seedTurns` is deliberately ignored — it seeded this session once; re-applying it
+	 * would duplicate history the session has since extended.
+	 *
+	 * This exists because a thread's persona is not fixed: the same character keeps one session
+	 * across a whole story while the *scene* driving their goals advances underneath. Without it a
+	 * character forever replays the goals of the scene they were first spoken to in.
+	 */
+	reconfigure(next: LlmSessionConfig): boolean {
+		const current = this.#config;
+		const changed =
+			current.systemPrompt !== next.systemPrompt ||
+			current.temperature !== next.temperature ||
+			current.topK !== next.topK ||
+			current.maxHistoryTurns !== next.maxHistoryTurns;
+		if (!changed) return false;
+		this.#config = { ...next, seedTurns: current.seedTurns };
+		return true;
 	}
 
 	async prompt(text: string, opts: { signal?: AbortSignal } = {}): Promise<string> {
@@ -284,7 +311,16 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 		async createSession(key: string, sessionConfig: LlmSessionConfig): Promise<LlmSession> {
 			await ensureProvider();
 			const existing = sessions.get(key);
-			if (existing) return existing;
+			if (existing) {
+				// Same key, new instruction (the scene moved on): keep the conversation, swap the
+				// persona. In session mode the instruction lives inside the backend handle, so that
+				// handle has to go — `createHandle` rebuilds it from `historyForReplay()`, which makes
+				// the swap lossless. Inline mode renders the persona into every prompt anyway.
+				if (existing.reconfigure(sessionConfig) && personaMode !== 'inline') {
+					destroyHandle(handleKeyFor(key));
+				}
+				return existing;
+			}
 
 			const session = new AdapterSession(key, modelId, sessionConfig, runtime);
 			sessions.set(key, session);

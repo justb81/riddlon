@@ -63,11 +63,46 @@ describe('buildPersonaPrompt', () => {
 		expect(prompt).toContain('Gruppenchat mit: Max, Sabine');
 		expect(prompt).toContain('confront-max-with-evidence');
 	});
+
+	it('names the people the cast binding says this character knows', () => {
+		// A solo scene has no `otherParticipants`, so without this a character cannot name anyone
+		// who isn't in the room — and a goal like "name-max-and-sabine-as-witnesses" is unreachable.
+		const prompt = buildPersonaPrompt({
+			...base,
+			scene: { goals: ['name-max-and-sabine-as-witnesses'], isGroup: false, otherParticipants: [] },
+			relationships: [
+				{ displayName: 'Max', relation: 'friend' },
+				{ displayName: 'Sabine', relation: 'friend' }
+			]
+		});
+		expect(prompt).toContain('Max (friend)');
+		expect(prompt).toContain('Sabine (friend)');
+	});
+
+	it('omits the relationships section for a character with none', () => {
+		expect(buildPersonaPrompt({ ...base, relationships: [] })).not.toContain('Diese Leute kennst');
+	});
 });
 
 describe('buildOpeningInstruction', () => {
 	it('addresses the player by name', () => {
 		expect(buildOpeningInstruction('Bastian')).toContain('Bastian');
+	});
+
+	it('points the opener at the scene’s first goal and forbids small talk', () => {
+		// Without the goal in the turn instruction the model opens with filler ("bist du noch
+		// online?") — safest completion, but it doesn't open the scene.
+		const instruction = buildOpeningInstruction('Bastian', [
+			'ask-whether-player-was-at-the-club',
+			'reveal-identity-as-lucy'
+		]);
+		expect(instruction).toContain('ask-whether-player-was-at-the-club');
+		expect(instruction).not.toContain('reveal-identity-as-lucy');
+		expect(instruction).toContain('Smalltalk');
+	});
+
+	it('still works for a scene that declares no goals', () => {
+		expect(buildOpeningInstruction('Bastian', [])).not.toContain('erstes Ziel');
 	});
 });
 
