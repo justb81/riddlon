@@ -1,5 +1,25 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { CharacterIdentity, Manifest, PlayerProfile } from '$lib/content/index.js';
+import type {
+	CharacterIdentity,
+	Clue,
+	Fact,
+	Manifest,
+	PlayerProfile,
+	Secret,
+	Story,
+	StoryGraph
+} from '$lib/content/index.js';
+
+/** The parsed, schema-valid package content `validatePackage` already produced at import
+ *  time — persisted alongside the manifest so the engine can be reconstructed on a later
+ *  app start without re-fetching/re-parsing the original ZIP (which isn't kept around). */
+export interface InstalledPackageContent {
+	story: Story;
+	graph: StoryGraph;
+	clues: Clue[];
+	facts: Fact[];
+	secrets: Secret[];
+}
 
 export interface InstalledPackageRecord {
 	/** = manifest.id, the package's own UUID. */
@@ -17,6 +37,9 @@ export interface InstalledPackageRecord {
 	 *  blob-store key (see `putAsset`/`assetKeyForBlob`). Absent on records installed before #10. */
 	assetKeys?: Record<string, string>;
 	manifest: Manifest;
+	/** Absent on records installed before this field existed — `storyRegistry.getBundle()`
+	 *  returns `undefined` for those rather than a half-formed bundle. */
+	content?: InstalledPackageContent;
 }
 
 export interface LibraryCharacterRecord extends CharacterIdentity {

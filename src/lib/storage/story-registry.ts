@@ -1,9 +1,9 @@
 import { browser } from '$app/environment';
-import type { Manifest } from '$lib/content/index.js';
-import { getDb, type InstalledPackageRecord } from './db.js';
+import type { Manifest, StoryBundle } from '$lib/content/index.js';
+import { getDb, type InstalledPackageContent, type InstalledPackageRecord } from './db.js';
 import { characterLibrary } from './character-library.js';
 
-export type InstalledPackageSummary = Omit<InstalledPackageRecord, 'manifest'>;
+export type InstalledPackageSummary = Omit<InstalledPackageRecord, 'manifest' | 'content'>;
 
 function toSummary(record: InstalledPackageRecord): InstalledPackageSummary {
 	return {
@@ -25,6 +25,10 @@ export interface InstallPackageOptions {
 	coverAssetKey?: string;
 	sizeBytes: number;
 	assetKeys?: Record<string, string>;
+	/** The parsed package content, so `getBundle()` can reconstruct a `StoryBundle` for the
+	 *  engine later without re-fetching the original ZIP. Absent for callers that only have
+	 *  a manifest (keeps this an additive, backward-compatible field). */
+	content?: InstalledPackageContent;
 }
 
 /**
@@ -51,7 +55,8 @@ export const storyRegistry = {
 			sizeBytes: opts.sizeBytes,
 			characterIds: opts.characterIds,
 			assetKeys: opts.assetKeys,
-			manifest
+			manifest,
+			content: opts.content
 		};
 		await db.put('packages', record);
 		return toSummary(record);
@@ -82,6 +87,24 @@ export const storyRegistry = {
 		const db = await getDb();
 		const record = await db.get('packages', packageId);
 		return record?.manifest;
+	},
+
+	/** Reconstructs the `StoryBundle` the engine needs, from the parsed content stored at
+	 *  install time. `undefined` if the package isn't installed, or was installed before
+	 *  this field existed. */
+	async getBundle(packageId: string): Promise<StoryBundle | undefined> {
+		if (!browser) return undefined;
+		const db = await getDb();
+		const record = await db.get('packages', packageId);
+		if (!record?.content) return undefined;
+		return {
+			manifest: record.manifest,
+			story: record.content.story,
+			graph: record.content.graph,
+			clues: record.content.clues,
+			facts: record.content.facts,
+			secrets: record.content.secrets
+		};
 	},
 
 	async list(): Promise<InstalledPackageSummary[]> {

@@ -54,8 +54,8 @@ export function bootStepFor(phase: BootPhase): BootStep {
 
 		case 'story-install':
 			return {
-				// TODO(#10/#19): still a fixed beat — there is no real story-install progress to track
-				// until the package importer and the reference package exist.
+				// The real install (`$lib/story/bootstrap.ts`) doesn't report incremental
+				// progress mid-install, so the bar just holds here until it resolves.
 				percent: percentForPhase('storyInstall', 0.5),
 				i18nKey: 'boot.step.installingStory',
 				vars: { title: phase.title ?? STORY_META.title }

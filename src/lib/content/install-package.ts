@@ -57,7 +57,14 @@ export async function installPackageFromZipBytes(bytes: Uint8Array): Promise<Imp
 	const summary = await storyRegistry.install(manifest, {
 		characterIds: characters.map((character) => character.id),
 		sizeBytes: bytes.byteLength,
-		assetKeys
+		assetKeys,
+		content: {
+			story: validation.story!,
+			graph: validation.graph!,
+			clues: validation.clues ?? [],
+			facts: validation.facts ?? [],
+			secrets: validation.secrets ?? []
+		}
 	});
 
 	if (!summary) {
