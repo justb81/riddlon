@@ -11,9 +11,9 @@
 	import { profile } from '$lib/state/profile.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { importPackageFromZipFile, importPackageFromUrl } from '$lib/content/index.js';
-	import { storyRegistry, type InstalledPackageSummary } from '$lib/storage/index.js';
+	import { installDemoStory } from '$lib/story/bootstrap.js';
 	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
-	import { INSTALLED_STORIES, type CatalogEntry } from '$lib/story/library.js';
+	import { type CatalogEntry } from '$lib/story/library.js';
 	import { ACHIEVEMENT_DEFS } from '$lib/story/reference-progress.js';
 
 	const statusKey = {
@@ -22,19 +22,18 @@
 		notStarted: 'library.status.notStarted'
 	} as const;
 
-	let installed = $state<InstalledPackageSummary[]>([]);
 	let notices = $state<{ id: string; text: string; failed: boolean }[]>([]);
 	let importing = $state(false);
 	let urlFieldOpen = $state(false);
 	let urlDraft = $state('');
 	let fileInput: HTMLInputElement | undefined = $state();
 
-	async function refreshInstalled(): Promise<void> {
-		installed = await storyRegistry.list();
-	}
+	// One source for "what's installed" (shared with the chat overview's library preview) —
+	// this screen only asks it to re-read the registry after an import.
+	const installed = $derived(storyRuntime.installedPackages);
 
 	$effect(() => {
-		void refreshInstalled();
+		void storyRuntime.init();
 	});
 
 	function noteId(): string {
@@ -56,7 +55,7 @@
 					})
 				}
 			];
-			await refreshInstalled();
+			await storyRuntime.refreshLibrary();
 		} else {
 			const message = result.errors.map((e) => e.message).join(' · ');
 			notices = [
@@ -114,8 +113,20 @@
 		// rather than faking success (see #16's acceptance criteria).
 	}
 
+	/** Re-installs the bundled demo after a factory reset. A full page load follows, because the
+	 *  engine runtime already resolved its (story-less) init — same reasoning as `state/reset.ts`. */
+	async function addDemoStory(): Promise<void> {
+		importing = true;
+		try {
+			await installDemoStory();
+			location.href = resolve('/');
+		} finally {
+			importing = false;
+		}
+	}
+
 	const displayEntries = $derived.by((): CatalogEntry[] => {
-		const real: CatalogEntry[] = installed.map((pkg) => {
+		return installed.map((pkg) => {
 			const isReference = pkg.id === REFERENCE_PACKAGE_ID;
 			const progress = isReference ? storyRuntime.progress : null;
 			const solved = isReference && storyRuntime.solved;
@@ -138,10 +149,15 @@
 				progressPercent: totalScenes > 0 ? Math.round((doneScenes / totalScenes) * 100) : undefined
 			};
 		});
-		const decorative = INSTALLED_STORIES.filter(
-			(entry) => !installed.some((pkg) => pkg.title === entry.title)
-		);
-		return [...real, ...decorative];
+	});
+
+	// A real registry means 0 or 1 installed stories most of the time, where the mock catalog always
+	// had three — so the plural-only greeting needs singular/empty variants (cf. `convo.*Plural`).
+	const welcome = $derived.by(() => {
+		const count = displayEntries.length;
+		if (count === 0) return t('library.welcomeEmpty', { name: profile.nickname });
+		if (count === 1) return t('library.welcomeSingle', { name: profile.nickname });
+		return t('library.welcome', { name: profile.nickname, count });
 	});
 
 	const chips = [
@@ -182,16 +198,29 @@
 				<div
 					class="rounded-tr-2xl rounded-br-2xl rounded-bl-md border border-line bg-surface-raised px-3.5 pt-2.5 pb-2.5"
 				>
-					<div class="text-body leading-relaxed text-slate-100">
-						{t('library.welcome', { name: profile.nickname, count: displayEntries.length })}
-					</div>
+					<div class="text-body leading-relaxed text-slate-100">{welcome}</div>
 				</div>
 			</div>
 
 			<div class="mt-3 flex w-full flex-col gap-2.5 self-start">
 				<div class="ml-0.5 font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
-					{t('library.installedLabel')}
+					{displayEntries.length === 0 ? t('library.emptyLabel') : t('library.installedLabel')}
 				</div>
+				{#if displayEntries.length === 0}
+					<div class="rounded-tile border border-dashed border-line-strong bg-slate-100/3 p-3.5">
+						<p class="text-label leading-relaxed text-slate-400">
+							{t('library.installDemoNote')}
+						</p>
+						<button
+							type="button"
+							disabled={importing}
+							onclick={() => void addDemoStory()}
+							class="mt-2.5 w-full rounded-control border border-line-strong px-3 py-2.5 text-label font-medium text-slate-200 hover:bg-slate-100/8 disabled:opacity-50"
+						>
+							{t('library.installDemo')}
+						</button>
+					</div>
+				{/if}
 				{#each displayEntries as story (story.id)}
 					<button
 						type="button"
