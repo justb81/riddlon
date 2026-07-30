@@ -1,0 +1,32 @@
+[
+	{
+		"id": "fact:club-theft",
+		"type": "fact",
+		"statement": "Lucy wurde im Club ihr Portmonnaie gestohlen."
+	},
+	{
+		"id": "fact:club-name",
+		"type": "fact",
+		"statement": "Der Club heißt „Kellerlicht“ und liegt im Bahnhofsviertel."
+	},
+	{
+		"id": "fact:theft-date",
+		"type": "fact",
+		"statement": "Der Diebstahl geschah in der Nacht von Samstag auf Sonntag."
+	},
+	{
+		"id": "fact:cloakroom-unstaffed",
+		"type": "fact",
+		"statement": "Die Garderobe im Kellerlicht ist unbesetzt; jeder kann sich dort bedienen."
+	},
+	{
+		"id": "fact:hans-is-barkeeper",
+		"type": "fact",
+		"statement": "Hans arbeitet als Barkeeper im Kellerlicht und ist selbst kein Chatkontakt."
+	},
+	{
+		"id": "fact:lucy-max-sabine-are-friends",
+		"type": "fact",
+		"statement": "Lucy, Max und Sabine kennen sich seit der Schulzeit und gehen regelmäßig zusammen aus."
+	}
+]

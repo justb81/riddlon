@@ -15,6 +15,10 @@ concurrency:
 
 jobs:
   build:
+    # Story-package releases (stories.yml, tagged `story-<slug>-v<version>`) publish content,
+    # not the app — they must not redeploy the site. `deploy` needs this job, so skipping
+    # here skips the whole workflow.
+    if: ${{ !startsWith(github.event.release.tag_name, 'story-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

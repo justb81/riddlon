@@ -1,0 +1,86 @@
+{
+	"castBindings": [
+		{
+			"characterRef": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+			"roleInStory": "quest-giver",
+			"knowledge": {
+				"publicFacts": [
+					"fact:club-theft",
+					"fact:club-name",
+					"fact:theft-date",
+					"fact:hans-is-barkeeper"
+				],
+				"secrets": ["secret:hans-tip"]
+			},
+			"availability": { "initialState": "visible" },
+			"relationships": {
+				"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e": "friend",
+				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e": "friend"
+			}
+		},
+		{
+			"characterRef": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+			"roleInStory": "witness",
+			"knowledge": {
+				"publicFacts": ["fact:club-theft", "fact:club-name", "fact:theft-date"],
+				"secrets": ["secret:max-took-wallet"]
+			},
+			"availability": { "initialState": "hidden", "unlockCondition": "flag:witnesses-named" },
+			"relationships": {
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f": "friend",
+				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e": "friend"
+			}
+		},
+		{
+			"characterRef": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+			"roleInStory": "witness",
+			"knowledge": {
+				"publicFacts": [
+					"fact:club-theft",
+					"fact:club-name",
+					"fact:theft-date",
+					"fact:hans-is-barkeeper"
+				],
+				"secrets": ["secret:sabine-saw-max"]
+			},
+			"availability": { "initialState": "hidden", "unlockCondition": "flag:witnesses-named" },
+			"relationships": {
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f": "friend",
+				"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e": "friend"
+			}
+		}
+	],
+	"achievements": [
+		{
+			"id": "5f83e807-42fc-41c0-b2e7-1d70a550f568",
+			"label": "Fall gelöst",
+			"description": "Max hat gestanden und die Rückgabe des Portmonnaies zugesagt."
+		},
+		{
+			"id": "4a5c9e46-d40c-4b1f-87b3-de8fe40bf1f4",
+			"label": "Alle Hinweise gefunden",
+			"description": "Jeder Hinweis in world/clues.json wurde mindestens einmal von einer Quelle bestätigt."
+		},
+		{
+			"id": "6c335a47-350d-4227-b629-0fe0a613d39c",
+			"label": "Ohne Falschbeschuldigung gelöst",
+			"description": "Der Fall wurde aufgeklärt, ohne unterwegs jemanden zu Unrecht zu beschuldigen."
+		}
+	],
+	"delayedEvents": [
+		{
+			"id": "event:lucy-nudge",
+			"trigger": "time-based",
+			"approxDelay": "PT20M",
+			"condition": "scene-unlocked:ce658bbf-33df-48d6-a2f6-e1568566fb8e",
+			"action": "set-flag:flag:lucy-nudge-due"
+		},
+		{
+			"id": "event:lucy-followup",
+			"trigger": "time-based",
+			"approxDelay": "PT2H",
+			"condition": "flag:report-to-lucy-done",
+			"action": "unlock-scene:b35e409f-d012-41ae-a655-8693901c086d"
+		}
+	]
+}

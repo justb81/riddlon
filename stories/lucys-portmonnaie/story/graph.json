@@ -1,0 +1,173 @@
+{
+	"nodes": [
+		{
+			"id": "ce658bbf-33df-48d6-a2f6-e1568566fb8e",
+			"type": "chat-scene",
+			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+			"goals": [
+				"open-as-unknown-contact",
+				"ask-whether-player-was-at-the-club",
+				"reveal-identity-as-lucy"
+			],
+			"entryConditions": [],
+			"exitConditions": ["flag:lucy-identified"],
+			"revealables": ["fact:club-name", "fact:theft-date"],
+			"next": [
+				{
+					"target": "32e477b0-6721-47cb-867e-cc181ed7c72f",
+					"when": ["flag:lucy-identified"]
+				}
+			]
+		},
+		{
+			"id": "32e477b0-6721-47cb-867e-cc181ed7c72f",
+			"type": "chat-scene",
+			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+			"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+			"entryConditions": ["flag:lucy-identified"],
+			"exitConditions": ["flag:witnesses-named"],
+			"revealables": ["fact:club-theft", "clue:stolen-item"],
+			"next": [
+				{
+					"target": "0974a346-476c-4222-976e-ee43854fc709",
+					"when": ["flag:witnesses-named"]
+				},
+				{
+					"target": "8e888a69-8631-40d8-af8d-a397d544ad20",
+					"when": ["flag:witnesses-named"]
+				}
+			]
+		},
+		{
+			"id": "0974a346-476c-4222-976e-ee43854fc709",
+			"type": "chat-scene",
+			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
+			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"entryConditions": ["flag:witnesses-named"],
+			"exitConditions": ["flag:max-questioned"],
+			"revealables": [
+				"clue:time-window",
+				"clue:location",
+				"clue:stolen-item",
+				"clue:suspect-description"
+			],
+			"next": [
+				{
+					"target": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
+					"when": ["flag:max-questioned", "flag:sabine-questioned"]
+				}
+			]
+		},
+		{
+			"id": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"type": "chat-scene",
+			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"entryConditions": ["flag:witnesses-named"],
+			"exitConditions": ["flag:sabine-questioned"],
+			"revealables": [
+				"clue:time-window",
+				"clue:location",
+				"clue:stolen-item",
+				"clue:suspect-description"
+			],
+			"next": [
+				{
+					"target": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
+					"when": ["flag:max-questioned", "flag:sabine-questioned"]
+				}
+			]
+		},
+		{
+			"id": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
+			"type": "chat-scene",
+			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+			"goals": ["report-findings", "go-quiet-afterwards"],
+			"entryConditions": [
+				"flag:max-questioned",
+				"flag:sabine-questioned",
+				"clue-confirmed:clue:time-window:2"
+			],
+			"exitConditions": ["flag:report-to-lucy-done"],
+			"revealables": [],
+			"next": []
+		},
+		{
+			"id": "b35e409f-d012-41ae-a655-8693901c086d",
+			"type": "chat-scene",
+			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+			"goals": ["raise-hans-suspicion", "ask-player-to-recheck-with-max-and-sabine"],
+			"entryConditions": ["flag:lucy-suspicion-only-via-delayed-event"],
+			"exitConditions": ["flag:suspicion-relayed"],
+			"revealables": ["secret:hans-tip", "clue:hans-accusation"],
+			"next": [
+				{
+					"target": "725e3554-0a53-49fa-9bb5-f80929dc685b",
+					"when": ["flag:suspicion-relayed"]
+				},
+				{
+					"target": "107ad6e6-72d9-4039-a2c1-34e79113d7f5",
+					"when": ["flag:suspicion-relayed"]
+				}
+			]
+		},
+		{
+			"id": "725e3554-0a53-49fa-9bb5-f80929dc685b",
+			"type": "chat-scene",
+			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
+			"goals": ["confront-with-hans-claim", "deny-being-at-the-cloakroom"],
+			"entryConditions": ["flag:suspicion-relayed"],
+			"exitConditions": ["flag:max-denies-hans-claim"],
+			"revealables": ["clue:max-whereabouts"],
+			"next": [
+				{
+					"target": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
+					"when": ["flag:max-denies-hans-claim", "flag:sabine-confirms-hans-claim"]
+				}
+			]
+		},
+		{
+			"id": "107ad6e6-72d9-4039-a2c1-34e79113d7f5",
+			"type": "chat-scene",
+			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+			"goals": ["confirm-hans-claim"],
+			"entryConditions": ["flag:suspicion-relayed"],
+			"exitConditions": ["flag:sabine-confirms-hans-claim"],
+			"revealables": ["clue:max-whereabouts", "secret:sabine-saw-max"],
+			"next": [
+				{
+					"target": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
+					"when": ["flag:max-denies-hans-claim", "flag:sabine-confirms-hans-claim"]
+				}
+			]
+		},
+		{
+			"id": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
+			"type": "chat-scene",
+			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+			"goals": ["report-findings", "confirm-suspicion", "announce-group-chat"],
+			"entryConditions": ["flag:max-denies-hans-claim", "flag:sabine-confirms-hans-claim"],
+			"exitConditions": ["flag:hans-info-confirmed"],
+			"revealables": [],
+			"next": []
+		},
+		{
+			"id": "2c608d80-cbf4-44cc-bc62-d3f449616ccd",
+			"type": "group-chat-scene",
+			"participants": [
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+				"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+			],
+			"goals": ["resolve-case"],
+			"entryConditions": ["flag:hans-info-confirmed"],
+			"exitConditions": [],
+			"revealables": ["secret:max-took-wallet"],
+			"playerRole": "confront-max-with-evidence",
+			"outcomes": [
+				{ "id": "max-confesses", "condition": "flag:evidence-presented" },
+				{ "id": "false-accusation-made", "condition": "flag:false-accusation" }
+			]
+		}
+	]
+}
