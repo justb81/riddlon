@@ -20,7 +20,8 @@ import {
 	settableFlags,
 	type DirectorVerdict
 } from '$lib/llm/director.js';
-import { buildOpeningInstruction, buildPersonaPrompt, pickResponder } from '$lib/llm/persona.js';
+import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
+import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
 import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
 import {
 	isCharacterSpeaker,
@@ -204,7 +205,8 @@ class StorySession {
 			const session = await llm.session(`${threadKey}:${speakerId}`, {
 				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread)
 			});
-			const text = (await session.prompt(buildOpeningInstruction(profile.nickname))).trim();
+			const goals = storyRuntime.sceneById(sceneId)?.goals ?? [];
+			const text = (await session.prompt(buildOpeningInstruction(profile.nickname, goals))).trim();
 			if (!text) return;
 			this.#openedScenes.add(sceneId);
 			await this.#persist(sceneId, speakerId, text);
@@ -360,44 +362,22 @@ class StorySession {
 		await saveStore.update(saveId, { chatHistory });
 	}
 
+	/** Thin over `buildScenePersonaPrompt`, which is pure and spec'd — see `story/persona-input.ts`. */
 	#personaPromptFor(characterId: string, sceneId: string, thread: StoryThread): string {
 		const bundle = storyRuntime.bundle;
-		const character = storyRuntime.cast.find((c) => c.id === characterId);
-		const scene = storyRuntime.sceneById(sceneId);
-		const knownFacts = new Set(character?.knowledge.publicFacts ?? []);
-		const heldSecrets = new Set(character?.knowledge.secrets ?? []);
-		const secrets = (bundle?.secrets ?? []).filter((secret) => heldSecrets.has(secret.id));
-
-		return buildPersonaPrompt({
-			character: {
-				id: characterId,
-				displayName: character?.displayName ?? characterId,
-				voiceStyle: character?.voiceStyle,
-				corePersonality: character?.corePersonality,
-				roleInStory: character?.roleInStory
+		if (!bundle) return '';
+		return buildScenePersonaPrompt(
+			{
+				bundle,
+				cast: storyRuntime.cast,
+				isConditionMet: (ref) => storyRuntime.isConditionMet(ref),
+				storyTitle: storyRuntime.title ?? '',
+				playerName: profile.nickname
 			},
-			storyTitle: storyRuntime.title ?? '',
-			scene: {
-				goals: scene?.goals ?? [],
-				playerRole: this.#playerRoleFor(sceneId),
-				isGroup: thread.kind === 'group',
-				otherParticipants: thread.participantIds
-					.filter((id) => id !== characterId)
-					.map((id) => storyRuntime.displayNameFor(id))
-			},
-			knowledge: {
-				facts: (bundle?.facts ?? [])
-					.filter((fact) => knownFacts.has(fact.id))
-					.map((fact) => fact.statement),
-				revealableSecrets: secrets
-					.filter((secret) => storyRuntime.isConditionMet(secret.revealCondition))
-					.map((secret) => secret.label),
-				withheldSecrets: secrets
-					.filter((secret) => !storyRuntime.isConditionMet(secret.revealCondition))
-					.map((secret) => secret.label)
-			},
-			playerName: profile.nickname
-		});
+			characterId,
+			sceneId,
+			thread
+		);
 	}
 
 	#sceneNode(sceneId: string) {
@@ -410,11 +390,6 @@ class StorySession {
 
 	#revealablesFor(sceneId: string): string[] {
 		return [...(this.#sceneNode(sceneId)?.revealables ?? [])];
-	}
-
-	#playerRoleFor(sceneId: string): string | undefined {
-		const node = this.#sceneNode(sceneId);
-		return node?.type === 'group-chat-scene' ? node.playerRole : undefined;
 	}
 
 	#setTyping(sceneId: string, typing: boolean): void {

@@ -60,6 +60,25 @@ describe('shipped story packages in stories/', () => {
 		expect(new Set(manifests.map((m) => m.title)).size).toBe(manifests.length);
 	});
 
+	/**
+	 * A fact nobody knows is invisible: `buildPersonaPrompt` only ever shows a character the facts
+	 * their own cast binding lists, so a fact in `world/facts.json` that no binding claims can never
+	 * reach the model. That is how `fact:lucy-max-sabine-are-friends` shipped unreachable while a
+	 * scene goal asked Lucy to name Max and Sabine — she was never told they exist.
+	 *
+	 * Not a `validatePackage` rule: an unused fact is legal in the format, this is a lint on the
+	 * content *we* ship.
+	 */
+	it.each(storySlugs)('%s gives every declared fact to at least one character', (slug) => {
+		const files = readStoryPackageFiles(path.join(STORIES_DIR, slug));
+		const bundle = loadStoryBundle(files).bundle;
+		const known = new Set(
+			bundle?.story.castBindings.flatMap((binding) => binding.knowledge.publicFacts) ?? []
+		);
+		const orphaned = (bundle?.facts ?? []).map((fact) => fact.id).filter((id) => !known.has(id));
+		expect(orphaned).toEqual([]);
+	});
+
 	it.each(storySlugs)('%s ships every asset its characters reference', (slug) => {
 		const dir = path.join(STORIES_DIR, slug);
 		const files = readStoryPackageFiles(dir);
