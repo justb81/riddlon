@@ -7,8 +7,14 @@
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import ChipRow from '$lib/components/chat/ChipRow.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
+	import { formatSizeLabel } from '$lib/llm/catalog.js';
 	import { profile } from '$lib/state/profile.svelte.js';
-	import { INSTALLED_STORIES, LAST_INSTALLED_NOTE } from '$lib/story/library.js';
+	import { storyRuntime } from '$lib/state/engine.svelte.js';
+	import { importPackageFromZipFile, importPackageFromUrl } from '$lib/content/index.js';
+	import { storyRegistry, type InstalledPackageSummary } from '$lib/storage/index.js';
+	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
+	import { INSTALLED_STORIES, type CatalogEntry } from '$lib/story/library.js';
+	import { ACHIEVEMENT_DEFS } from '$lib/story/reference-progress.js';
 
 	const statusKey = {
 		running: 'library.status.running',
@@ -16,15 +22,127 @@
 		notStarted: 'library.status.notStarted'
 	} as const;
 
-	// Only "Lucys Portmonnaie" has a playable thread right now — every catalog
-	// entry opens the same story overview until the other reference stories ship.
+	let installed = $state<InstalledPackageSummary[]>([]);
+	let notices = $state<{ id: string; text: string; failed: boolean }[]>([]);
+	let importing = $state(false);
+	let urlFieldOpen = $state(false);
+	let urlDraft = $state('');
+	let fileInput: HTMLInputElement | undefined = $state();
+
+	async function refreshInstalled(): Promise<void> {
+		installed = await storyRegistry.list();
+	}
+
+	$effect(() => {
+		void refreshInstalled();
+	});
+
+	function noteId(): string {
+		return `notice-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+	}
+
+	async function afterImport(
+		result: Awaited<ReturnType<typeof importPackageFromZipFile>>
+	): Promise<void> {
+		if (result.ok) {
+			notices = [
+				...notices,
+				{
+					id: noteId(),
+					failed: false,
+					text: t('library.lastInstalledNote', {
+						title: result.summary.title,
+						size: formatSizeLabel(result.summary.sizeBytes)
+					})
+				}
+			];
+			await refreshInstalled();
+		} else {
+			const message = result.errors.map((e) => e.message).join(' · ');
+			notices = [
+				...notices,
+				{ id: noteId(), failed: true, text: t('library.importErrorNote', { message }) }
+			];
+		}
+	}
+
+	async function pickZip(): Promise<void> {
+		fileInput?.click();
+	}
+
+	async function onZipChosen(event: Event): Promise<void> {
+		// `currentTarget` is only valid for the synchronous dispatch of the event — it's
+		// already `null` by the time an `await` below resumes, so it's captured up front.
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		importing = true;
+		try {
+			await afterImport(await importPackageFromZipFile(file));
+		} finally {
+			importing = false;
+			input.value = '';
+		}
+	}
+
+	function openUrlField(): void {
+		urlFieldOpen = true;
+	}
+
+	async function submitUrlImport(): Promise<void> {
+		const url = urlDraft.trim();
+		if (!url) return;
+		importing = true;
+		try {
+			await afterImport(await importPackageFromUrl(url));
+			urlDraft = '';
+			urlFieldOpen = false;
+		} finally {
+			importing = false;
+		}
+	}
+
+	// Only "Lucys Portmonnaie" (the one package the engine can actually run) has a live
+	// progress/engine session — any other installed package still opens the same story
+	// overview, since only one story engine instance runs at a time.
 	function openStory(): void {
 		void goto(resolve('/story'));
 	}
 
 	function noop(): void {
-		// Decorative for now — no import/update backend exists yet (docs/concept.md §4).
+		// Genuinely not built yet (update-checking, storage management) — tracked explicitly
+		// rather than faking success (see #16's acceptance criteria).
 	}
+
+	const displayEntries = $derived.by((): CatalogEntry[] => {
+		const real: CatalogEntry[] = installed.map((pkg) => {
+			const isReference = pkg.id === REFERENCE_PACKAGE_ID;
+			const progress = isReference ? storyRuntime.progress : null;
+			const solved = isReference && storyRuntime.solved;
+			const totalScenes = progress?.totalSceneCount ?? 0;
+			const doneScenes = progress?.completedSceneCount ?? 0;
+			return {
+				id: pkg.id,
+				title: pkg.title,
+				genre: 'Krimi',
+				status: solved ? 'solved' : 'running',
+				contactCount: pkg.characterIds.length,
+				...(solved
+					? {
+							achievements: {
+								earned: storyRuntime.earnedAchievements.length,
+								total: ACHIEVEMENT_DEFS.length
+							}
+						}
+					: { chapter: { current: doneScenes + 1, total: Math.max(totalScenes, 1) } }),
+				progressPercent: totalScenes > 0 ? Math.round((doneScenes / totalScenes) * 100) : undefined
+			};
+		});
+		const decorative = INSTALLED_STORIES.filter(
+			(entry) => !installed.some((pkg) => pkg.title === entry.title)
+		);
+		return [...real, ...decorative];
+	});
 
 	const chips = [
 		{ id: 'updates', label: t('library.chipCheckUpdates'), onClick: noop },
@@ -65,7 +183,7 @@
 					class="rounded-tr-2xl rounded-br-2xl rounded-bl-md border border-line bg-surface-raised px-3.5 pt-2.5 pb-2.5"
 				>
 					<div class="text-body leading-relaxed text-slate-100">
-						{t('library.welcome', { name: profile.nickname, count: INSTALLED_STORIES.length })}
+						{t('library.welcome', { name: profile.nickname, count: displayEntries.length })}
 					</div>
 				</div>
 			</div>
@@ -74,7 +192,7 @@
 				<div class="ml-0.5 font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
 					{t('library.installedLabel')}
 				</div>
-				{#each INSTALLED_STORIES as story (story.id)}
+				{#each displayEntries as story (story.id)}
 					<button
 						type="button"
 						onclick={openStory}
@@ -138,33 +256,63 @@
 				<div class="font-mono text-[9.5px] tracking-[0.1em] text-slate-500">
 					{t('library.importLabel')}
 				</div>
+				<input
+					bind:this={fileInput}
+					type="file"
+					accept=".zip"
+					class="hidden"
+					onchange={onZipChosen}
+				/>
 				<div class="mt-2.5 flex gap-2.5">
 					<button
 						type="button"
-						class="flex-1 rounded-control border border-accent/50 bg-accent/15 px-3 py-3 text-label font-medium text-slate-100 hover:bg-accent/25"
+						disabled={importing}
+						onclick={pickZip}
+						class="flex-1 rounded-control border border-accent/50 bg-accent/15 px-3 py-3 text-label font-medium text-slate-100 hover:bg-accent/25 disabled:opacity-50"
 					>
-						{t('library.importZip')}
+						{importing ? t('library.importing') : t('library.importZip')}
 					</button>
 					<button
 						type="button"
-						class="flex-1 rounded-control border border-line-strong px-3 py-3 text-label font-medium text-slate-200 hover:bg-slate-100/8"
+						disabled={importing}
+						onclick={openUrlField}
+						class="flex-1 rounded-control border border-line-strong px-3 py-3 text-label font-medium text-slate-200 hover:bg-slate-100/8 disabled:opacity-50"
 					>
 						{t('library.importUrl')}
 					</button>
 				</div>
+				{#if urlFieldOpen}
+					<div class="mt-2.5 flex gap-2">
+						<input
+							bind:value={urlDraft}
+							onkeydown={(event) => event.key === 'Enter' && submitUrlImport()}
+							placeholder={t('library.importUrlPlaceholder')}
+							class="min-w-0 flex-1 rounded-control border border-line-strong bg-slate-100/5 px-3 py-2 text-label text-slate-100 placeholder:text-slate-500 focus:border-accent/60 focus:outline-none"
+						/>
+						<button
+							type="button"
+							disabled={importing}
+							onclick={submitUrlImport}
+							class="flex-none rounded-control border border-accent/50 bg-accent/15 px-3 py-2 text-label font-medium text-slate-100 disabled:opacity-50"
+						>
+							{t('library.importUrlApply')}
+						</button>
+					</div>
+				{/if}
 				<div class="mt-2.5 text-label leading-relaxed text-slate-500">
 					{t('library.importNote')}
 				</div>
 			</div>
 
-			<div
-				class="mt-4 mb-1 self-center rounded-control bg-slate-100/6 px-3 py-1.5 text-center font-mono text-[10.5px] text-slate-400"
-			>
-				{t('library.lastInstalledNote', {
-					title: LAST_INSTALLED_NOTE.title,
-					size: LAST_INSTALLED_NOTE.size
-				})}
-			</div>
+			{#each notices as notice (notice.id)}
+				<div
+					class="mt-2.5 mb-1 self-center rounded-control px-3 py-1.5 text-center font-mono text-[10.5px] {notice.failed
+						? 'bg-danger/15 text-danger'
+						: 'bg-slate-100/6 text-slate-400'}"
+				>
+					{notice.text}
+				</div>
+			{/each}
 			<div class="h-1.5 flex-none"></div>
 		</div>
 	</div>

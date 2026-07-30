@@ -8,11 +8,21 @@
 	import MilestoneItem from '$lib/components/chat/MilestoneItem.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 	import { game } from '$lib/state/game.svelte.js';
+	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { STORY_META } from '$lib/story/lucys-portmonnaie.js';
 
 	const total = $derived(game.milestones.length);
 	const done = $derived(game.milestones.filter((m) => m.done).length);
 	const donePercent = $derived(total > 0 ? (done / total) * 100 : 0);
+
+	// Real scene progress from the engine, not the mock's fixed chapter numbers — falls back
+	// to STORY_META's flavor numbers only until `storyRuntime` has finished loading.
+	const totalScenes = $derived(storyRuntime.progress?.totalSceneCount ?? STORY_META.totalChapters);
+	const currentScene = $derived(
+		storyRuntime.progress
+			? storyRuntime.progress.completedSceneCount + 1
+			: STORY_META.currentChapter
+	);
 </script>
 
 <svelte:head><title>{t('story.title')} · Riddlon</title></svelte:head>
@@ -29,8 +39,8 @@
 		<span class="font-mono text-[9px] tracking-[0.11em] text-slate-600">
 			{t('story.chapterInfo', {
 				story: STORY_META.title.toUpperCase(),
-				chapter: STORY_META.currentChapter,
-				total: STORY_META.totalChapters
+				chapter: currentScene,
+				total: totalScenes
 			})}
 		</span>
 	</InfoBand>
@@ -43,7 +53,7 @@
 					<span class="min-w-0 flex-1">
 						<span class="block text-h2 font-medium text-slate-100">{STORY_META.title}</span>
 						<span class="mt-1 block text-label text-slate-400">
-							{STORY_META.genre} · Kapitel {STORY_META.currentChapter} von {STORY_META.totalChapters}
+							{STORY_META.genre} · Kapitel {currentScene} von {totalScenes}
 							·
 							{STORY_META.contactCount} Kontakte
 						</span>
@@ -58,7 +68,7 @@
 					onclick={() => goto(resolve('/chat/[thread]', { thread: 'lucy' }))}
 					class="mt-4 w-full rounded-tile border border-accent/50 bg-accent/15 py-3.5 text-label font-medium text-slate-100 hover:bg-accent/25"
 				>
-					{t('story.continue', { chapter: STORY_META.currentChapter })}
+					{t('story.continue', { chapter: currentScene })}
 				</button>
 			</div>
 

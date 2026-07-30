@@ -7,6 +7,7 @@
 	import { findModel } from '$lib/llm/catalog.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { profile } from '$lib/state/profile.svelte.js';
+	import { game } from '$lib/state/game.svelte.js';
 	import { hasOnboarded, markOnboarded } from '$lib/state/onboarding.js';
 	import {
 		bootStepFor,
@@ -61,6 +62,10 @@
 	}
 
 	function runWarmSequence() {
+		// Fire-and-forget: a returning player's package/save already exist, so this resolves
+		// almost immediately, but `/chats` shouldn't have to wait for it to start loading.
+		void game.init();
+
 		const steps = warmBootSteps();
 		const span = bootStepSpanMs();
 		currentStep = steps[0] ?? null;
@@ -87,11 +92,19 @@
 		}
 		if (abort.signal.aborted) return;
 
-		// TODO(#10/#19): a fixed beat, until there is a real package import to report progress for.
 		const installing = bootStepFor({ kind: 'story-install' });
 		percent = installing.percent;
 		currentStep = installing;
-		timers.push(setTimeout(finish, bootStepSpanMs()));
+		try {
+			// Real install (validate → store assets → register), not a fixed-duration timer —
+			// see `$lib/story/bootstrap.ts`. No incremental progress to report mid-install, so
+			// the bar just holds at `installing.percent` until this resolves.
+			await game.init();
+		} catch {
+			// A failed story install shouldn't strand the player on the splash screen —
+			// `/chats` surfaces the gap instead of a silent retry loop here.
+		}
+		finish();
 	}
 
 	function showError() {
