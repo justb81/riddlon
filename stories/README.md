@@ -93,16 +93,17 @@ minor for added scenes or clues, major for a change that would invalidate an exi
 ## Known format gaps
 
 Things the reference story needs but the package format (issue #4) has no field for yet. These
-are content the LLM/UI currently has to improvise, not bugs in the packages:
+are content the LLM/UI currently has to improvise, not bugs in the packages. Each has an issue;
+closing one includes filling the gap in `lucys-portmonnaie/` and deleting its bullet here:
 
-- **Seed chats** (§7 step 6 — new contacts arrive with pre-generated history). No schema home;
-  the scene's `goals` are the only hint the model gets.
-- **Identity masking** (§7 steps 1–3 — a contact shows as "Unbekannt" until they introduce
-  themselves). Modelled here as a scene plus `flag:lucy-identified`; the display-name swap
-  itself is a UI concern with no package field behind it.
-- **Achievement conditions**. `achievementSchema` is id/label/description only (an explicit
+- **Seed chats** (#30) — §7 step 6 has new contacts arrive with pre-generated history. No schema
+  home; the scene's `goals` are the only hint the model gets, so an unlocked thread opens empty.
+- **Identity masking** (#31) — §7 steps 1–3 show a contact as "Unbekannt" until they introduce
+  themselves. Modelled here as a scene plus `flag:lucy-identified`, but the name itself lives on
+  the story-independent character identity, so every surface renders "Lucy" from message one.
+- **Achievement conditions** (#32) — `achievementSchema` is id/label/description only (an explicit
   open point in concept §9), so the three endings are declared but nothing evaluates when they
-  are earned — that lands with #17.
-- **Cancelling an armed delayed event.** `fireDueEvents` doesn't re-check the condition, so
-  "nudge the player _if_ they haven't replied" can't be expressed. `event:lucy-nudge` therefore
-  only means "the nudge window has elapsed"; whether to actually send one is left to the UI.
+  are earned. Blocks #17.
+- **Delayed events don't re-check their condition** (#33) — `fireDueEvents` fires on elapsed time
+  alone, so "nudge the player _if_ they haven't replied" can't be expressed. `event:lucy-nudge`
+  therefore only means "the nudge window has elapsed"; whether to send one is left to the UI.
