@@ -6,13 +6,19 @@
  * fields, exported as one instance, every method inert outside the browser. The adapter is built
  * lazily inside it so nothing WebGPU-shaped is touched during prerender.
  *
- * Note this holds *loaded* state, not the player's preference — `profile.model` owns the choice, and
- * the two genuinely differ: you can select a model that hasn't been downloaded yet.
+ * There is no player preference to reconcile this against: which model runs is entirely the app's
+ * decision (native Prompt API first, else `capabilities.ts`'s `bestSupportedModelId`), so this store
+ * is the only source of truth — the settings screen's model list is a read-only view over it.
  */
 
 import { browser } from '$app/environment';
 import { createLlmAdapter } from './adapter.js';
-import { canRunModel, detectLlmCapabilities, type LlmCapabilities } from './capabilities.js';
+import {
+	canRunModel,
+	detectLlmCapabilities,
+	unsupportedModelReason,
+	type LlmCapabilities
+} from './capabilities.js';
 import { shouldAutoStartDownload } from './capabilities-rules.js';
 import { DEFAULT_MODEL_ID, MODEL_ORDER, type LocalModelId } from './catalog.js';
 import { LlmError, classifyLoadError, type LlmErrorCode } from './errors.js';
@@ -62,6 +68,18 @@ class LlmStore {
 		return capabilities ? canRunModel(capabilities, modelId) : true;
 	}
 
+	/** `undefined` when `modelId` can run here (or capabilities haven't been probed yet). */
+	unsupportedReason(modelId: LocalModelId): LlmErrorCode | undefined {
+		const capabilities = this.capabilities;
+		return capabilities ? unsupportedModelReason(capabilities, modelId) : undefined;
+	}
+
+	/** The model currently downloading/preparing, for a per-row progress display. `null` when idle. */
+	get loadingModelId(): LocalModelId | null {
+		if (this.status !== 'downloading' && this.status !== 'preparing') return null;
+		return this.#adapterModelId ?? null;
+	}
+
 	async detect(): Promise<void> {
 		if (!browser) return;
 		this.status = 'checking';
@@ -90,6 +108,24 @@ class LlmStore {
 		const result = await isModelCached(modelId);
 		this.cached = { ...this.cached, [modelId]: result };
 		return result;
+	}
+
+	/**
+	 * Whether loading `modelId` right now would find the model already on the device — as opposed to
+	 * needing a real download. Native-aware: when the native Prompt API is present it answers for
+	 * `modelId` regardless of catalog choice (`provider.ts`'s `resolveFresh` tries native first), so
+	 * this asks its own `availability()` rather than `isModelCached`, which only ever probes the
+	 * WebLLM cache and so can't see native state at all — on a device that already has e.g. Gemini
+	 * Nano, `isModelCached` would say "not cached" and the boot screen would show an unearned
+	 * first-run download bar for a model that needs no download.
+	 */
+	async isModelReady(modelId: LocalModelId): Promise<boolean> {
+		if (!browser) return false;
+		if (!this.capabilities) await this.detect();
+		if (this.capabilities?.hasNativeLanguageModel) {
+			return (await this.#ensureAdapter(modelId).availability()) === 'ready';
+		}
+		return this.isModelCached(modelId);
 	}
 
 	/**
@@ -127,8 +163,8 @@ class LlmStore {
 			throw new LlmError('insufficient-vram');
 		}
 
-		const alreadyCached = await this.isModelCached(modelId);
-		if (!alreadyCached && browser && navigator.onLine === false) {
+		const alreadyReady = await this.isModelReady(modelId);
+		if (!alreadyReady && browser && navigator.onLine === false) {
 			this.#fail('offline');
 			throw new LlmError('offline');
 		}

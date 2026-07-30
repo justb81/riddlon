@@ -5,11 +5,23 @@
  * a config change rather than a code change (issue #12's first acceptance criterion).
  *
  * Model choice: the reference story is German, and Phi-3 Mini / Llama 3 8B (the placeholders in
- * docs/design/riddlon-app-mockup.dc.html) are both weak at it. Llama 3.2 3B is the small default,
- * Llama 3.1 8B the option for machines that can hold it.
+ * docs/design/riddlon-app-mockup.dc.html) are both weak at it. Llama 3.2 3B is the default; 3.2 1B
+ * is the fallback below it for weaker devices, auto-selected by `capabilities.ts`'s
+ * `bestSupportedModelId` — never picked by the player (the settings screen's model list is
+ * read-only). Deliberately no 8B tier: Llama 3.2 tops out at 3B, and stepping up to the older
+ * Llama 3.1 8B for a marginal quality gain isn't worth doubling the download for the rare device
+ * that can hold it but has no native Prompt API.
+ *
+ * `vramRequiredMB` for every entry here is taken from `@mlc-ai/web-llm`'s own `prebuiltAppConfig`
+ * model list, which ships exactly this figure per model — `catalog.spec.ts` asserts our copies stay
+ * in sync with it so a web-llm version bump that changes these numbers fails loudly instead of
+ * quietly mis-sizing the VRAM check. It isn't imported here directly: `@mlc-ai/web-llm` is a heavy,
+ * WASM-adjacent dependency, and this module is imported far outside the WebLLM-only code path (e.g.
+ * the settings screen, which a native-Prompt-API player never needs it for) — pulling it in here
+ * would bundle it for everyone.
  */
 
-export type LocalModelId = 'llama-3.2-3b' | 'llama-3.1-8b';
+export type LocalModelId = 'llama-3.2-1b' | 'llama-3.2-3b';
 
 export interface LlmModelDescriptor {
 	id: LocalModelId;
@@ -35,6 +47,16 @@ export interface LlmModelDescriptor {
 const GB = 1024 * 1024 * 1024;
 
 export const LLM_MODELS: Record<LocalModelId, LlmModelDescriptor> = {
+	'llama-3.2-1b': {
+		id: 'llama-3.2-1b',
+		label: 'Llama 3.2 1B',
+		mlcModelId: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+		// No download-size field exists in web-llm's model list (only vram/compute figures) — this
+		// stays a seeded estimate; correct it from a measured download if it drifts.
+		approxDownloadBytes: 900 * 1024 * 1024,
+		vramRequiredMB: 879,
+		contextWindow: 4096
+	},
 	'llama-3.2-3b': {
 		id: 'llama-3.2-3b',
 		label: 'Llama 3.2 3B',
@@ -42,21 +64,13 @@ export const LLM_MODELS: Record<LocalModelId, LlmModelDescriptor> = {
 		approxDownloadBytes: Math.round(1.9 * GB),
 		vramRequiredMB: 2264,
 		contextWindow: 4096
-	},
-	'llama-3.1-8b': {
-		id: 'llama-3.1-8b',
-		label: 'Llama 3.1 8B',
-		mlcModelId: 'Llama-3.1-8B-Instruct-q4f16_1-MLC',
-		approxDownloadBytes: Math.round(4.6 * GB),
-		vramRequiredMB: 5001,
-		contextWindow: 4096
 	}
 };
 
 export const DEFAULT_MODEL_ID: LocalModelId = 'llama-3.2-3b';
 
-/** Catalog order is the order the settings picker shows: smallest (and default) first. */
-export const MODEL_ORDER: readonly LocalModelId[] = ['llama-3.2-3b', 'llama-3.1-8b'];
+/** Catalog order is the order the settings picker shows: smallest first. */
+export const MODEL_ORDER: readonly LocalModelId[] = ['llama-3.2-1b', 'llama-3.2-3b'];
 
 export function llmModelOptions(): readonly LlmModelDescriptor[] {
 	return MODEL_ORDER.map((id) => LLM_MODELS[id]);

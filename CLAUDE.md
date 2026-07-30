@@ -87,9 +87,18 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
 **Native first, polyfill fallback** — a built-in model costs no download, so it wins when present.
 
 - **`catalog.ts`** — the only place a Riddlon model id maps to an MLC model id. Two entries, chosen
-  for German dialogue: `llama-3.2-3b` (default) and `llama-3.1-8b`. `approxDownloadBytes` (what the
-  player waits for) and `vramRequiredMB` (peak GPU memory, the capability check) are separate figures
-  and must never be conflated — the design mockup's "1,8 GB / 4,6 GB" were download sizes.
+  for German dialogue: `llama-3.2-1b` and `llama-3.2-3b` (default), forming the fallback ladder
+  `capabilities.ts`'s `bestSupportedModelId` auto-selects from when there's no native Prompt API —
+  the player never picks a model directly (the settings screen's model list is a read-only status
+  view, not a picker; see `model-status.ts`). Deliberately no larger tier: Llama 3.2 tops out at 3B,
+  and the older Llama 3.1 8B isn't worth doubling the download for the rare device that could hold it
+  but has no native Prompt API. `vramRequiredMB` is copied from
+  `@mlc-ai/web-llm`'s own `prebuiltAppConfig` model list (`catalog.spec.ts` asserts the copies stay in
+  sync), not hand-guessed — `catalog.ts` itself still never imports `@mlc-ai/web-llm` directly, since
+  that's a heavy dependency this module is reachable from far outside the WebLLM-only code path.
+  `approxDownloadBytes` (what the player waits for) and `vramRequiredMB` (peak GPU memory, the
+  capability check) are separate figures and must never be conflated — the design mockup's
+  "1,8 GB / 4,6 GB" were download sizes.
 - **`adapter.ts`** — `LlmAdapter` / `LlmSession`, what `engine/` and `ui/` code against. Injects its
   provider, so `adapter.spec.ts` exercises the real logic against a fake in Node with no GPU.
 - **`provider.ts`** — the _only_ file touching `globalThis.LanguageModel`, `window.WEBLLM_CONFIG` or

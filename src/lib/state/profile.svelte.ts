@@ -1,18 +1,20 @@
 /** App-wide player profile & settings singleton — "gilt für alle Geschichten". */
 
 import { browser } from '$app/environment';
-import { DEFAULT_MODEL_ID, type LocalModelId } from '$lib/llm/catalog.js';
 import { playerProfileStore } from '$lib/storage/index.js';
 import type { DisguiseMode, Pronoun } from './profile.js';
 
 const APP_SETTINGS_KEY = 'riddlon:app-settings';
 
-/** Disguise level, model choice and the notify toggle are app-level settings, not part of
- *  the story-package `PlayerProfile` schema — kept in `localStorage` (like `onboarding.ts`),
- *  separate from the IndexedDB-backed `playerProfileStore` that owns nickname/bio/pronouns. */
+/** Disguise level and the notify toggle are app-level settings, not part of the story-package
+ *  `PlayerProfile` schema — kept in `localStorage` (like `onboarding.ts`), separate from the
+ *  IndexedDB-backed `playerProfileStore` that owns nickname/bio/pronouns.
+ *
+ *  There is deliberately no model choice here: which local model runs is entirely the app's
+ *  decision (native Prompt API first, else the best WebLLM model this device can hold — see
+ *  `$lib/llm/capabilities.ts`'s `bestSupportedModelId`), not something the player picks. */
 interface StoredAppSettings {
 	disguise: DisguiseMode;
-	model: LocalModelId;
 	notify: boolean;
 }
 
@@ -41,11 +43,6 @@ class ProfileStore {
 	addressAs = $state<Pronoun>('they/them');
 	disguise = $state<DisguiseMode>('subtle');
 	notify = $state(true);
-	/**
-	 * The model the player *chose*. What's actually loaded is `llm.activeModelId` — the two differ
-	 * whenever a selected model hasn't been downloaded yet.
-	 */
-	model = $state<LocalModelId>(DEFAULT_MODEL_ID);
 
 	#loaded = false;
 
@@ -56,7 +53,6 @@ class ProfileStore {
 	async #load(): Promise<void> {
 		const stored = loadAppSettings();
 		if (stored.disguise) this.disguise = stored.disguise;
-		if (stored.model) this.model = stored.model;
 		if (stored.notify !== undefined) this.notify = stored.notify;
 
 		const saved = await playerProfileStore.get();
@@ -75,7 +71,7 @@ class ProfileStore {
 	 *  fields, no per-keystroke fan-out risk) to call on every change rather than debounce. */
 	persist(): void {
 		if (!browser || !this.#loaded) return;
-		saveAppSettings({ disguise: this.disguise, model: this.model, notify: this.notify });
+		saveAppSettings({ disguise: this.disguise, notify: this.notify });
 		playerProfileStore
 			.save({
 				displayName: this.nickname.trim() || undefined,
