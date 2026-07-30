@@ -1,0 +1,20 @@
+{
+	"format": "chatstory-package",
+	"formatVersion": "1.0.0",
+	"id": "7e9c1a2b-3d4e-4f5a-8b6c-9d0e1f2a3b4c",
+	"title": "Lucys Portmonnaie",
+	"version": "1.0.0",
+	"author": "Riddlon Team",
+	"language": "de",
+	"entryStory": "story/story.json",
+	"entryGraph": "story/graph.json",
+	"characters": [
+		"characters/3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f.character.json",
+		"characters/8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e.character.json",
+		"characters/c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e.character.json"
+	],
+	"world": ["world/clues.json", "world/facts.json", "world/secrets.json"],
+	"assetsBase": "assets/",
+	"minPlayerVersion": "0.1.0",
+	"capabilities": ["local-llm", "delayed-events", "multi-character-chat", "group-chat"]
+}

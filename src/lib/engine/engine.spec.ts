@@ -7,13 +7,15 @@ import {
 	MAX_ID as WALKTHROUGH_MAX_ID,
 	SABINE_ID as WALKTHROUGH_SABINE_ID,
 	SCENE_GROUP_CONFRONTATION,
+	SCENE_LUCY_INTRO,
 	SCENE_LUCY_SUSPICION,
 	SCENE_MAX_QUESTIONING_1,
 	SCENE_MAX_QUESTIONING_2,
 	SCENE_REPORT_1,
 	SCENE_REPORT_2,
 	SCENE_SABINE_QUESTIONING_1,
-	SCENE_SABINE_QUESTIONING_2
+	SCENE_SABINE_QUESTIONING_2,
+	SCENE_UNKNOWN_CONTACT
 } from '$lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
 import { isClueConflicting } from './clues.js';
 import { StoryEngine } from './engine.js';
@@ -156,7 +158,7 @@ function makeWalkthroughEngine(clock: () => number): StoryEngine {
 }
 
 describe('walkthrough: docs/concept.md §7 "Lucys Portmonnaie" end-to-end (#7, #8, #9)', () => {
-	it('the walkthrough fixture validates against the package format with zero errors', () => {
+	it('the shipped package validates against the package format with zero errors', () => {
 		const result = validatePackage(buildWalkthroughPackageFiles());
 		expect(result.valid).toBe(true);
 		expect(result.errors).toEqual([]);
@@ -166,10 +168,22 @@ describe('walkthrough: docs/concept.md §7 "Lucys Portmonnaie" end-to-end (#7, #
 		let now = 1_700_000_000_000;
 		const engine = makeWalkthroughEngine(() => now);
 
-		// Steps 1-4: Lucy is visible from story start; Max/Sabine are not yet named.
+		// Steps 1-3: the cold-open scene is the only thing unlocked; Lucy is already a
+		// contact (her display name still reading "Unbekannt" is a UI concern, not a graph
+		// one), Max/Sabine are not. The ~20min "no reaction yet" nudge arms immediately.
+		expect(engine.progress().unlockedSceneIds).toEqual([SCENE_UNKNOWN_CONTACT]);
 		expect(engine.isCharacterVisible(WALKTHROUGH_LUCY_ID)).toBe(true);
 		expect(engine.isCharacterVisible(WALKTHROUGH_MAX_ID)).toBe(false);
 		expect(engine.isCharacterVisible(WALKTHROUGH_SABINE_ID)).toBe(false);
+		expect(engine.state.pendingDelayedEvents).toContainEqual({
+			eventId: 'event:lucy-nudge',
+			dueAt: new Date(now + 20 * 60 * 1000).toISOString(),
+			fired: false
+		});
+
+		// Step 4: Lucy identifies herself and asks for help.
+		engine.setFlag('flag:lucy-identified', now);
+		expect(engine.progress().unlockedSceneIds).toContain(SCENE_LUCY_INTRO);
 
 		// Step 5-6: Lucy names Max and Sabine — both appear as contacts, both questioning scenes unlock.
 		engine.setFlag('flag:witnesses-named', now);
@@ -203,18 +217,22 @@ describe('walkthrough: docs/concept.md §7 "Lucys Portmonnaie" end-to-end (#7, #
 
 		// Step 8: player reports to Lucy — the ~2h delayed event arms but hasn't fired.
 		engine.setFlag('flag:report-to-lucy-done', now);
-		expect(engine.state.pendingDelayedEvents).toEqual([
-			{
-				eventId: 'event:lucy-followup',
-				dueAt: new Date(now + 2 * HOUR_MS).toISOString(),
-				fired: false
-			}
-		]);
+		expect(engine.state.pendingDelayedEvents).toContainEqual({
+			eventId: 'event:lucy-followup',
+			dueAt: new Date(now + 2 * HOUR_MS).toISOString(),
+			fired: false
+		});
 		expect(engine.progress().unlockedSceneIds).not.toContain(SCENE_LUCY_SUSPICION);
 
-		// Reopening BEFORE the delay has elapsed does not fire the event.
+		// Reopening BEFORE the delay has elapsed does not fire the followup. (The unrelated
+		// step-2 nudge is long overdue by now and does fire here — hence the per-event check.)
 		now += HOUR_MS;
-		expect(engine.resume(now).some((e) => e.type === 'delayed-event-fired')).toBe(false);
+		const earlyEffects = engine.resume(now);
+		expect(
+			earlyEffects.some(
+				(e) => e.type === 'delayed-event-fired' && e.eventId === 'event:lucy-followup'
+			)
+		).toBe(false);
 		expect(engine.progress().unlockedSceneIds).not.toContain(SCENE_LUCY_SUSPICION);
 
 		// Step 9: after ~2h total, the delayed event fires exactly once.

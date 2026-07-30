@@ -1,0 +1,119 @@
+name: Story packages
+
+# Story packages under stories/ version and release independently of the app: the app's
+# version is release-please's business (release-please.yml), a story's version lives in its
+# own manifest.json. Bumping `version` there and merging to main publishes a new story
+# release; nothing else does.
+#
+# The path filters are duplicated between `push` and `pull_request` because GitHub Actions
+# does not support YAML anchors — keep the two lists in sync.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'stories/**'
+      - 'scripts/build-stories.mjs'
+      - 'src/lib/content/**'
+      - '.github/workflows/stories.yml'
+  pull_request:
+    paths:
+      - 'stories/**'
+      - 'scripts/build-stories.mjs'
+      - 'src/lib/content/**'
+      - '.github/workflows/stories.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stories-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stories:
+    name: Validate, pack & publish
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed by the publish step below; ignored on pull_request runs, which never publish.
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+
+      # Fails the run on any schema error, dangling reference, undeclared file or missing
+      # asset, and writes dist/stories/<slug>-v<version>.zip plus a build index.
+      - run: npm run stories:build
+
+      # A published version is immutable: its zip is already installed on players' devices.
+      # Editing a story without bumping its version would otherwise merge silently and
+      # publish nothing, leaving the release serving stale content. Comparing the freshly
+      # built checksum against the released one catches exactly that — and only that, since
+      # an unchanged story rebuilds byte-identically (see scripts/build-stories.mjs).
+      - name: Reject content changes to an already-released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          drift=0
+          tmp=$(mktemp -d)
+          while IFS=$'\t' read -r slug version tag zip sha; do
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              echo "· $slug v$version is unreleased — will publish"
+              continue
+            fi
+            rm -f "$tmp/$zip.sha256"
+            if ! gh release download "$tag" --pattern "$zip.sha256" --dir "$tmp" >/dev/null 2>&1; then
+              echo "· $tag has no checksum asset — cannot compare, skipping"
+              continue
+            fi
+            released=$(cut -d' ' -f1 "$tmp/$zip.sha256")
+            if [ "$released" = "$sha" ]; then
+              echo "· $slug v$version is unchanged from its release"
+            else
+              echo "✖ $slug: content differs from the published $tag"
+              echo "    released: $released"
+              echo "    built:    $sha"
+              echo "    Bump \"version\" in stories/$slug/manifest.json to publish this change."
+              drift=1
+            fi
+          done < <(jq -r '.[] | [.slug, .version, .tag, .zip, .sha256] | @tsv' dist/stories/index.json)
+          exit $drift
+
+      - name: Create a release per story whose version has no tag yet
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          published=0
+          # index.json is written by scripts/build-stories.mjs, one entry per story package.
+          while IFS=$'\t' read -r slug title version tag zip; do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "· $tag already released — skipping"
+              continue
+            fi
+            echo "→ publishing $tag"
+            notes=$(printf '%s\n' \
+              "Story package \`$slug\` version \`$version\` for the Riddlon player." \
+              "" \
+              "Install it from the Riddlon system chat: **ZIP wählen** with the downloaded file, or" \
+              "**URL einfügen** with this asset's download URL." \
+              "" \
+              "\`$zip.sha256\` is the checksum of the archive; \`signatures/checksums.json\` inside it" \
+              "covers each contained file." \
+              "" \
+              "Built from \`stories/$slug/\` at commit ${{ github.sha }}.")
+            gh release create "$tag" \
+              "dist/stories/$zip" \
+              "dist/stories/$zip.sha256" \
+              --title "$title v$version" \
+              --notes "$notes"
+            published=$((published + 1))
+          done < <(jq -r '.[] | [.slug, .title, .version, .tag, .zip] | @tsv' dist/stories/index.json)
+          echo "Published $published new story release(s)."

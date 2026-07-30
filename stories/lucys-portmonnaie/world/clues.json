@@ -1,0 +1,48 @@
+[
+	{
+		"id": "clue:time-window",
+		"type": "clue",
+		"label": "Ungefähre Tatzeit",
+		"confirmedBy": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e", "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+		"conflicting": true
+	},
+	{
+		"id": "clue:location",
+		"type": "clue",
+		"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte",
+		"confirmedBy": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e", "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+		"conflicting": false
+	},
+	{
+		"id": "clue:stolen-item",
+		"type": "clue",
+		"label": "Gestohlener Gegenstand",
+		"confirmedBy": [
+			"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+			"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+			"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+		],
+		"conflicting": false
+	},
+	{
+		"id": "clue:suspect-description",
+		"type": "clue",
+		"label": "Täterbeschreibung",
+		"confirmedBy": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e", "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+		"conflicting": false
+	},
+	{
+		"id": "clue:hans-accusation",
+		"type": "clue",
+		"label": "Hans’ Hinweis auf Max",
+		"confirmedBy": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+		"conflicting": false
+	},
+	{
+		"id": "clue:max-whereabouts",
+		"type": "clue",
+		"label": "Max’ Aufenthaltsort zur Tatzeit",
+		"confirmedBy": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e", "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
+		"conflicting": true
+	}
+]

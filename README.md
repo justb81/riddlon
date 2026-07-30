@@ -76,7 +76,9 @@ src/
     story/                  # mock installed-story-package content ("Lucys Portmonnaie")
     i18n/                   # de.json dictionary + t() lookup — see CLAUDE.md "i18n"
 static/                     # manifest.webmanifest, icons, robots.txt
-.github/                    # CI, Dependabot, release-please, GitHub Pages deploy
+stories/                    # authored story packages — built & released separately, see stories/README.md
+scripts/build-stories.mjs   # validates + packs stories/ into dist/stories/*.zip
+.github/                    # CI, Dependabot, release-please, GitHub Pages deploy, story releases
 ```
 
 ## Commands
@@ -90,6 +92,8 @@ static/                     # manifest.webmanifest, icons, robots.txt
 | Unit tests       | `npm test` (once) / `npm run test:unit` (watch) |
 | Lint             | `npm run lint`                                  |
 | Format           | `npm run format`                                |
+| Validate stories | `npm run stories:validate`                      |
+| Pack stories     | `npm run stories:build` → `dist/stories/*.zip`  |
 
 Tests run under Vitest's `server` (Node) project, which matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is on — every test must assert at least once.
@@ -112,6 +116,14 @@ triggers the deploy. The release-please workflow expects a `RELEASE_TOKEN` repos
 so the created release can trigger the deploy workflow — see the comment in
 `.github/workflows/release-please.yml`. Enable **Settings → Pages → Source: GitHub Actions** in the
 new repo before the first release.
+
+### Story releases
+
+Story packages under [`stories/`](./stories/) version and ship independently of the app.
+`.github/workflows/stories.yml` validates them on every PR and, on `main`, publishes a GitHub
+release per package version — tagged `story-<slug>-v<version>` with the `.zip` and its `.sha256`
+attached. Bumping `version` in a story's `manifest.json` and merging is the whole procedure; the
+deploy workflow ignores `story-*` tags so a content release doesn't redeploy the site.
 
 ## Conventions & gotchas
 

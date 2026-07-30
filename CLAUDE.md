@@ -41,6 +41,34 @@ doc's "App 2" module breakdown as the issue backlog works through them:
 | `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`)                                                   |
 | `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                                           |
 
+## Story packages (`stories/`)
+
+Story content is **not** part of the app bundle — it's authored under `stories/<slug>/` as the
+unzipped package layout from `docs/concept.md` §5 and released separately. Read
+[`stories/README.md`](./stories/README.md) before touching any of it.
+
+- `stories/lucys-portmonnaie/` is the concept §7 reference story (#19) — manifest, three character
+  identities, a 10-node scene graph over all 15 walkthrough steps, clues/facts/secrets, placeholder
+  SVG assets. Its own README maps each §7 step to a scene id and lists the flags the engine expects
+  callers to set.
+- `scripts/build-stories.mjs` (`npm run stories:validate` / `stories:build`) validates each package
+  with the app's own `src/lib/content/validate-package.ts` — loaded through Vite's SSR module
+  runner, which is why validating shipped content needs no separate TS runner or new dependency —
+  and packs a reproducible zip into `dist/stories/`.
+- `.github/workflows/stories.yml` publishes one GitHub release per package version, tagged
+  `story-<slug>-v<version>` — each package releases independently, so editing one story never
+  re-releases the others. **Bumping `version` in a `manifest.json` and merging to `main` is the
+  entire release procedure.** `deploy.yml` skips `story-*` tags so a content release doesn't
+  redeploy the site. A released version is immutable: the workflow diffs each built zip's
+  checksum against the released one and fails with "bump the version" rather than letting an
+  edit merge without publishing.
+
+The shipped package is the engine's acceptance fixture, not a copy of it: `__fixtures__/lucys-portmonnaie-walkthrough.ts`
+reads `stories/lucys-portmonnaie/` off disk (Node-only — specs only, never app code), so
+`engine.spec.ts`'s §7 walkthrough plays through the exact content that gets released. Editing the
+story means editing the JSON. `src/lib/content/story-packages.spec.ts` additionally validates every
+package under `stories/` on a plain `npm test`.
+
 ## Local LLM
 
 `src/lib/llm/` runs inference in the browser. It does **not** define its own backend vocabulary: the
@@ -187,6 +215,8 @@ titles) is **not** in the dictionary — see "Chat UI" above.
 | Single test by name | `npx vitest run -t "mentionsEvidence"`                     |
 | Lint                | `npm run lint` (prettier `--check` + eslint)               |
 | Format              | `npm run format`                                           |
+| Validate stories    | `npm run stories:validate`                                 |
+| Pack stories        | `npm run stories:build` → zips in `dist/stories/`          |
 
 Tests run under Vitest's `server` (Node) project, which only matches `src/**/*.{test,spec}.{js,ts}`
 (not `*.svelte.{test,spec}.*`). `requireAssertions` is enabled — every test must make at least one
@@ -298,6 +328,10 @@ in non-supporting environments (`browser` from `$app/environment`, plus feature 
 raises the version/changelog PR from Conventional Commits; **deploy** (`deploy.yml`) builds with
 `BASE_PATH` set to the Pages subpath and publishes to GitHub Pages on each release. The release-please
 workflow needs a `RELEASE_TOKEN` repository secret (a PAT) so a created release can trigger the deploy.
+
+**Story packages release on their own track** (`stories.yml`, see "Story packages" above) — content
+versions are independent of app versions, so release-please never sees them and `deploy.yml` filters
+`story-*` tags back out.
 
 ## Conventions & gotchas
 

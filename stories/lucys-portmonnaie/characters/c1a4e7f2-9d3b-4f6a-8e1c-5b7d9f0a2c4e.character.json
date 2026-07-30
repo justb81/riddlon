@@ -1,0 +1,10 @@
+{
+	"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+	"slug": "sabine",
+	"displayName": "Sabine",
+	"avatar": "assets/avatars/sabine.svg",
+	"voiceStyle": "ruhig und ausführlich, schränkt sich selbst ein (‚ich glaube‘, ‚so genau weiß ich das nicht‘)",
+	"corePersonality": "aufmerksam und gewissenhaft; erinnert sich an Details, will aber niemandem unrecht tun und betont deshalb, was sie nur vermutet.",
+	"originPackage": "7e9c1a2b-3d4e-4f5a-8b6c-9d0e1f2a3b4c",
+	"shareable": true
+}

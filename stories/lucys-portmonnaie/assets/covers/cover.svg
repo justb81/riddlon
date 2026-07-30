@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-label="Lucys Portmonnaie">
+  <title>Lucys Portmonnaie</title>
+  <rect width="640" height="360" fill="#151a26" />
+  <rect x="24" y="24" width="592" height="312" fill="none" stroke="#c1502e" stroke-width="2" />
+  <text x="64" y="168" fill="#f3eee3" font-family="Georgia, 'Times New Roman', serif" font-size="52">Lucys Portmonnaie</text>
+  <text x="64" y="212" fill="#c1502e" font-family="Georgia, 'Times New Roman', serif" font-size="22" letter-spacing="4">KRIMI · REFERENZSTORY</text>
+  <text x="64" y="300" fill="#8c93a1" font-family="Georgia, 'Times New Roman', serif" font-size="18">Platzhalter-Cover</text>
+</svg>
