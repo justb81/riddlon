@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/justb81/riddlon/compare/riddlon-v0.6.2...riddlon-v0.7.0) (2026-07-30)
+
+
+### Features
+
+* **content:** bundle the example story and pack clue counts into progress ([358c757](https://github.com/justb81/riddlon/commit/358c7572163c20efefce550fa8d8330d284e563d))
+* **llm:** build personas and judge story progress from the conversation ([df57957](https://github.com/justb81/riddlon/commit/df57957112409de606c8d81a2b37a7ebab41ee90))
+
+
+### Bug Fixes
+
+* drive chats from the installed package, delete the demo mockups ([a465c4f](https://github.com/justb81/riddlon/commit/a465c4f6806ef539abe6461ff104db816f4bcf71))
+* **engine:** activate an installed package, and drive chats from its content ([ecd0b97](https://github.com/justb81/riddlon/commit/ecd0b97c0a7b2e96ee5d088c8399db2b94846915))
+
 ## [0.6.2](https://github.com/justb81/riddlon/compare/riddlon-v0.6.1...riddlon-v0.6.2) (2026-07-30)
 
 
