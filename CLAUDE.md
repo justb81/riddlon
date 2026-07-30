@@ -143,6 +143,20 @@ Things that look wrong but aren't:
   the polyfill both share the one backend handle, so it is a decode cost, not a model reload. The
   director session is created with `maxHistoryTurns: 0` and destroyed after each call — it must
   judge this exchange, not accumulate its own past verdicts.
+
+And one thing that **is** wrong, written down in `shared-handle.spec.ts` so a fix has something to
+change: `maxHistoryTurns: 0` and `destroy()` only clear _our_ record. A Prompt API handle is
+**stateful** — the polyfill appends every prompt and answer to its own conversation and prepends
+that to the next generation — so under the shared inline handle the director's JSON request is not
+a clean call at all: it is turn N of an ongoing German roleplay, in a handle created with an empty
+system instruction, right after an assistant message written in Lucy's voice. That is the leading
+explanation for a verdict that parses to `{}` forever, which stops the graph dead (nothing else can
+set a flag). The native path is fine — it gets a real session per key. Any fix has to reckon with
+the fact that a second `create()` under the polyfill is a full model reload; grammar-constrained
+JSON (`responseConstraint`, which the polyfill forwards to WebLLM's `response_format`) is the other
+half of the answer, but it latches onto the shared handle's `generationConfig` and would then
+constrain character replies too.
+
 - `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker. The
   polyfill's `availability()` always reports `'available'`, so it can't answer this; each fallback is
   wrong in a different way, and together the worst case is one unnecessary progress bar.
@@ -150,7 +164,11 @@ Things that look wrong but aren't:
   the adapter against a fake; a real conversation turn is verified by hand via the dev-only
   `/dev/llm` and `/dev/story` harness routes — the latter also shows the last raw director answer
   next to what survived the allowlist, since a verdict that silently sets nothing is otherwise
-  invisible (the story just stops advancing).
+  invisible (the story just stops advancing). `/dev/story`'s **director probe** runs that pass on its
+  own: pick a scene, edit the transcript, and see the exact prompt, the raw answer and the parsed
+  verdict without playing a chat turn — which is how you tell a model problem from a story problem,
+  since the story's flag chain is already asserted in Node (`engine.spec.ts`'s §7 walkthrough sets
+  `flag:lucy-identified`/`flag:witnesses-named` by hand and expects Max and Sabine to appear).
 
 ## Chat UI
 
@@ -207,6 +225,11 @@ Building blocks:
   can never leave the runtime with no session while the library still lists a story. `onActivate()`
   is how the chat session hears about an activation that happens after init (an import into an
   empty library, or a `switchTo` from the library screen) — a direct call would be an import cycle.
+  `bundle` is a `$state.raw` **field**, not a getter over the active session: a getter can never
+  invalidate a `$derived` that reads it, and the failure is silent — a derived that first runs before
+  activation short-circuits on `bundle == null`, registers no dependency, and stays empty forever
+  (this is exactly what made `/dev/story`'s scene lookup find nothing in a package with ten scenes).
+  `engine` is still a plain getter and therefore imperative-callers-only.
 - **`$lib/state/story-session.svelte.ts`** — the `storySession` singleton: chat history per thread,
   typing state, streaming reply, the contradiction panel's open row, the case-solved overlay, and
   the send loop (persist → stream a reply → director pass → apply verdict). History loads **per

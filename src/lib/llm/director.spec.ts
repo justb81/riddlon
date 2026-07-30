@@ -19,7 +19,10 @@ const scene: DirectorScene = {
 const allowed = {
 	flags: settableFlags(scene),
 	clueIds: claimableClueIds(scene),
-	characterIds: [LUCY, MAX]
+	characters: [
+		{ id: LUCY, name: 'Lucy' },
+		{ id: MAX, name: 'Max' }
+	]
 };
 
 describe('the scene allowlist', () => {
@@ -115,5 +118,44 @@ describe('parseDirectorVerdict', () => {
 		// Leniency is free here: whatever comes out still has to survive the id allowlist.
 		const raw = '[{"flags":["flag:lucy-identified"],"clues":[]}]';
 		expect(parseDirectorVerdict(raw, allowed).flags).toEqual(['flag:lucy-identified']);
+	});
+
+	// The remaining cases below are not hypothetical: each is the actual raw answer a real local
+	// model (Chrome's native Prompt API, via `/dev/story`'s director probe) gave for this exact
+	// scene, reproduced live against the real conversation from the reported bug. Dropping them
+	// outright is what made Lucy's identification — and later the witness names — never advance
+	// the graph, even though the model had clearly understood the conversation.
+	describe('near-miss shapes a real local model actually produces', () => {
+		it('accepts a flag reported as a bare id, missing its "flag:" prefix', () => {
+			const raw = '{"flags": ["lucy-identified"], "clues": []}';
+			expect(parseDirectorVerdict(raw, allowed).flags).toEqual(['flag:lucy-identified']);
+		});
+
+		it('salvages a flag-shaped event the model put inside `clues` instead of `flags`', () => {
+			// The exact answer reproduced live: the model recognised "Ich bin Lucy" as the scene's
+			// exit condition, but reported it as a clue claim rather than a flag.
+			const raw = `{"flags": [], "clues": [{"id": "lucy-identified", "character": "${LUCY}", "value": "Lucy"}]}`;
+			expect(parseDirectorVerdict(raw, allowed)).toEqual({
+				flags: ['flag:lucy-identified'],
+				clues: []
+			});
+		});
+
+		it('does not salvage a clue id that also happens to not be a real flag', () => {
+			const raw = `{"flags": [], "clues": [{"id": "clue:nonexistent", "character": "${LUCY}", "value": "x"}]}`;
+			expect(parseDirectorVerdict(raw, allowed)).toEqual({ flags: [], clues: [] });
+		});
+
+		it('resolves a character reported by display name instead of uuid', () => {
+			const raw = `{"flags": [], "clues": [{"id": "clue:time-window", "character": "lucy", "value": "kurz vor eins"}]}`;
+			expect(parseDirectorVerdict(raw, allowed).clues).toEqual([
+				{ id: 'clue:time-window', characterId: LUCY, value: 'kurz vor eins' }
+			]);
+		});
+
+		it('still drops a name that matches no character in the scene', () => {
+			const raw = `{"flags": [], "clues": [{"id": "clue:time-window", "character": "Hans", "value": "x"}]}`;
+			expect(parseDirectorVerdict(raw, allowed).clues).toEqual([]);
+		});
 	});
 });

@@ -90,18 +90,26 @@ class StoryRuntime {
 	outcomes = $state<ReachedOutcome[]>([]);
 	clueDisplays = $state<Record<string, ClueDisplay>>({});
 	lastEffects = $state<EngineEffect[]>([]);
+	/**
+	 * The active package's bundle — reactive, and deliberately not a getter over `#active`.
+	 *
+	 * A plain getter can never invalidate a `$derived` that reads it, and the failure mode is
+	 * silent: a derived evaluated before activation short-circuits on `bundle == null`, registers
+	 * no dependency at all, and then stays `undefined` forever even though `bundle` is long since
+	 * there (that is what made `/dev/story`'s scene lookup find nothing). `$state.raw` because the
+	 * bundle is immutable once loaded — a deep proxy would buy nothing and would hand out a
+	 * different object identity than `#sync` passes to the pure derivations.
+	 */
+	bundle = $state.raw<StoryBundle | null>(null);
 
 	#sessions = new Map<string, EngineSession>();
 	#active: EngineSession | null = null;
 	#initPromise: Promise<void> | null = null;
 	#activationListeners = new Set<() => void>();
 
+	/** Imperative callers only — not reactive, for the reason spelled out on `bundle` above. */
 	get engine(): StoryEngine | null {
 		return this.#active?.engine ?? null;
-	}
-
-	get bundle(): StoryBundle | null {
-		return this.#active?.bundle ?? null;
 	}
 
 	/** An outcome has been reached — the only end-of-story signal that comes from real engine
@@ -230,6 +238,7 @@ class StoryRuntime {
 		this.packageId = session.packageId;
 		this.saveId = session.saveId;
 		this.title = session.bundle.manifest.title;
+		this.bundle = session.bundle;
 		this.cast = session.cast;
 		// The single choke point for "which story is active", so `switchTo` and the boot fallback
 		// both persist the choice without having to remember to.
