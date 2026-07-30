@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StoryBundle } from '$lib/content/index.js';
+import { recordClueClaim, resolveClue } from './clues.js';
 import { createInitialState } from './state.js';
 import { isCharacterVisible, progress, recompute, visibleCharacterIds } from './graph.js';
 
@@ -9,6 +10,25 @@ const MAX_ID = '33333333-3333-4333-8333-333333333333';
 const SCENE_QUESTIONING = '44444444-4444-4444-8444-444444444444';
 const SCENE_REPORT = '55555555-5555-4555-8555-555555555555';
 const SCENE_GROUP = '66666666-6666-4666-8666-666666666666';
+const CLUE_TIME = 'clue:time-window';
+const CLUE_PLACE = 'clue:place';
+
+/** `makeTestBundle()` ships no clues, so the clue-count cases declare their own two. */
+function withClues(bundle: StoryBundle): StoryBundle {
+	return {
+		...bundle,
+		clues: [
+			{
+				id: CLUE_TIME,
+				type: 'clue',
+				label: 'Tatzeit',
+				confirmedBy: [LUCY_ID, MAX_ID],
+				conflicting: true
+			},
+			{ id: CLUE_PLACE, type: 'clue', label: 'Ort', confirmedBy: [LUCY_ID], conflicting: false }
+		]
+	};
+}
 
 /** Minimal hand-built bundle: Lucy visible from start, Max hidden until "flag:max-unlocked". */
 function makeTestBundle(): StoryBundle {
@@ -202,5 +222,38 @@ describe('progress', () => {
 		expect(summary.totalSceneCount).toBe(3);
 		expect(summary.completedSceneCount).toBe(0);
 		expect(summary.unlockedSceneIds).toContain(SCENE_REPORT);
+	});
+
+	it('counts a clue as known from its first claim, not from being declared', () => {
+		const bundle = withClues(makeTestBundle());
+		const state = createInitialState(bundle);
+
+		expect(progress(state, bundle)).toMatchObject({
+			knownClueCount: 0,
+			totalClueCount: 2,
+			openContradictionCount: 0
+		});
+
+		recordClueClaim(state, CLUE_TIME, LUCY_ID, 'halb zwölf');
+		expect(progress(state, bundle)).toMatchObject({
+			knownClueCount: 1,
+			openContradictionCount: 0
+		});
+	});
+
+	it('opens a contradiction on a second distinct value and closes it on resolveClue', () => {
+		const bundle = withClues(makeTestBundle());
+		const state = createInitialState(bundle);
+		recordClueClaim(state, CLUE_TIME, LUCY_ID, 'halb zwölf');
+		recordClueClaim(state, CLUE_TIME, MAX_ID, 'kurz vor eins');
+
+		expect(progress(state, bundle).openContradictionCount).toBe(1);
+
+		resolveClue(state, CLUE_TIME);
+		const resolved = progress(state, bundle);
+		// Resolving closes the contradiction without forgetting that the clue is known — the
+		// claims themselves are never dropped (see `clues.ts`).
+		expect(resolved.openContradictionCount).toBe(0);
+		expect(resolved.knownClueCount).toBe(1);
 	});
 });

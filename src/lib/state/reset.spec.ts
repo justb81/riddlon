@@ -9,6 +9,12 @@ describe('appKeysToClear', () => {
 		]);
 	});
 
+	it('removes the active-package pointer, which the wipe would otherwise leave dangling', () => {
+		// A pointer to a deleted package is exactly what made the app claim a story was active
+		// while the library was empty.
+		expect(appKeysToClear(['riddlon:active-package'])).toEqual(['riddlon:active-package']);
+	});
+
 	it('keeps the LLM model-cache markers, so a reset triggers no re-download', () => {
 		expect(
 			appKeysToClear(['riddlon:onboarded', 'riddlon:llm:cached:Llama-3.2-3B-Instruct-q4f16_1-MLC'])
