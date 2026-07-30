@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/justb81/riddlon/compare/riddlon-v0.7.2...riddlon-v0.7.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **llm:** salvage near-miss director verdicts instead of dropping them ([3e8da8b](https://github.com/justb81/riddlon/commit/3e8da8b351e467b738489138adadf013b905ea20))
+
 ## [0.7.2](https://github.com/justb81/riddlon/compare/riddlon-v0.7.1...riddlon-v0.7.2) (2026-07-30)
 
 
