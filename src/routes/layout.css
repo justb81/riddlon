@@ -65,6 +65,17 @@
 
 :root {
 	color-scheme: dark;
+
+	/*
+	 * The only place the Window Controls Overlay env() vars are read. Everything below
+	 * consumes `var(--rd-titlebar-*)` instead, which (a) keeps the geometry in one place
+	 * and (b) makes the layout testable outside an installed app — custom properties can
+	 * be overridden from a browser/Playwright session, env() cannot. Every fallback is
+	 * chosen so the rules using them are inert without a WCO titlebar.
+	 */
+	--rd-titlebar-x: env(titlebar-area-x, 0px);
+	--rd-titlebar-width: env(titlebar-area-width, 100dvw);
+	--rd-titlebar-height: env(titlebar-area-height, 0px);
 }
 
 body {
@@ -75,21 +86,30 @@ body {
 }
 
 /*
- * Window Controls Overlay (installed, Chromium-desktop only): the app header is
- * repositioned to sit inside the OS titlebar strip, using the env() vars Chromium
- * populates with the rect it isn't drawing window buttons over. Every var has a
- * fallback so this block is inert everywhere else (browser tab, non-Chromium,
- * overlay toggled off) — `[data-wco='true']` is only ever set when the overlay is
- * actually visible right now (see `$lib/state/windowChrome.svelte.ts`).
+ * Window Controls Overlay (installed, Chromium-desktop only): with the OS titlebar
+ * collapsed, the app header *is* the titlebar. It keeps its 60px and stays in the
+ * frame's column flow — it is deliberately neither `position: fixed` nor sized to
+ * `--rd-titlebar-height`: a ~33-40px strip cannot hold a 36px avatar next to two
+ * text lines, and taking the header out of flow left nothing reserving its space,
+ * so the <InfoBand> below slid underneath it.
+ *
+ * What WCO does change is horizontal: Chromium draws the window buttons (and the
+ * app menu) over the parts of the titlebar row outside the titlebar-area rect, so
+ * the header pads itself out of their way — otherwise its `trailing` controls sit
+ * under them. Below `lg` the header spans the whole window, which is what makes
+ * 100dvw the right reference for the far side.
+ *
+ * `[data-wco='true']` is only ever set while the overlay is actually visible (see
+ * `$lib/state/windowChrome.svelte.ts`), and the `--rd-titlebar-*` fallbacks make
+ * the padding collapse to plain `px-4.5` everywhere else.
  */
 .app-header[data-wco='true'] {
-	position: fixed;
-	inset-inline-start: env(titlebar-area-x, 0);
-	top: env(titlebar-area-y, 0);
-	width: env(titlebar-area-width, 100%);
-	height: env(titlebar-area-height, auto);
+	--rd-wco-start: var(--rd-titlebar-x);
+	--rd-wco-end: max(0px, 100dvw - var(--rd-titlebar-x) - var(--rd-titlebar-width));
+
 	-webkit-app-region: drag;
-	z-index: 40;
+	padding-left: calc(1.125rem + var(--rd-wco-start));
+	padding-right: calc(1.125rem + var(--rd-wco-end));
 }
 
 /* Every interactive control inside the drag strip needs this, or it becomes unclickable. */
@@ -108,15 +128,14 @@ body {
 }
 
 .app-frame-titlebar {
-	height: env(titlebar-area-height, 0px);
+	height: var(--rd-titlebar-height);
 	-webkit-app-region: drag;
 }
 
 @media (width >= 64rem) {
 	.app-frame[data-split='true'] .app-header[data-wco='true'] {
-		position: static;
-		width: auto;
-		height: 3.75rem;
+		--rd-wco-start: 0px;
+		--rd-wco-end: 0px;
 		-webkit-app-region: no-drag;
 	}
 }
