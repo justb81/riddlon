@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.4](https://github.com/justb81/riddlon/compare/riddlon-v0.7.3...riddlon-v0.7.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* **llm:** load the model on a warm boot and stop the director stalling scenes ([421618e](https://github.com/justb81/riddlon/commit/421618eb165844d365f5e22733cf28eb8ab99e4b))
+* **llm:** warm-boot model load, director scene progress, Windows test path ([c885d2f](https://github.com/justb81/riddlon/commit/c885d2f46844d74ddc526b60f1d1eb6754850e68))
+
 ## [0.7.3](https://github.com/justb81/riddlon/compare/riddlon-v0.7.2...riddlon-v0.7.3) (2026-07-30)
 
 
