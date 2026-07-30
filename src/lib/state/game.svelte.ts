@@ -65,6 +65,10 @@ class GameStore {
 	groupOpenFlagId = $state<string | null>(null);
 	achievementToast = $state<AchievementToastState | null>(null);
 	celebrationVisible = $state(false);
+	/** `init()` has finished, successfully or not (mirrors `storyRuntime.initialized`) — lets
+	 *  chat/story screens tell "still loading the seeded/resumed thread" apart from "genuinely
+	 *  empty", instead of flashing an empty thread or "0/0" while the async load is in flight (#38). */
+	initialized = $state(false);
 
 	#lucyBeatsPlayed = 0;
 	#groupSeeded = false;
@@ -89,7 +93,11 @@ class GameStore {
 
 	/** Idempotent — safe to call from every screen that reads chat state. */
 	init(): Promise<void> {
-		if (!this.#initPromise) this.#initPromise = this.#doInit();
+		if (!this.#initPromise) {
+			this.#initPromise = this.#doInit().finally(() => {
+				this.initialized = true;
+			});
+		}
 		return this.#initPromise;
 	}
 
