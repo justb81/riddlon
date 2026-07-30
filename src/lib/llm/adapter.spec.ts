@@ -386,8 +386,8 @@ describe('lifecycle', () => {
 	});
 
 	it('exposes the model it was configured with, and nothing about the backend', async () => {
-		const { adapter } = setup('llama-3.1-8b');
-		expect(adapter.modelId).toBe('llama-3.1-8b');
+		const { adapter } = setup('llama-3.2-1b');
+		expect(adapter.modelId).toBe('llama-3.2-1b');
 		expect(Object.keys(adapter).sort()).toEqual(
 			['availability', 'createSession', 'dispose', 'load', 'modelId'].sort()
 		);

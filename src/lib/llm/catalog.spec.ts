@@ -15,10 +15,10 @@ describe('catalog', () => {
 		expect([...MODEL_ORDER].sort()).toEqual(Object.keys(LLM_MODELS).sort());
 	});
 
-	it('lists options in catalog order with the default first', () => {
+	it('lists options in catalog order, smallest first', () => {
 		const options = llmModelOptions();
 		expect(options.map((option) => option.id)).toEqual([...MODEL_ORDER]);
-		expect(options[0].id).toBe(DEFAULT_MODEL_ID);
+		expect(MODEL_ORDER).toContain(DEFAULT_MODEL_ID);
 	});
 
 	it('resolves the default model', () => {
@@ -60,18 +60,32 @@ describe('catalog', () => {
 
 	it('matches the sizes the settings picker will show', () => {
 		const labels = llmModelOptions().map((option) => formatSizeLabel(option.approxDownloadBytes));
-		expect(labels).toEqual(['1,9 GB', '4,6 GB']);
+		expect(labels).toEqual(['900 MB', '1,9 GB']);
 	});
 
 	it('pins the MLC model ids the WebLLM backend is configured with', () => {
 		// A dependency bump that renames these in prebuiltAppConfig would otherwise fail at runtime,
 		// in the browser, after a multi-gigabyte download.
 		const pinned: Record<LocalModelId, string> = {
-			'llama-3.2-3b': 'Llama-3.2-3B-Instruct-q4f16_1-MLC',
-			'llama-3.1-8b': 'Llama-3.1-8B-Instruct-q4f16_1-MLC'
+			'llama-3.2-1b': 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+			'llama-3.2-3b': 'Llama-3.2-3B-Instruct-q4f16_1-MLC'
 		};
 		for (const [id, mlcModelId] of Object.entries(pinned)) {
 			expect(LLM_MODELS[id as LocalModelId].mlcModelId).toBe(mlcModelId);
+		}
+	});
+
+	it("keeps vramRequiredMB in sync with web-llm's own model list", async () => {
+		// web-llm ships `vram_required_MB` per model in `prebuiltAppConfig` — that's the authoritative
+		// figure the VRAM check is really about, so our copy must track it. A dynamic import here is
+		// fine: this is a Node-only spec, not the runtime bundle catalog.ts itself must stay out of
+		// (see catalog.ts's module comment).
+		const { prebuiltAppConfig } = await import('@mlc-ai/web-llm');
+		for (const model of llmModelOptions()) {
+			const upstream = prebuiltAppConfig.model_list.find((m) => m.model_id === model.mlcModelId);
+			expect(upstream, `${model.mlcModelId} missing from prebuiltAppConfig`).toBeDefined();
+			// Rounded to whole MB when we copied it in; allow for that.
+			expect(model.vramRequiredMB).toBeCloseTo(upstream?.vram_required_MB ?? NaN, 0);
 		}
 	});
 });

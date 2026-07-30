@@ -10,7 +10,13 @@
  */
 
 export { createLlmAdapter, modelVramRequiredMB } from './adapter.js';
-export { canRunModel, detectLlmCapabilities, type LlmCapabilities } from './capabilities.js';
+export {
+	bestSupportedModelId,
+	canRunModel,
+	detectLlmCapabilities,
+	unsupportedModelReason,
+	type LlmCapabilities
+} from './capabilities.js';
 export {
 	isMeteredConnection,
 	resolveBackend,
@@ -37,6 +43,7 @@ export {
 	type LlmErrorCode
 } from './errors.js';
 export { deleteModel, isModelCached, markModelCached } from './model-cache.js';
+export { modelRowStatus, type ModelRowInput, type ModelRowStatus } from './model-status.js';
 export {
 	PHASE_BUDGET,
 	PREPARE_THRESHOLD,

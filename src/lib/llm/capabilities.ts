@@ -9,8 +9,9 @@
  */
 
 import { browser } from '$app/environment';
-import { findModel, type LocalModelId } from './catalog.js';
+import { DEFAULT_MODEL_ID, MODEL_ORDER, findModel, type LocalModelId } from './catalog.js';
 import { type DeviceFacts, type MeteredFacts, isMeteredConnection } from './capabilities-rules.js';
+import type { LlmErrorCode } from './errors.js';
 
 export interface LlmCapabilities extends DeviceFacts {
 	/** True when the browser exposes a built-in Prompt API we could use instead of downloading. */
@@ -73,8 +74,37 @@ function readMeteredFacts(): boolean | undefined {
 
 /** Convenience wrapper so callers don't have to remember which catalog field to compare. */
 export function canRunModel(capabilities: LlmCapabilities, modelId: LocalModelId): boolean {
-	if (capabilities.hasNativeLanguageModel) return true;
-	return fitsInDevice(capabilities, findModel(modelId).vramRequiredMB);
+	return unsupportedModelReason(capabilities, modelId) === undefined;
+}
+
+/**
+ * Why a WebLLM catalog entry can't run on this device, for the settings picker to say something
+ * more specific than "nicht unterstützt" — `undefined` when the model is fine. Never fires while a
+ * native Prompt API is present: that backend wins regardless of which catalog model is selected, so
+ * every WebLLM entry is moot rather than unsupported (see `usingBuiltIn` in the settings screen).
+ */
+export function unsupportedModelReason(
+	capabilities: LlmCapabilities,
+	modelId: LocalModelId
+): LlmErrorCode | undefined {
+	if (capabilities.hasNativeLanguageModel) return undefined;
+	if (!capabilities.hasWebGpu) return 'no-webgpu';
+	return fitsInDevice(capabilities, findModel(modelId).vramRequiredMB)
+		? undefined
+		: 'insufficient-vram';
+}
+
+/**
+ * The WebLLM catalog entry to auto-load when no native Prompt API is present — the app decides this,
+ * the player never picks a model directly (see the settings screen's read-only status list). Prefers
+ * the largest model this device can actually hold, since a bigger model is the better fallback
+ * whenever it fits; `MODEL_ORDER` is smallest-first, so this walks it in reverse.
+ */
+export function bestSupportedModelId(capabilities: LlmCapabilities): LocalModelId {
+	const supported = [...MODEL_ORDER]
+		.reverse()
+		.find((id) => fitsInDevice(capabilities, findModel(id).vramRequiredMB));
+	return supported ?? DEFAULT_MODEL_ID;
 }
 
 function fitsInDevice(capabilities: LlmCapabilities, vramRequiredMB: number): boolean {

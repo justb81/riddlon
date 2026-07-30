@@ -4,9 +4,9 @@
 	import { resolve } from '$app/paths';
 	import RiddlonMark from '$lib/components/icons/RiddlonMark.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { findModel } from '$lib/llm/catalog.js';
+	import { bestSupportedModelId } from '$lib/llm/capabilities.js';
+	import { DEFAULT_MODEL_ID, findModel, type LocalModelId } from '$lib/llm/catalog.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
-	import { profile } from '$lib/state/profile.svelte.js';
 	import { storySession } from '$lib/state/story-session.svelte.js';
 	import { hasOnboarded, markOnboarded } from '$lib/state/onboarding.js';
 	import {
@@ -24,7 +24,12 @@
 	let currentStep = $state<BootStep | null>(null);
 	let awaitingConsent = $state(false);
 
-	const model = $derived(findModel(profile.model));
+	// The WebLLM fallback to auto-load when there's no native Prompt API — the app decides this from
+	// device capabilities, the player never picks a model (see the settings screen's read-only status
+	// list). Only meaningful once `llm.detect()` has run; `DEFAULT_MODEL_ID` is just a placeholder for
+	// the boot label before that.
+	let modelId = $state<LocalModelId>(DEFAULT_MODEL_ID);
+	const model = $derived(findModel(modelId));
 
 	let timers: ReturnType<typeof setTimeout>[] = [];
 	const abort = new AbortController();
@@ -45,7 +50,14 @@
 			return;
 		}
 
-		firstRun = !(await llm.isModelCached(profile.model));
+		// Native wins whenever it's present (provider.ts), so `modelId` only ever matters for the
+		// WebLLM fallback path — but `isModelReady` below still needs a concrete catalog id either way
+		// (it ignores `modelId` itself once native is in play).
+		if (llm.capabilities && !llm.capabilities.hasNativeLanguageModel) {
+			modelId = bestSupportedModelId(llm.capabilities);
+		}
+
+		firstRun = !(await llm.isModelReady(modelId));
 		if (!firstRun) {
 			runWarmSequence();
 			return;
@@ -71,7 +83,7 @@
 		// forever and every reply would silently fail with `errorCode: 'no-model'`. A failure
 		// here just leaves the player in that same degraded mode, which the chat UI already
 		// surfaces per-thread.
-		void llm.ensureLoaded(profile.model).catch(() => {});
+		void llm.ensureLoaded(modelId).catch(() => {});
 
 		const steps = warmBootSteps();
 		const span = bootStepSpanMs();
@@ -92,7 +104,7 @@
 		currentStep = bootStepFor({ kind: 'model-load', fraction: 0, model });
 
 		try {
-			await llm.ensureLoaded(profile.model, { signal: abort.signal });
+			await llm.ensureLoaded(modelId, { signal: abort.signal });
 		} catch {
 			showError(); // llm.errorCode already carries the classified reason.
 			return;

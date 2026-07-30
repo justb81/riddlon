@@ -8,13 +8,6 @@ export type DisguiseMode = 'pure' | 'subtle' | 'game';
  */
 export type Pronoun = string;
 
-/**
- * The model domain lives in `$lib/llm` (docs/concept.md §3.2 puts "Modellauswahl" there), and the
- * available models plus their real sizes come from its catalog. Re-exported here because the profile
- * is what *stores* the player's choice — see `profile.svelte.ts`.
- */
-export type { LocalModelId } from '$lib/llm/catalog.js';
-
 export const PRONOUN_OPTIONS: Pronoun[] = ['sie/ihr', 'er/ihm', 'they/them', 'nur Vorname'];
 
 export const DISGUISE_MODES: DisguiseMode[] = ['pure', 'subtle', 'game'];

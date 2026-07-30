@@ -6,21 +6,46 @@
 	import InfoBand from '$lib/components/chat/InfoBand.svelte';
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { formatSizeLabel, llmModelOptions, type LocalModelId } from '$lib/llm/catalog.js';
+	import { formatSizeLabel, llmModelOptions } from '$lib/llm/catalog.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
+	import { modelRowStatus, type ModelRowKind, type ModelRowStatus } from '$lib/llm/model-status.js';
 	import { profile } from '$lib/state/profile.svelte.js';
 	import { DISGUISE_MODES, PRONOUN_OPTIONS, addressPreview } from '$lib/state/profile.js';
 	import { resetEverything, resetStoryProgress } from '$lib/state/reset.js';
 
 	const preview = $derived(addressPreview(profile.addressAs, profile.nickname));
 
-	// The built-in model needs no download at all, so when the browser has one the WebLLM entries are
-	// an explicit override rather than the normal path — the picker must not imply a download that
-	// would never happen.
-	const usingBuiltIn = $derived(llm.backend === 'native');
+	// Read-only status list, not a picker: which model actually runs is entirely the app's decision
+	// (native Prompt API first, else the best WebLLM model this device can hold — see
+	// `capabilities.ts`'s `bestSupportedModelId`). Native first in display order, matching load
+	// priority. Each WebLLM row states its own VRAM requirement (from web-llm's own model list, see
+	// catalog.ts) so the detected capacity line above the list means something concrete per row.
+	const modelRows = $derived([
+		{ kind: 'native' as const, label: 'Gemini Nano', detail: t('settings.modelNativeDetail') },
+		...llmModelOptions().map((option) => ({
+			kind: option.id as ModelRowKind,
+			label: option.label,
+			detail: t('settings.modelWebllmDetail', {
+				size: formatSizeLabel(option.approxDownloadBytes),
+				vram: formatSizeLabel(option.vramRequiredMB * 1024 * 1024)
+			})
+		}))
+	]);
 
+	// What the device actually reports, so a player can see why the app picked the fallback tier it
+	// did — `maxBufferBytes` is the same figure `capabilities.ts`'s VRAM check itself compares
+	// against, not total VRAM (browsers don't expose that), so it's phrased as an estimate.
+	const availableCapacity = $derived(
+		llm.capabilities?.hasWebGpu && llm.capabilities.maxBufferBytes !== undefined
+			? formatSizeLabel(llm.capabilities.maxBufferBytes)
+			: null
+	);
+
+	// Capabilities are normally already known by the time this screen is reached (the boot splash
+	// probes them first), but a direct reload of /settings would otherwise leave every row stuck on
+	// "wird geprüft" forever.
 	$effect(() => {
-		void llm.refreshCacheState();
+		if (!llm.capabilities) void llm.detect();
 	});
 
 	// Persists every field this screen edits (#18) — reading each one here is what makes the
@@ -31,7 +56,6 @@
 		void profile.bio;
 		void profile.addressAs;
 		void profile.disguise;
-		void profile.model;
 		void profile.notify;
 		profile.persist();
 	});
@@ -43,20 +67,41 @@
 		if (trimmed) profile.addressAs = trimmed;
 	}
 
-	/** Right-hand status for a model row: cached, unsupported, still being probed, or not yet local. */
-	function statusKey(id: LocalModelId): string {
-		if (usingBuiltIn) return 'settings.modelBuiltIn';
-		if (!llm.canRun(id)) return 'settings.modelUnsupported';
-		const cached = llm.cached[id];
-		if (cached === undefined) return 'settings.modelChecking';
-		return cached ? 'settings.modelLoaded' : 'settings.modelNotLoaded';
+	function rowStatus(kind: ModelRowKind): ModelRowStatus {
+		return modelRowStatus({
+			kind,
+			backend: llm.backend,
+			activeModelId: llm.activeModelId,
+			loadingModelId: llm.loadingModelId,
+			status: llm.status,
+			progress: llm.progress,
+			hasNativeLanguageModel: llm.capabilities?.hasNativeLanguageModel,
+			unsupportedReason: kind === 'native' ? undefined : llm.unsupportedReason(kind)
+		});
 	}
 
-	async function pickModel(id: LocalModelId) {
-		if (profile.model === id) return;
-		profile.model = id;
-		// Tears down the live engine so the next load picks up the newly chosen weights.
-		await llm.selectModel(id);
+	/** Right-hand status text for a model row. */
+	function statusLabel(status: ModelRowStatus): string {
+		switch (status.kind) {
+			case 'checking':
+				return t('settings.modelChecking');
+			case 'unavailable':
+				return t('settings.modelUnavailable');
+			case 'unsupported':
+				return t(
+					status.reason === 'no-webgpu'
+						? 'settings.modelUnsupportedNoWebgpu'
+						: 'settings.modelUnsupportedVram'
+				);
+			case 'downloading':
+				return t('settings.modelDownloading', { percent: status.percent });
+			case 'preparing':
+				return t('settings.modelPreparing', { percent: status.percent });
+			case 'active':
+				return t('settings.modelActive');
+			case 'inactive':
+				return t('settings.modelInactive');
+		}
 	}
 
 	type ResetKind = 'progress' | 'all';
@@ -217,30 +262,36 @@
 				<div class="font-mono text-[9.5px] tracking-[0.12em] text-slate-500">
 					{t('settings.modelLabel')}
 				</div>
+				<p class="mt-1.5 text-label leading-relaxed text-slate-400">{t('settings.modelDesc')}</p>
+				{#if availableCapacity}
+					<p class="mt-1 font-mono text-caption text-slate-500">
+						{t('settings.modelAvailableCapacity', { size: availableCapacity })}
+					</p>
+				{/if}
 				<div class="mt-2.5 flex flex-col gap-2">
-					{#each llmModelOptions() as option (option.id)}
-						<button
-							type="button"
-							onclick={() => void pickModel(option.id)}
-							class="flex w-full items-center gap-2.5 rounded-tile border px-3.5 py-3 text-left {profile.model ===
-							option.id
-								? 'border-accent bg-accent/12'
+					{#each modelRows as row (row.kind)}
+						{@const status = rowStatus(row.kind)}
+						{@const isActive = status.kind === 'active'}
+						<div
+							class="flex w-full items-center gap-2.5 rounded-tile border px-3.5 py-3 {isActive
+								? 'border-success/40 bg-success/10'
 								: 'border-line bg-slate-100/3'}"
 						>
 							<span
-								class="size-1.75 flex-none rounded-full {profile.model === option.id
-									? 'bg-accent'
-									: 'bg-slate-600'}"
+								class="size-1.75 flex-none rounded-full {isActive ? 'bg-success' : 'bg-slate-600'}"
 							></span>
-							<span
-								class="flex-1 text-label font-medium {profile.model === option.id
-									? 'text-slate-100'
-									: 'text-slate-300'}">{option.label}</span
+							<span class="flex-1">
+								<span
+									class="block text-label font-medium {isActive
+										? 'text-slate-100'
+										: 'text-slate-400'}">{row.label}</span
+								>
+								<span class="block text-caption text-slate-500">{row.detail}</span>
+							</span>
+							<span class="font-mono text-caption {isActive ? 'text-success' : 'text-slate-500'}"
+								>{statusLabel(status)}</span
 							>
-							<span class="font-mono text-caption text-slate-500"
-								>{formatSizeLabel(option.approxDownloadBytes)} · {t(statusKey(option.id))}</span
-							>
-						</button>
+						</div>
 					{/each}
 				</div>
 

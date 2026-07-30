@@ -9,14 +9,23 @@
 	 *
 	 * Delete this route once #15 streams real replies through `llm.session()`.
 	 */
-	import { llmModelOptions, formatSizeLabel, type LocalModelId } from '$lib/llm/catalog.js';
+	import {
+		DEFAULT_MODEL_ID,
+		llmModelOptions,
+		formatSizeLabel,
+		type LocalModelId
+	} from '$lib/llm/catalog.js';
 	import { i18nKeyForLlmError } from '$lib/llm/errors.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { profile } from '$lib/state/profile.svelte.js';
 
 	const SYSTEM_PROMPT =
 		'Du bist Lucy, 28, aus einer Kriminalgeschichte. Antworte kurz, in der Ich-Form, auf Deutsch.';
+
+	// Manual override for testing — unlike the player-facing settings screen (which is read-only:
+	// the app always picks native-first / best-fit automatically), this harness exists specifically
+	// to force a particular catalog model regardless of what the device would auto-select.
+	let selectedModel = $state<LocalModelId>(DEFAULT_MODEL_ID);
 
 	let input = $state('Wo warst du gegen acht?');
 	let answer = $state('');
@@ -33,7 +42,7 @@
 	async function load() {
 		thrown = null;
 		try {
-			await llm.ensureLoaded(profile.model);
+			await llm.ensureLoaded(selectedModel);
 		} catch (error) {
 			thrown = error instanceof Error ? error.message : String(error);
 		}
@@ -66,7 +75,7 @@
 	}
 
 	async function switchModel(id: LocalModelId) {
-		profile.model = id;
+		selectedModel = id;
 		await llm.selectModel(id);
 	}
 </script>
@@ -116,7 +125,7 @@
 			<button
 				type="button"
 				onclick={() => void switchModel(option.id)}
-				class="flex items-center gap-2.5 rounded-tile border px-3.5 py-3 text-left {profile.model ===
+				class="flex items-center gap-2.5 rounded-tile border px-3.5 py-3 text-left {selectedModel ===
 				option.id
 					? 'border-accent bg-accent/12'
 					: 'border-line bg-slate-100/3'}"
