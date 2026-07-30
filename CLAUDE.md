@@ -268,10 +268,18 @@ settings form, story overview, library). Both are plain `@theme` container value
 
 Gotchas:
 
+- **With a collapsed OS titlebar the header stays 60px and stays in flow** — below `lg` it simply
+  _becomes_ the titlebar: `.app-header[data-wco]` only adds `-webkit-app-region: drag` plus padding
+  that keeps its `trailing` controls out from under the window buttons. It is deliberately **not**
+  `position: fixed` and **not** sized to the titlebar rect: a ~33–40px strip can't hold a 36px
+  avatar next to two text lines, and out of flow nothing reserved the header's space, so `InfoBand`
+  slid underneath it. `layout.css` reads `env(titlebar-area-*)` exactly once, into `--rd-titlebar-*`
+  on `:root` — which is also what makes the layout checkable outside an installed app, since custom
+  properties can be overridden from a browser session and `env()` cannot.
 - **Window Controls Overlay can't use `AppHeader` in the two-pane layout** — there are two headers
-  side by side then, and only one titlebar rect. From `lg` up the `.app-header[data-wco]` fixed
-  positioning is switched off and `AppFrame` draws its own `.app-frame-titlebar` drag strip above
-  both panes instead (see `layout.css`). Below `lg` the original single-header behaviour stands.
+  side by side then, and only one titlebar rect. From `lg` up the header's drag region and window-
+  button padding are switched off and `AppFrame` draws its own `.app-frame-titlebar` drag strip
+  above both panes instead (see `layout.css`).
 - **`AppHeader`'s back chevron is hidden on desktop** (`backOnDesktop={false}`) on the conversation
   screens, where the docked list already is the way back. `/story` and `/settings` keep it — the
   sidebar has no entry for them.

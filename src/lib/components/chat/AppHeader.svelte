@@ -7,6 +7,11 @@
 	 * Fixed 60px title row, identical height on every screen — see the "Header
 	 * überall gleich hoch" feedback in chats/chat1.md. Pair with <InfoBand> below
 	 * it (46px) so every screen's chrome totals the same 106px.
+	 *
+	 * That 60px holds with a collapsed OS titlebar too: below `lg` this row *is* the
+	 * titlebar (`data-wco` → `-webkit-app-region: drag`, plus padding that keeps the
+	 * `trailing` controls clear of the window buttons — see `.app-header[data-wco]` in
+	 * layout.css). Which is why every interactive child needs `.app-header-no-drag`.
 	 */
 	let {
 		onBack,
