@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { version as appVersion } from './package.json';
 
 // `prompt-api-polyfill` can drive five backends and declares all of them as dependencies. We only
 // ever configure its WebLLM one (see src/lib/llm/provider.ts); the other four talk to cloud services,
@@ -26,6 +27,7 @@ const cloudBackendAliases = [
 ];
 
 export default defineConfig({
+	define: { __APP_VERSION__: JSON.stringify(appVersion) },
 	resolve: { alias: cloudBackendAliases },
 	plugins: [
 		tailwindcss(),

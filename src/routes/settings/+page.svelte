@@ -66,7 +66,7 @@
 		<span class="block text-center text-h1 font-medium text-slate-100">{t('settings.title')}</span>
 		{#snippet trailing()}
 			<span class="font-mono text-caption text-slate-500"
-				>{t('settings.version', { version: '0.1' })}</span
+				>{t('settings.version', { version: __APP_VERSION__ })}</span
 			>
 		{/snippet}
 	</AppHeader>
