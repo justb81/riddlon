@@ -328,6 +328,8 @@
 		</div>
 
 		<dl class="mt-3 grid grid-cols-[10rem_1fr] gap-1 font-mono text-[11px]">
+			<dt class="text-slate-500">scene node</dt>
+			<dd>{node ? node.id : `not found (sceneId=${sceneId || '—'})`}</dd>
 			<dt class="text-slate-500">settable flags</dt>
 			<dd>{settableFlags(directorScene).join(', ') || '(keine)'}</dd>
 			<dt class="text-slate-500">claimable clues</dt>
