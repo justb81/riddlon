@@ -19,7 +19,9 @@ import {
 	MILESTONE_DEFS,
 	isAchievementEarned,
 	isMilestoneDone,
+	resolveClueDisplays,
 	type AchievementDef,
+	type ClueDisplay,
 	type MilestoneDef
 } from '$lib/story/reference-progress.js';
 
@@ -41,6 +43,7 @@ class StoryRuntime {
 	visibleCharacterIds = $state<string[]>([]);
 	milestones = $state<DisplayMilestone[]>([]);
 	earnedAchievements = $state<AchievementDef[]>([]);
+	clueDisplays = $state<Record<string, ClueDisplay>>({});
 	solved = $state(false);
 	lastEffects = $state<EngineEffect[]>([]);
 
@@ -123,6 +126,7 @@ class StoryRuntime {
 		this.earnedAchievements = ACHIEVEMENT_DEFS.filter((def) =>
 			isAchievementEarned(def, state, bundle)
 		);
+		this.clueDisplays = resolveClueDisplays(state, bundle);
 		this.solved = state.reachedOutcomeIds.has(OUTCOME_MAX_CONFESSES);
 
 		if (this.saveId) void saveStore.update(this.saveId, saveRecordPatchFromState(state));
