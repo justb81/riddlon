@@ -43,6 +43,7 @@
 			"type": "chat-scene",
 			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"autoOpen": false,
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:max-questioned"],
 			"revealables": [
@@ -63,6 +64,7 @@
 			"type": "chat-scene",
 			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"autoOpen": false,
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:sabine-questioned"],
 			"revealables": [

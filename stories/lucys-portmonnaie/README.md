@@ -63,6 +63,14 @@ All 15 steps of §7, and the scene each one runs in:
   turn instruction, so the opener actually opens the scene. `ask-whether-player-was-at-the-club`
   therefore comes first in "Unbekannter Erstkontakt" — that is literally §7 step 1's
   „Warst du letzten Samstag im Club?", and `open-as-unknown-contact` alone produced small talk.
+- **Cold vs. auto-open contacts.** Lucy's unknown-contact opener (`ce658bbf-...`) auto-opens on the
+  schema default (`autoOpen` unset). Max's and Sabine's first questioning scenes
+  (`0974a346-.../8e888a69-...`) ship `autoOpen: false`, so unlocking them via
+  `flag:witnesses-named` no longer has both proactively message the player with their
+  `seed-timeline`/`seed-location`/`seed-suspect-description` goals — the player has to write to
+  them first, same goals, no longer front-loaded. This is a narrower fix than what §7 step 6 and
+  issue #30 ("Seed chats", `stories/README.md`) actually call for — Max and Sabine arriving with
+  pre-authored history instead of an empty thread — so that gap stays open.
 - **Secrets** unlock progressively: `secret:hans-tip` (Lucy, after the first report),
   `secret:sabine-saw-max` (Sabine, once the suspicion is relayed), `secret:max-took-wallet`
   (Max, only once confronted with evidence — step 14's confession).

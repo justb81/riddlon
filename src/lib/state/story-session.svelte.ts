@@ -188,6 +188,9 @@ class StorySession {
 		const sceneId = thread?.activeSceneId;
 		if (!thread || !sceneId) return;
 		if (this.#openedScenes.has(sceneId) || this.#busyScenes.has(sceneId)) return;
+		// Cold scenes wait for the player to write first — the character's `goals` still drive
+		// what they say once addressed, via the normal `send()` path.
+		if (this.#sceneNode(sceneId)?.autoOpen === false) return;
 		// Never triggers a model download from a thread open — `llm.session()` would call
 		// `ensureLoaded()`, and a multi-GB fetch is the boot screen's decision, not a side effect
 		// of tapping a chat.
