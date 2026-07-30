@@ -3,6 +3,7 @@ import { validatePackage } from './validate-package.js';
 import type { Manifest, Story, StoryGraph } from './schemas/index.js';
 import {
 	buildValidPackageFiles,
+	LUCY_ID,
 	MAX_ID,
 	SABINE_ID,
 	withIncompatibleMinPlayerVersion,
@@ -113,6 +114,12 @@ describe('validatePackage', () => {
 		]);
 		expect(result.story).toBeDefined();
 		expect(result.graph).toBeDefined();
+	});
+
+	it('returns the parsed character identities for the installer to hand off to #characters', () => {
+		const result = validatePackage(buildValidPackageFiles());
+		expect(result.characters).toHaveLength(3);
+		expect(result.characters?.map((c) => c.id).sort()).toEqual([LUCY_ID, MAX_ID, SABINE_ID].sort());
 	});
 
 	it('rejects a secret.heldBy referencing a character with no shipped character file', () => {

@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { manifestSchema, type Manifest } from './schemas/manifest.js';
-import { characterIdentitySchema } from './schemas/character.js';
+import { characterIdentitySchema, type CharacterIdentity } from './schemas/character.js';
 import { storySchema } from './schemas/story.js';
 import { storyGraphSchema } from './schemas/sceneGraph.js';
 import { cluesFileSchema, type Clue } from './schemas/clue.js';
@@ -36,6 +36,8 @@ export interface PackageValidationResult {
 	clues?: Clue[];
 	facts?: Fact[];
 	secrets?: Secret[];
+	/** Every successfully-parsed `manifest.characters` entry, for the installer's #characters hand-off. */
+	characters?: CharacterIdentity[];
 }
 
 export interface ValidatePackageOptions {
@@ -238,6 +240,7 @@ export function validatePackage(
 	// Step 5: parse character files; verify filename-embedded uuid matches the declared id.
 	const parsedCharacterIds = new Set<string>();
 	const characterIdOrigins = new Map<string, string>();
+	const parsedCharacters: CharacterIdentity[] = [];
 	for (const charPath of manifest.characters) {
 		if (files[charPath] === undefined) continue; // already reported as MISSING_FILE above
 		const charResult = characterIdentitySchema.safeParse(files[charPath]);
@@ -264,6 +267,7 @@ export function validatePackage(
 			characterIdOrigins.set(character.id, charPath);
 		}
 		parsedCharacterIds.add(character.id);
+		parsedCharacters.push(character);
 	}
 
 	// Step 6: duplicate-id checks — scene-node ids, clue/fact/secret ids.
@@ -357,6 +361,7 @@ export function validatePackage(
 		graph,
 		clues: parsedClueFiles.length > 0 ? parsedClueFiles.flatMap((f) => f.data) : undefined,
 		facts: parsedFactFiles.length > 0 ? parsedFactFiles.flatMap((f) => f.data) : undefined,
-		secrets: parsedSecretFiles.length > 0 ? parsedSecretFiles.flatMap((f) => f.data) : undefined
+		secrets: parsedSecretFiles.length > 0 ? parsedSecretFiles.flatMap((f) => f.data) : undefined,
+		characters: parsedCharacters.length > 0 ? parsedCharacters : undefined
 	};
 }
