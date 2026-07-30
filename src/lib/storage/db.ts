@@ -50,9 +50,14 @@ export interface LibraryCharacterRecord extends CharacterIdentity {
 export interface SaveChatMessage {
 	id: string;
 	sceneId: string;
+	/** `me`, `system`, or a character UUID from the package's cast. */
 	from: string;
 	text: string;
 	sentAt: string;
+	/** Set when this message is what taught the engine a clue claim, so the contradiction panel
+	 *  can be re-attached to it after a reload. Absent on records written before the director
+	 *  pass existed, and on any message that revealed nothing. */
+	clueId?: string;
 }
 
 export interface PendingDelayedEvent {

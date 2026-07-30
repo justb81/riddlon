@@ -1,35 +1,32 @@
-/** Shared shapes for mock story-package content (see docs/concept.md §5 for the real package format). */
-
-export type SpeakerId = 'system' | 'me' | 'lucy' | 'max' | 'sabine';
-
-export interface StoryCharacter {
-	id: Exclude<SpeakerId, 'system' | 'me'>;
-	name: string;
-	initial: string;
-}
+/** Shared UI-facing shapes for whatever story package is installed (docs/concept.md §5). */
 
 /**
- * References which clue a message's "WIDERSPRUCH: ..." panel is about — `label` is authored
- * dialogue framing (the heading text), everything else (the clue's own label, the claimed
- * sources) is resolved live from `EngineState.clues[clueId]` via `storyRuntime.clueDisplays`,
- * never hardcoded here. See #35.
+ * Who a chat message is from: two reserved values plus character UUIDs from the active
+ * package's cast. There is no fixed set of speakers any more, because the app no longer ships
+ * story content of its own.
  */
-export interface Contradiction {
-	label: string;
-	clueId: string;
+export const SPEAKER_ME = 'me';
+export const SPEAKER_SYSTEM = 'system';
+export type SpeakerId = string;
+
+export function isCharacterSpeaker(from: SpeakerId): boolean {
+	return from !== SPEAKER_ME && from !== SPEAKER_SYSTEM;
 }
 
-export interface SeedMessage {
+export interface ChatMessage {
 	id: string;
 	from: SpeakerId;
 	text: string;
+	/** `HH:MM`, display only. */
 	time?: string;
-	contradiction?: Contradiction;
-}
-
-export interface ReplyBeatMessage {
-	from: SpeakerId;
-	text: string;
+	/** ISO — what ordering and "newer than" comparisons use; `time` is lossy. */
+	sentAt?: string;
+	/**
+	 * Set when this message is what taught the engine a clue claim. The "WIDERSPRUCH: …" panel
+	 * resolves its contents live from `EngineState.clues[clueId]`, so the message only ever
+	 * carries the reference, never the claims (#35).
+	 */
+	clueId?: string;
 }
 
 export interface MilestoneBadge {
