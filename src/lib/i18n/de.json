@@ -96,7 +96,8 @@
 		"continue": "Weiterspielen · Kapitel {chapter}",
 		"emptyTitle": "Keine Geschichte aktiv",
 		"emptyDesc": "Sobald eine Geschichte installiert und gestartet ist, findest du hier ihre Meilensteine und Auszeichnungen.",
-		"emptyAction": "Bibliothek öffnen"
+		"emptyAction": "Bibliothek öffnen",
+		"noMilestonesYet": "Für dieses Paket sind noch keine Meilensteine oder Chatinhalte hinterlegt."
 	},
 	"settings": {
 		"title": "Profil & Einstellungen",

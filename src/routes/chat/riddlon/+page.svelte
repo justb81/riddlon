@@ -101,11 +101,14 @@
 		}
 	}
 
-	// Only "Lucys Portmonnaie" (the one package the engine can actually run) has a live
-	// progress/engine session — any other installed package still opens the same story
-	// overview, since only one story engine instance runs at a time.
-	function openStory(): void {
-		void goto(resolve('/story'));
+	// Every installed package gets its own live engine/save session (#37) — switching activates
+	// (and, on first visit, loads) that package's session before `/story` reads it, so opening a
+	// second story never shows or overwrites the reference story's progress.
+	function openStory(packageId: string): void {
+		void (async () => {
+			await storyRuntime.switchTo(packageId);
+			await goto(resolve('/story'));
+		})();
 	}
 
 	function noop(): void {
@@ -224,7 +227,7 @@
 				{#each displayEntries as story (story.id)}
 					<button
 						type="button"
-						onclick={openStory}
+						onclick={() => openStory(story.id)}
 						class="w-full rounded-tile border {story.status === 'running'
 							? 'border-accent/40'
 							: 'border-line'} bg-surface-raised p-3 text-left"

@@ -10,6 +10,7 @@
 	import Composer from '$lib/components/chat/Composer.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 	import { game } from '$lib/state/game.svelte.js';
+	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { profile } from '$lib/state/profile.svelte.js';
 	import {
 		CHARACTERS,
@@ -18,9 +19,18 @@
 		LUCY_THREAD_META,
 		SOLO_CHIPS
 	} from '$lib/story/lucys-portmonnaie.js';
+	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
 	import type { PageData } from './$types.js';
 
 	let { data }: { data: PageData } = $props();
+
+	// This screen's chat content (`game.svelte.ts`) is authored only for the reference story —
+	// pin the runtime back to it on entry so a session switched elsewhere (e.g. opening a
+	// different package's `/story` overview from `/chat/riddlon`, #37) never leaks its save/
+	// engine into Lucy's/the group's chat.
+	$effect(() => {
+		void storyRuntime.switchTo(REFERENCE_PACKAGE_ID);
+	});
 	const thread = $derived(data.thread);
 	const isGroup = $derived(thread === 'group');
 
