@@ -2,23 +2,17 @@
 
 export type DisguiseMode = 'pure' | 'subtle' | 'game';
 export type Pronoun = 'sie/ihr' | 'er/ihm' | 'they/them' | 'nur Vorname';
-export type LocalModelId = 'phi-3-mini' | 'llama-3-8b';
+
+/**
+ * The model domain lives in `$lib/llm` (docs/concept.md §3.2 puts "Modellauswahl" there), and the
+ * available models plus their real sizes come from its catalog. Re-exported here because the profile
+ * is what *stores* the player's choice — see `profile.svelte.ts`.
+ */
+export type { LocalModelId } from '$lib/llm/catalog.js';
 
 export const PRONOUN_OPTIONS: Pronoun[] = ['sie/ihr', 'er/ihm', 'they/them', 'nur Vorname'];
 
 export const DISGUISE_MODES: DisguiseMode[] = ['pure', 'subtle', 'game'];
-
-export interface LocalModelOption {
-	id: LocalModelId;
-	label: string;
-	sizeLabel: string;
-	loaded: boolean;
-}
-
-export const MODEL_OPTIONS: LocalModelOption[] = [
-	{ id: 'phi-3-mini', label: 'Phi-3 Mini', sizeLabel: '1,8 GB', loaded: true },
-	{ id: 'llama-3-8b', label: 'Llama 3 8B', sizeLabel: '4,6 GB', loaded: false }
-];
 
 /**
  * Picks the i18n key + vars for the "how Lucy addresses you" preview line.

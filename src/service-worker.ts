@@ -18,7 +18,11 @@ import { build, files, version } from '$service-worker';
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-const CACHE = `riddlon-${version}`;
+// Prefixed so the activate sweep below can tell our own shell caches apart from every other
+// cache on the origin. `riddlon-assets-v1` ($lib/storage/blob-store.ts) and the multi-GB model
+// weight cache the local LLM keeps are NOT ours to delete.
+const SHELL_PREFIX = 'riddlon-shell-';
+const CACHE = `${SHELL_PREFIX}${version}`;
 const PRECACHE = [...build, ...files];
 
 sw.addEventListener('install', (event) => {
@@ -32,8 +36,11 @@ sw.addEventListener('message', (event) => {
 sw.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
+			// Only sweep our own superseded shell caches. Deleting everything else would wipe
+			// the asset blob store and the local model weights on every single app update,
+			// turning each release into a multi-GB re-download and breaking offline play.
 			for (const key of await caches.keys()) {
-				if (key !== CACHE) await caches.delete(key);
+				if (key.startsWith(SHELL_PREFIX) && key !== CACHE) await caches.delete(key);
 			}
 			await sw.clients.claim();
 		})()
@@ -43,6 +50,13 @@ sw.addEventListener('activate', (event) => {
 sw.addEventListener('fetch', (event) => {
 	if (event.request.method !== 'GET') return;
 
+	// Let the browser handle anything that isn't ours. Cross-origin responses were never cached
+	// here anyway, and routing them through this handler would proxy every model weight shard
+	// (gigabytes, sometimes as range requests) through the worker for no benefit.
+	const url = new URL(event.request.url);
+	if (url.origin !== location.origin) return;
+	if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
 	event.respondWith(
 		(async () => {
 			const cache = await caches.open(CACHE);
@@ -51,10 +65,7 @@ sw.addEventListener('fetch', (event) => {
 
 			try {
 				const response = await fetch(event.request);
-				const url = new URL(event.request.url);
-				if (response.ok && url.origin === location.origin) {
-					cache.put(event.request, response.clone());
-				}
+				if (response.ok) cache.put(event.request, response.clone());
 				return response;
 			} catch (err) {
 				const fallback = await cache.match(event.request);

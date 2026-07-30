@@ -6,15 +6,37 @@
 	import InfoBand from '$lib/components/chat/InfoBand.svelte';
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
+	import { formatSizeLabel, llmModelOptions, type LocalModelId } from '$lib/llm/catalog.js';
+	import { llm } from '$lib/llm/llm.svelte.js';
 	import { profile } from '$lib/state/profile.svelte.js';
-	import {
-		DISGUISE_MODES,
-		MODEL_OPTIONS,
-		PRONOUN_OPTIONS,
-		addressPreview
-	} from '$lib/state/profile.js';
+	import { DISGUISE_MODES, PRONOUN_OPTIONS, addressPreview } from '$lib/state/profile.js';
 
 	const preview = $derived(addressPreview(profile.addressAs, profile.nickname));
+
+	// The built-in model needs no download at all, so when the browser has one the WebLLM entries are
+	// an explicit override rather than the normal path — the picker must not imply a download that
+	// would never happen.
+	const usingBuiltIn = $derived(llm.backend === 'native');
+
+	$effect(() => {
+		void llm.refreshCacheState();
+	});
+
+	/** Right-hand status for a model row: cached, unsupported, still being probed, or not yet local. */
+	function statusKey(id: LocalModelId): string {
+		if (usingBuiltIn) return 'settings.modelBuiltIn';
+		if (!llm.canRun(id)) return 'settings.modelUnsupported';
+		const cached = llm.cached[id];
+		if (cached === undefined) return 'settings.modelChecking';
+		return cached ? 'settings.modelLoaded' : 'settings.modelNotLoaded';
+	}
+
+	async function pickModel(id: LocalModelId) {
+		if (profile.model === id) return;
+		profile.model = id;
+		// Tears down the live engine so the next load picks up the newly chosen weights.
+		await llm.selectModel(id);
+	}
 </script>
 
 <svelte:head><title>{t('settings.title')} · Riddlon</title></svelte:head>
@@ -136,10 +158,10 @@
 					{t('settings.modelLabel')}
 				</div>
 				<div class="mt-2.5 flex flex-col gap-2">
-					{#each MODEL_OPTIONS as option (option.id)}
+					{#each llmModelOptions() as option (option.id)}
 						<button
 							type="button"
-							onclick={() => (profile.model = option.id)}
+							onclick={() => void pickModel(option.id)}
 							class="flex w-full items-center gap-2.5 rounded-tile border px-3.5 py-3 text-left {profile.model ===
 							option.id
 								? 'border-accent bg-accent/12'
@@ -156,9 +178,7 @@
 									: 'text-slate-300'}">{option.label}</span
 							>
 							<span class="font-mono text-caption text-slate-500"
-								>{option.sizeLabel} · {option.loaded
-									? t('settings.modelLoaded')
-									: t('settings.modelNotLoaded')}</span
+								>{formatSizeLabel(option.approxDownloadBytes)} · {t(statusKey(option.id))}</span
 							>
 						</button>
 					{/each}

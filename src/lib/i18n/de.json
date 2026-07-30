@@ -8,11 +8,29 @@
 		"setupLabel": "ERSTEINRICHTUNG",
 		"setupOfflineNote": "EINMALIG · DANACH VOLLSTÄNDIG OFFLINE",
 		"warmLabel": "GESCHICHTE WIRD VORBEREITET",
+		"consentStart": "Modell laden",
+		"retry": "Erneut versuchen",
+		"continueWithoutLlm": "Ohne lokale KI fortfahren",
 		"step": {
+			"consent": "Lokales Modell laden · {model} ({size}) · einmalig",
+			"checking": "Gerät wird geprüft",
 			"loadingModel": "Lokales Modell wird geladen · {model} ({size})",
 			"preparingDevice": "Modell wird für dein Gerät vorbereitet",
 			"installingStory": "Geschichte „{title}“ wird installiert",
 			"done": "Fertig"
+		}
+	},
+	"llm": {
+		"error": {
+			"no-webgpu": "Dieser Browser kann keine lokale KI ausführen — WebGPU fehlt. Mit einem aktuellen Chrome, Edge oder Firefox funktioniert es.",
+			"insufficient-vram": "Für dieses Modell reicht der Grafikspeicher deines Geräts nicht. Wähle in den Einstellungen ein kleineres Modell.",
+			"offline": "Für die einmalige Einrichtung ist eine Internetverbindung nötig. Danach läuft alles offline.",
+			"download-failed": "Das Modell konnte nicht vollständig geladen werden. Prüfe deine Verbindung und versuche es erneut.",
+			"compile-failed": "Das Modell ließ sich auf dieser Grafikkarte nicht starten. Ein erneuter Versuch oder ein kleineres Modell hilft meist.",
+			"oom": "Dem Gerät ist der Grafikspeicher ausgegangen. Schließe andere Tabs oder wähle ein kleineres Modell.",
+			"aborted": "Vorgang abgebrochen.",
+			"unsupported-model": "Dieses Modell ist in der installierten KI-Version nicht verfügbar.",
+			"unknown": "Die lokale KI konnte nicht gestartet werden."
 		}
 	},
 	"chats": {
@@ -94,6 +112,9 @@
 		"modelLabel": "LOKALES MODELL",
 		"modelLoaded": "geladen",
 		"modelNotLoaded": "nicht geladen",
+		"modelChecking": "wird geprüft",
+		"modelUnsupported": "nicht unterstützt",
+		"modelBuiltIn": "im Browser integriert",
 		"notifyTitle": "Benachrichtigungen",
 		"notifyDesc": "Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen."
 	},

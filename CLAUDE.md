@@ -37,9 +37,52 @@ concept doc's "App 2" module breakdown as the issue backlog works through them:
 | `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`) — `ui/` still runs on the `$lib/state/game.svelte.ts` mock until #14–#17 swap it over |
 | `content/`    | Loader/importer/installer/registry for installed story packages               | Mocked in `$lib/story/library.ts`                                                                                     |
 | `characters/` | Local, story-independent character library                                    | Not started                                                                                                           |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Not started (`$lib/state/profile.ts` lists model options as static data)                                              |
+| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                   |
 | `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Not started — all state above is in-memory only, lost on reload                                                       |
 | `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                           |
+
+## Local LLM
+
+`src/lib/llm/` runs inference in the browser. It does **not** define its own backend vocabulary: the
+interface _is_ the [W3C/Chrome Prompt API](https://webmachinelearning.github.io/prompt-api/)
+(`LanguageModel.availability()` / `create()` / `promptStreaming()`), and browsers without a built-in
+one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend over WebGPU.
+**Native first, polyfill fallback** — a built-in model costs no download, so it wins when present.
+
+- **`catalog.ts`** — the only place a Riddlon model id maps to an MLC model id. Two entries, chosen
+  for German dialogue: `llama-3.2-3b` (default) and `llama-3.1-8b`. `approxDownloadBytes` (what the
+  player waits for) and `vramRequiredMB` (peak GPU memory, the capability check) are separate figures
+  and must never be conflated — the design mockup's "1,8 GB / 4,6 GB" were download sizes.
+- **`adapter.ts`** — `LlmAdapter` / `LlmSession`, what `engine/` and `ui/` code against. Injects its
+  provider, so `adapter.spec.ts` exercises the real logic against a fake in Node with no GPU.
+- **`provider.ts`** — the _only_ file touching `globalThis.LanguageModel`, `window.WEBLLM_CONFIG` or
+  `import('prompt-api-polyfill')`. The native probe must run before the polyfill import (the polyfill
+  installs itself on the global as an import side effect), and `WEBLLM_CONFIG` must be set before it
+  (with no config the polyfill silently falls back to Transformers.js).
+- **`llm.svelte.ts`** — the `llm` singleton the UI reads: status, real download progress, which
+  backend won, which models are cached. `profile.model` holds the _choice_; `llm.activeModelId` holds
+  what's _loaded_ — they differ whenever a selected model hasn't been downloaded.
+- **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — the polyfill can also
+  reach Firebase/Gemini/OpenAI/Transformers.js. Those four SDKs are aliased to a throwing stub, so
+  "no cloud calls" (concept §2/§8) is enforced by the build, not by convention.
+
+Things that look wrong but aren't:
+
+- The `boot.step.loadingModel` → `boot.step.preparingDevice` switch is a **threshold heuristic**
+  (fraction ≥ 0.85). The polyfill collapses download and shader-compile into one 0..1 fraction and
+  doesn't forward WebLLM's progress text, so there is no real phase boundary to read.
+- Under the polyfill **all characters share one backend session** (`personaMode: 'inline'`), with
+  persona and history rendered into each prompt. A second `create()` would rebuild the whole
+  MLCEngine, so per-character sessions would mean a multi-GB reload on every chat switch. The native
+  provider does get a real session each.
+- Inference runs on the **main thread** — the polyfill's WebLLM backend has no worker variant. Keep
+  typing/spinner animations CSS-only so they survive the decode loop.
+- `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker. The
+  polyfill's `availability()` always reports `'available'`, so it can't answer this; each fallback is
+  wrong in a different way, and together the worst case is one unnecessary progress bar.
+- Automated tests cannot run real inference — CI and the dev sandbox have no GPU. `npm test` covers
+  the adapter against a fake; a real conversation turn is verified by hand via the dev-only
+  `/dev/llm` harness route (delete it once #15 streams replies for real).
 
 ## Chat UI
 
