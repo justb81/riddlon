@@ -5,6 +5,14 @@
  * `downloadprogress` events the WebLLM polyfill fires, streams from a scripted chunk list, and
  * records how often the adapter actually called `create()`/`destroy()` — which is the only way to
  * assert the session-pooling behaviour the polyfill forces on us.
+ *
+ * It also models the one property of a real provider that is easy to forget and expensive to get
+ * wrong: **a backend handle is stateful.** Both the built-in API and the polyfill append every
+ * prompt and every answer to the handle's own conversation (`prompt-api-polyfill` does it in
+ * `prompt()`/`promptStreaming()`), so what the model actually sees is `initialPrompts` plus that
+ * whole accumulated history plus the new input — never just the string we passed. `conversations`
+ * exposes exactly that, because a stateless fake makes the shared-handle path in `adapter.ts` look
+ * far cleaner than it is (see `shared-handle.spec.ts`).
  */
 
 import type {
@@ -12,6 +20,7 @@ import type {
 	LanguageModelSessionLike,
 	PromptApiAvailability,
 	PromptApiCreateOptions,
+	PromptApiMessage,
 	PromptApiPromptOptions,
 	ProviderKind,
 	ResolvedProvider
@@ -21,6 +30,15 @@ import { createProgressEvent } from './progress-event.js';
 export interface FakeCall {
 	input: string;
 	options?: PromptApiPromptOptions;
+}
+
+/** One backend handle's own conversation — what the model is really shown on the next turn. */
+export interface FakeConversation {
+	/** What `create({ initialPrompts })` seeded the handle with. */
+	readonly seeded: readonly PromptApiMessage[];
+	/** Prompts and answers the handle has accumulated since, in order. */
+	readonly messages: readonly PromptApiMessage[];
+	readonly destroyed: boolean;
 }
 
 export interface FakeLanguageModelOptions {
@@ -44,6 +62,8 @@ export interface FakeLanguageModel extends LanguageModelLike {
 	readonly lastCreateOptions: PromptApiCreateOptions | undefined;
 	readonly createOptions: readonly PromptApiCreateOptions[];
 	readonly calls: readonly FakeCall[];
+	/** One entry per handle `create()` produced, in creation order. */
+	readonly conversations: readonly FakeConversation[];
 }
 
 const DEFAULT_CHUNKS = ['Ich ', 'war ', 'zu Hause.'];
@@ -57,13 +77,31 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 	let liveSessions = 0;
 	const createOptions: PromptApiCreateOptions[] = [];
 	const calls: FakeCall[] = [];
+	const conversations: FakeConversation[] = [];
 
-	function makeSession(): LanguageModelSessionLike {
+	function makeSession(createOpts: PromptApiCreateOptions): LanguageModelSessionLike {
 		liveSessions += 1;
 		let destroyed = false;
 
+		// The handle's own history, exactly as a real provider keeps it: seeded once, then extended
+		// by every completed turn. Only *completed* turns — the polyfill drops an aborted or failed
+		// generation instead of recording half of it.
+		const messages: PromptApiMessage[] = [];
+		const conversation: FakeConversation = {
+			seeded: [...(createOpts.initialPrompts ?? [])],
+			messages,
+			get destroyed() {
+				return destroyed;
+			}
+		};
+		conversations.push(conversation);
+
 		function guard(): void {
 			if (destroyed) throw new DOMException('Session destroyed', 'InvalidStateError');
+		}
+
+		function record(input: string, answer: string): void {
+			messages.push({ role: 'user', content: input }, { role: 'assistant', content: answer });
 		}
 
 		return {
@@ -73,7 +111,9 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 				if (promptOptions?.signal?.aborted) {
 					throw new DOMException('Aborted', 'AbortError');
 				}
-				return chunks.join('');
+				const answer = chunks.join('');
+				record(input, answer);
+				return answer;
 			},
 			promptStreaming(input, promptOptions) {
 				guard();
@@ -83,6 +123,7 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 
 				return new ReadableStream<string>({
 					async pull(controller) {
+						let produced = '';
 						for (let i = 0; i < chunks.length; i += 1) {
 							if (signal?.aborted) {
 								controller.error(new DOMException('Aborted', 'AbortError'));
@@ -92,8 +133,10 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 								controller.error(new Error('Device lost'));
 								return;
 							}
+							produced += chunks[i];
 							controller.enqueue(chunks[i]);
 						}
+						record(input, produced);
 						controller.close();
 					}
 				});
@@ -130,7 +173,7 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 			if (options.createError) throw options.createError;
 
 			createCount += 1;
-			return makeSession();
+			return makeSession(createOpts ?? {});
 		},
 		get createCount() {
 			return createCount;
@@ -149,6 +192,9 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 		},
 		get calls() {
 			return calls;
+		},
+		get conversations() {
+			return conversations;
 		}
 	};
 }
