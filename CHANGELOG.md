@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/justb81/riddlon/compare/riddlon-v0.5.0...riddlon-v0.6.0) (2026-07-30)
+
+
+### Features
+
+* **settings:** add a reset that really clears the demo content ([02d1c11](https://github.com/justb81/riddlon/commit/02d1c110b5c39e7400014c2a65574303c9016aa4))
+* **settings:** add a reset that really clears the demo content ([605dcd1](https://github.com/justb81/riddlon/commit/605dcd1d8176504163c5059ff113bf3385b78951))
+
+
+### Bug Fixes
+
+* **chat:** source the contradiction panel from real engine clue state ([#35](https://github.com/justb81/riddlon/issues/35)) ([feb08f2](https://github.com/justb81/riddlon/commit/feb08f22fa26a68eeb22259df33e7f256abd491c))
+* **chat:** source the contradiction panel from real engine clue state ([#35](https://github.com/justb81/riddlon/issues/35)) ([95c5715](https://github.com/justb81/riddlon/commit/95c5715fff75a9815866a1e4e4c5916aea6f9c9d))
+* **settings:** show the real app version instead of hardcoded v0.1 ([5be1000](https://github.com/justb81/riddlon/commit/5be1000778d41278e85d046b98d1d9d3a9703d33))
+* **settings:** show the real app version instead of hardcoded v0.1 ([767bbe4](https://github.com/justb81/riddlon/commit/767bbe43479ca5a9b84dec2af025db2412cb90e1))
+
 ## [0.5.0](https://github.com/justb81/riddlon/compare/riddlon-v0.4.0...riddlon-v0.5.0) (2026-07-30)
 
 
