@@ -33,6 +33,11 @@
 	// Nothing installed (fresh device, or after a reset in /settings): there is no story to
 	// summarise, so this screen says so rather than rendering the reference story's numbers.
 	const noStory = $derived(storyRuntime.initialized && storyRuntime.packageId === null);
+
+	// `game.milestones` mirrors `storyRuntime`'s engine sync but resolves a moment after it —
+	// gate on both so a direct/reloaded visit doesn't flash "0/0" and an empty timeline while the
+	// save is still loading (#38).
+	const ready = $derived(storyRuntime.initialized && game.initialized);
 	const title = $derived(storyRuntime.bundle?.manifest.title ?? STORY_META.title);
 	const contactCount = $derived(
 		storyRuntime.bundle?.manifest.characters.length ?? STORY_META.contactCount
@@ -49,7 +54,7 @@
 	<AppHeader onBack={() => goto(resolve('/chat/riddlon'))}>
 		<span class="block text-center text-h1 font-medium text-slate-100">{t('story.title')}</span>
 		{#snippet trailing()}
-			{#if isReferenceStory}
+			{#if isReferenceStory && ready}
 				<span class="font-mono text-caption text-slate-500">{done}/{total}</span>
 			{/if}
 		{/snippet}
@@ -94,7 +99,7 @@
 							</span>
 						</span>
 					</div>
-					{#if isReferenceStory}
+					{#if isReferenceStory && ready}
 						<div class="mt-4 flex items-end gap-3">
 							<div class="font-serif text-[32px] leading-none text-slate-50">{done} / {total}</div>
 							<div class="pb-0.5 text-label text-slate-400">{t('story.milestonesReached')}</div>
@@ -109,7 +114,9 @@
 					{/if}
 				</div>
 
-				{#if isReferenceStory}
+				{#if isReferenceStory && !ready}
+					<p class="mt-6.5 text-label leading-relaxed text-slate-500">{t('common.loading')}</p>
+				{:else if isReferenceStory}
 					<div class="relative mt-6.5 pl-[30px]">
 						<div
 							class="absolute top-1.5 bottom-3 left-[9px] w-[1.5px]"

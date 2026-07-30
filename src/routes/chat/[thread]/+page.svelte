@@ -42,6 +42,13 @@
 		isGroup ? (game.messagesFor('group').at(-1)?.time ?? '') : LUCY_THREAD_META.lastOnline
 	);
 
+	// While `storyRuntime`/`game` are still resolving (a real IndexedDB read, worse on the very
+	// first install), the thread would otherwise render as genuinely empty and the clue strip as
+	// "HINWEISE 0/0" — a misleading flash rather than the seeded conversation that's about to
+	// arrive (#38). Gate on both: `game.init()` awaits `storyRuntime.init()` before doing
+	// anything, but finishes a moment after it.
+	const ready = $derived(storyRuntime.initialized && game.initialized);
+
 	const messages = $derived(game.messagesFor(thread));
 	const typing = $derived(game.typingFor(thread));
 	const openFlagId = $derived(game.openFlagFor(thread));
@@ -98,7 +105,11 @@
 	</AppHeader>
 
 	<InfoBand>
-		{#if showClueStrip}
+		{#if !ready}
+			<span class="font-mono text-[9px] tracking-[0.11em] text-slate-500">
+				{t('common.loading')}
+			</span>
+		{:else if showClueStrip}
 			<a href={resolve('/story')} class="flex h-full w-full items-center gap-2.5 text-left">
 				<span class="flex-none font-mono text-[9px] tracking-[0.11em] text-accent">
 					{t('convo.clueCount', { revealed: doneMilestones, total: game.milestones.length })}
@@ -119,16 +130,18 @@
 
 	<div bind:this={scrollEl} class="min-h-0 flex-1 overflow-y-auto">
 		<div class="mx-auto flex w-full max-w-chat flex-col px-4.5 pt-4.5 pb-2.5 lg:px-6">
-			{#each messages as message, index (message.id)}
-				<MessageBubble
-					{message}
-					showName={showName(index)}
-					open={openFlagId === message.id}
-					onToggleFlag={() => game.toggleFlag(thread, message.id)}
-				/>
-			{/each}
-			{#if typing}
-				<TypingIndicator />
+			{#if ready}
+				{#each messages as message, index (message.id)}
+					<MessageBubble
+						{message}
+						showName={showName(index)}
+						open={openFlagId === message.id}
+						onToggleFlag={() => game.toggleFlag(thread, message.id)}
+					/>
+				{/each}
+				{#if typing}
+					<TypingIndicator />
+				{/if}
 			{/if}
 			<div class="h-1.5 flex-none"></div>
 		</div>

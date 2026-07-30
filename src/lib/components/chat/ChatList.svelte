@@ -32,6 +32,10 @@
 	});
 
 	function previewFor(thread: 'lucy' | 'group'): string {
+		// `game` resolves a moment after `storyRuntime` (a real IndexedDB read/seed) — an empty
+		// preview during that gap would misleadingly suggest the thread is genuinely new/silent,
+		// so show a loading label instead of blanking out (#38).
+		if (!game.initialized) return t('common.loading');
 		const messages = game.messagesFor(thread);
 		const last = messages.at(-1);
 		if (!last) return '';

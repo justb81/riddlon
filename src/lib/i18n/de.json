@@ -1,7 +1,8 @@
 {
 	"common": {
 		"back": "Zurück",
-		"new": "NEU"
+		"new": "NEU",
+		"loading": "Wird geladen …"
 	},
 	"boot": {
 		"tagline": "GESCHICHTEN, DIE ZURÜCKSCHREIBEN",
