@@ -1,8 +1,16 @@
 /**
- * The live `StoryEngine` runtime for the currently-installed reference story — the real
- * replacement for `game.svelte.ts`'s old scripted timers (#13-#15). A singleton (like
- * `llm.svelte.ts`) so the engine survives navigating between screens; `init()` is
- * idempotent and safe to call from every screen that needs engine data.
+ * The live `StoryEngine` runtime for installed stories — the real replacement for
+ * `game.svelte.ts`'s old scripted timers (#13-#15). A singleton (like `llm.svelte.ts`) so
+ * engines survive navigating between screens; `init()` is idempotent and safe to call from
+ * every screen that needs engine data.
+ *
+ * Holds one `EngineSession` per installed package (#37) rather than a single fixed session —
+ * each package gets its own `StoryEngine` + save, cached in `#sessions` once loaded, so
+ * switching which story is "active" (`switchTo`) never cross-contaminates another package's
+ * progress. The reactive fields below always mirror the *active* session; screens that only
+ * ever care about the reference story (the real chat content lives nowhere else yet — see
+ * `game.svelte.ts`) call `switchTo(REFERENCE_PACKAGE_ID)` on mount to pin it back regardless
+ * of what another screen last switched to.
  */
 
 import { browser } from '$app/environment';
@@ -13,7 +21,10 @@ import type { EngineEffect, ProgressSummary } from '$lib/engine/index.js';
 import type { StoryBundle } from '$lib/content/index.js';
 import { saveStore, storyRegistry, type InstalledPackageSummary } from '$lib/storage/index.js';
 import { ensureReferenceStoryInstalled } from '$lib/story/bootstrap.js';
-import { OUTCOME_MAX_CONFESSES } from '$lib/story/reference-package.js';
+import {
+	OUTCOME_MAX_CONFESSES,
+	PACKAGE_ID as REFERENCE_PACKAGE_ID
+} from '$lib/story/reference-package.js';
 import {
 	ACHIEVEMENT_DEFS,
 	MILESTONE_DEFS,
@@ -30,6 +41,14 @@ export interface DisplayMilestone extends MilestoneDef {
 	time: string;
 }
 
+interface EngineSession {
+	packageId: string;
+	bundle: StoryBundle;
+	engine: StoryEngine;
+	saveId: string;
+	milestoneTimes: Record<string, string>;
+}
+
 function nowTime(): string {
 	const d = new Date();
 	return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -44,32 +63,35 @@ class StoryRuntime {
 	/** Every package in the registry — the library list in `/chat/riddlon` and the chat
 	 *  overview's "Deine Bibliothek: n Geschichten" both read this one source. */
 	installedPackages = $state<InstalledPackageSummary[]>([]);
-	/** The package the engine is actually running, or `null` when nothing playable is
-	 *  installed (a fresh device with the demo opted out, see `story/demo-story.ts`). */
+	/** The *active* session's package, or `null` when nothing playable is installed (a fresh
+	 *  device with the demo opted out, see `story/demo-story.ts`). */
 	packageId = $state<string | null>(null);
 	saveId = $state<string | null>(null);
 	progress = $state<ProgressSummary | null>(null);
 	visibleCharacterIds = $state<string[]>([]);
+	/** Authored only for the reference story (#32 tracks giving the package format itself real
+	 *  unlock conditions) — always empty for any other active package rather than showing that
+	 *  story's milestones grafted onto content they don't apply to. */
 	milestones = $state<DisplayMilestone[]>([]);
 	earnedAchievements = $state<AchievementDef[]>([]);
 	clueDisplays = $state<Record<string, ClueDisplay>>({});
 	solved = $state(false);
 	lastEffects = $state<EngineEffect[]>([]);
 
-	#engine: StoryEngine | null = null;
-	#bundle: StoryBundle | null = null;
-	#milestoneTimes: Record<string, string> = {};
+	#sessions = new Map<string, EngineSession>();
+	#active: EngineSession | null = null;
 	#initPromise: Promise<void> | null = null;
 
 	get engine(): StoryEngine | null {
-		return this.#engine;
+		return this.#active?.engine ?? null;
 	}
 
 	get bundle(): StoryBundle | null {
-		return this.#bundle;
+		return this.#active?.bundle ?? null;
 	}
 
-	/** Idempotent — safe to call from every screen that needs engine data. */
+	/** Idempotent — safe to call from every screen that needs engine data. Loads the reference
+	 *  story (installing it on a first-ever run) as the initial active session. */
 	init(): Promise<void> {
 		if (!browser) return Promise.resolve();
 		if (!this.#initPromise) {
@@ -86,6 +108,18 @@ class StoryRuntime {
 		this.installedPackages = await storyRegistry.list();
 	}
 
+	/** Switches the active session to a different installed package (#37) — loads it (and
+	 *  creates its save) on first visit, then reuses the same live `StoryEngine` on every later
+	 *  switch, so progress in one package is never lost or mixed into another's. A no-op if
+	 *  that package is already active. */
+	async switchTo(packageId: string): Promise<void> {
+		await this.init();
+		if (this.packageId === packageId) return;
+		const session = await this.#loadSession(packageId);
+		if (!session) return;
+		this.#activate(session);
+	}
+
 	async #doInit(): Promise<void> {
 		const summary = await ensureReferenceStoryInstalled();
 		await this.refreshLibrary();
@@ -95,27 +129,49 @@ class StoryRuntime {
 			return;
 		}
 
-		const bundle = await storyRegistry.getBundle(summary.id);
-		if (!bundle) return;
-		this.#bundle = bundle;
-		this.packageId = summary.id;
-
-		const save =
-			(await saveStore.getForPackage(summary.id)) ?? (await saveStore.createForPackage(summary.id));
-		if (!save) return;
-		this.saveId = save.id;
-
-		const hasSavedProgress = save.unlockedSceneIds.length > 0 || Object.keys(save.flags).length > 0;
-		this.#engine = new StoryEngine(bundle, {
-			state: hasSavedProgress ? stateFromSaveRecord(save) : undefined
-		});
-		this.#sync(this.#engine.resume());
+		const session = await this.#loadSession(summary.id);
+		if (!session) return;
+		this.#activate(session);
 
 		watchForResume(() => {
-			if (this.#engine) this.#sync(this.#engine.resume());
+			if (this.#active) this.#sync(this.#active.engine.resume());
 		});
 
 		this.ready = true;
+	}
+
+	async #loadSession(packageId: string): Promise<EngineSession | null> {
+		const cached = this.#sessions.get(packageId);
+		if (cached) return cached;
+
+		const bundle = await storyRegistry.getBundle(packageId);
+		if (!bundle) return null;
+
+		const save =
+			(await saveStore.getForPackage(packageId)) ?? (await saveStore.createForPackage(packageId));
+		if (!save) return null;
+
+		const hasSavedProgress = save.unlockedSceneIds.length > 0 || Object.keys(save.flags).length > 0;
+		const engine = new StoryEngine(bundle, {
+			state: hasSavedProgress ? stateFromSaveRecord(save) : undefined
+		});
+
+		const session: EngineSession = {
+			packageId,
+			bundle,
+			engine,
+			saveId: save.id,
+			milestoneTimes: {}
+		};
+		this.#sessions.set(packageId, session);
+		return session;
+	}
+
+	#activate(session: EngineSession): void {
+		this.#active = session;
+		this.packageId = session.packageId;
+		this.saveId = session.saveId;
+		this.#sync(session.engine.resume());
 	}
 
 	setFlag(flag: string): EngineEffect[] {
@@ -127,33 +183,41 @@ class StoryRuntime {
 	}
 
 	#mutate(fn: (engine: StoryEngine) => EngineEffect[]): EngineEffect[] {
-		if (!this.#engine) return [];
-		const effects = fn(this.#engine);
+		if (!this.#active) return [];
+		const effects = fn(this.#active.engine);
 		this.#sync(effects);
 		return effects;
 	}
 
 	#sync(effects: EngineEffect[]): void {
-		if (!this.#engine || !this.#bundle) return;
-		const { state } = this.#engine;
-		const bundle = this.#bundle;
+		if (!this.#active) return;
+		const session = this.#active;
+		const { state } = session.engine;
+		const { bundle } = session;
+		const isReferenceStory = session.packageId === REFERENCE_PACKAGE_ID;
 
 		this.lastEffects = effects;
-		this.progress = this.#engine.progress();
-		this.visibleCharacterIds = [...this.#engine.visibleCharacterIds()];
+		this.progress = session.engine.progress();
+		this.visibleCharacterIds = [...session.engine.visibleCharacterIds()];
 
-		this.milestones = MILESTONE_DEFS.map((def) => {
-			const done = isMilestoneDone(def, state, bundle);
-			if (done && !this.#milestoneTimes[def.id]) this.#milestoneTimes[def.id] = nowTime();
-			return { ...def, done, time: this.#milestoneTimes[def.id] ?? '—' };
-		});
-		this.earnedAchievements = ACHIEVEMENT_DEFS.filter((def) =>
-			isAchievementEarned(def, state, bundle)
-		);
+		if (isReferenceStory) {
+			this.milestones = MILESTONE_DEFS.map((def) => {
+				const done = isMilestoneDone(def, state, bundle);
+				if (done && !session.milestoneTimes[def.id]) session.milestoneTimes[def.id] = nowTime();
+				return { ...def, done, time: session.milestoneTimes[def.id] ?? '—' };
+			});
+			this.earnedAchievements = ACHIEVEMENT_DEFS.filter((def) =>
+				isAchievementEarned(def, state, bundle)
+			);
+			this.solved = state.reachedOutcomeIds.has(OUTCOME_MAX_CONFESSES);
+		} else {
+			this.milestones = [];
+			this.earnedAchievements = [];
+			this.solved = false;
+		}
 		this.clueDisplays = resolveClueDisplays(state, bundle);
-		this.solved = state.reachedOutcomeIds.has(OUTCOME_MAX_CONFESSES);
 
-		if (this.saveId) void saveStore.update(this.saveId, saveRecordPatchFromState(state));
+		if (session.saveId) void saveStore.update(session.saveId, saveRecordPatchFromState(state));
 	}
 }
 

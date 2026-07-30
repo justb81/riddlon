@@ -10,6 +10,12 @@
 	import { game } from '$lib/state/game.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { STORY_META } from '$lib/story/lucys-portmonnaie.js';
+	import { PACKAGE_ID as REFERENCE_PACKAGE_ID } from '$lib/story/reference-package.js';
+
+	// Authored milestones/chat content (`game.svelte.ts`) exist only for the reference story
+	// (#37) — any other active package still shows its own real scene/clue progress above, just
+	// without a milestone timeline or a "weiterspielen" button into a chat that doesn't exist yet.
+	const isReferenceStory = $derived(storyRuntime.packageId === REFERENCE_PACKAGE_ID);
 
 	const total = $derived(game.milestones.length);
 	const done = $derived(game.milestones.filter((m) => m.done).length);
@@ -43,7 +49,9 @@
 	<AppHeader onBack={() => goto(resolve('/chat/riddlon'))}>
 		<span class="block text-center text-h1 font-medium text-slate-100">{t('story.title')}</span>
 		{#snippet trailing()}
-			<span class="font-mono text-caption text-slate-500">{done}/{total}</span>
+			{#if isReferenceStory}
+				<span class="font-mono text-caption text-slate-500">{done}/{total}</span>
+			{/if}
 		{/snippet}
 	</AppHeader>
 
@@ -86,28 +94,36 @@
 							</span>
 						</span>
 					</div>
-					<div class="mt-4 flex items-end gap-3">
-						<div class="font-serif text-[32px] leading-none text-slate-50">{done} / {total}</div>
-						<div class="pb-0.5 text-label text-slate-400">{t('story.milestonesReached')}</div>
-					</div>
-					<button
-						type="button"
-						onclick={() => goto(resolve('/chat/[thread]', { thread: 'lucy' }))}
-						class="mt-4 w-full rounded-tile border border-accent/50 bg-accent/15 py-3.5 text-label font-medium text-slate-100 hover:bg-accent/25"
-					>
-						{t('story.continue', { chapter: currentScene })}
-					</button>
+					{#if isReferenceStory}
+						<div class="mt-4 flex items-end gap-3">
+							<div class="font-serif text-[32px] leading-none text-slate-50">{done} / {total}</div>
+							<div class="pb-0.5 text-label text-slate-400">{t('story.milestonesReached')}</div>
+						</div>
+						<button
+							type="button"
+							onclick={() => goto(resolve('/chat/[thread]', { thread: 'lucy' }))}
+							class="mt-4 w-full rounded-tile border border-accent/50 bg-accent/15 py-3.5 text-label font-medium text-slate-100 hover:bg-accent/25"
+						>
+							{t('story.continue', { chapter: currentScene })}
+						</button>
+					{/if}
 				</div>
 
-				<div class="relative mt-6.5 pl-[30px]">
-					<div
-						class="absolute top-1.5 bottom-3 left-[9px] w-[1.5px]"
-						style="background:linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent) {donePercent}%, var(--color-line) {donePercent}%, var(--color-line) 100%)"
-					></div>
-					{#each game.milestones as milestone (milestone.id)}
-						<MilestoneItem {milestone} />
-					{/each}
-				</div>
+				{#if isReferenceStory}
+					<div class="relative mt-6.5 pl-[30px]">
+						<div
+							class="absolute top-1.5 bottom-3 left-[9px] w-[1.5px]"
+							style="background:linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent) {donePercent}%, var(--color-line) {donePercent}%, var(--color-line) 100%)"
+						></div>
+						{#each game.milestones as milestone (milestone.id)}
+							<MilestoneItem {milestone} />
+						{/each}
+					</div>
+				{:else}
+					<p class="mt-6.5 text-label leading-relaxed text-slate-500">
+						{t('story.noMilestonesYet')}
+					</p>
+				{/if}
 			</div>
 		</div>
 	{/if}
