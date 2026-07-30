@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2](https://github.com/justb81/riddlon/compare/riddlon-v0.6.1...riddlon-v0.6.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ui:** close the async load gap that flashed empty chats / 0-of-0 ([63bf43c](https://github.com/justb81/riddlon/commit/63bf43c4a37af67a2880a2d0a46a5879577d3f94))
+* **ui:** close the async load gap that flashed empty chats / 0-of-0 ([#38](https://github.com/justb81/riddlon/issues/38)) ([66cdb0c](https://github.com/justb81/riddlon/commit/66cdb0c39a426f152348a03c312fd69096b5557f))
+
 ## [0.6.1](https://github.com/justb81/riddlon/compare/riddlon-v0.6.0...riddlon-v0.6.1) (2026-07-30)
 
 
