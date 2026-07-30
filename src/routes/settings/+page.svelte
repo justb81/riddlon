@@ -10,6 +10,7 @@
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { profile } from '$lib/state/profile.svelte.js';
 	import { DISGUISE_MODES, PRONOUN_OPTIONS, addressPreview } from '$lib/state/profile.js';
+	import { resetEverything, resetStoryProgress } from '$lib/state/reset.js';
 
 	const preview = $derived(addressPreview(profile.addressAs, profile.nickname));
 
@@ -56,6 +57,30 @@
 		profile.model = id;
 		// Tears down the live engine so the next load picks up the newly chosen weights.
 		await llm.selectModel(id);
+	}
+
+	type ResetKind = 'progress' | 'all';
+
+	// Two-step confirm instead of `window.confirm`: it's the only irreversible action in the app,
+	// and a native dialog is the one piece of chrome the disguise modes can't style.
+	let armed = $state<ResetKind | null>(null);
+	let running = $state<ResetKind | null>(null);
+
+	async function runReset(kind: ResetKind): Promise<void> {
+		if (armed !== kind) {
+			armed = kind;
+			return;
+		}
+		armed = null;
+		running = kind;
+		try {
+			if (kind === 'all') await resetEverything();
+			else await resetStoryProgress();
+		} finally {
+			// Full load, not `goto`: the state singletons memoize their init (see `state/reset.ts`),
+			// so booting again is what actually shows the cleared state.
+			location.href = resolve('/');
+		}
 	}
 </script>
 
@@ -240,6 +265,65 @@
 						<span class="size-5 rounded-full {profile.notify ? 'bg-white' : 'bg-slate-400'}"></span>
 					</span>
 				</button>
+			</div>
+
+			<div>
+				<div class="font-mono text-[9.5px] tracking-[0.12em] text-slate-500">
+					{t('settings.resetLabel')}
+				</div>
+				<p class="mt-1.5 text-label leading-relaxed text-slate-400">{t('settings.resetDesc')}</p>
+				<div class="mt-3 flex flex-col gap-2.5">
+					{#each [{ kind: 'progress' as const, danger: false }, { kind: 'all' as const, danger: true }] as action (action.kind)}
+						<div
+							class="rounded-tile border px-4 py-3.5 {armed === action.kind
+								? 'border-danger bg-danger/10'
+								: 'border-line bg-slate-100/3'}"
+						>
+							<div class="text-body font-medium {action.danger ? 'text-danger' : 'text-slate-100'}">
+								{action.kind === 'all'
+									? t('settings.resetAllTitle')
+									: t('settings.resetProgressTitle')}
+							</div>
+							<p class="mt-1 text-label leading-relaxed text-slate-500">
+								{action.kind === 'all'
+									? t('settings.resetAllDesc')
+									: t('settings.resetProgressDesc')}
+							</p>
+							{#if armed === action.kind}
+								<p class="mt-2 text-label font-medium text-danger">{t('settings.resetConfirm')}</p>
+							{/if}
+							<div class="mt-3 flex gap-2.5">
+								<button
+									type="button"
+									disabled={running !== null}
+									onclick={() => void runReset(action.kind)}
+									class="flex-1 rounded-control border px-3 py-2.5 text-label font-medium disabled:opacity-50 {armed ===
+									action.kind
+										? 'border-danger bg-danger/20 text-slate-100'
+										: 'border-line-strong text-slate-200 hover:bg-slate-100/8'}"
+								>
+									{running === action.kind
+										? t('settings.resetRunning')
+										: action.kind === 'all'
+											? t('settings.resetAllTitle')
+											: t('settings.resetProgressTitle')}
+								</button>
+								{#if armed === action.kind}
+									<button
+										type="button"
+										onclick={() => (armed = null)}
+										class="flex-none rounded-control border border-line-strong px-3 py-2.5 text-label font-medium text-slate-300 hover:bg-slate-100/8"
+									>
+										{t('settings.resetCancel')}
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+				<p class="mt-2.5 text-caption leading-relaxed text-slate-600">
+					{t('settings.resetModelNote')}
+				</p>
 			</div>
 		</div>
 	</div>

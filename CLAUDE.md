@@ -38,7 +38,7 @@ doc's "App 2" module breakdown as the issue backlog works through them:
 | `content/`    | Validator/loader/importer/installer for story packages                        | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`) import both real; `/chat/riddlon`'s buttons not wired to them yet (#ui-riddlon-chat) |
 | `characters/` | Local, story-independent character library                                    | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                                                 |
 | `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                                                                   |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`)                                                   |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`), reset in `clear-data.ts`                         |
 | `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                                           |
 
 ## Story packages (`stories/`)
@@ -134,6 +134,15 @@ Notes on things that look like bugs but aren't:
   other than "Lucys Portmonnaie", opens the same `lucy` thread / `/story` screen — there's only one
   reference story with real content right now (see `docs/concept.md` §7). Search for `Only "Lucys
 Portmonnaie"` to find the call sites.
+- **An imported package shows up in the library but does not become playable.** `storyRuntime`
+  runs `reference-package.ts`'s `PACKAGE_ID` and nothing else, and `game.svelte.ts` keys its
+  authored beats off that package's scene/clue/flag ids — so importing a ZIP registers it, and
+  the chats keep playing the built-in demo. Making an arbitrary package playable is the
+  remaining piece of the `ui/` ↔ `engine/` wiring, not a bug in `content/`.
+- The built-in demo (`story/bootstrap.ts`) is **auto-installed on a fresh device**, which is why
+  the app looks like it only ever has demo content. `/settings`' "Alles löschen" sets
+  `riddlon:skip-demo-story` (see `story/demo-story.ts`) so the demo is _not_ re-seeded on the next
+  boot; the then-empty library in `/chat/riddlon` offers it back explicitly.
 - The **"Fallakte ansehen"** button on the case-solved celebration literally says that (not
   "Storyübersicht") — that's the original design's wording; the screen it renamed to
   "Storyübersicht" is `/story`.
@@ -148,8 +157,15 @@ Building blocks:
   (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and
   `/chat/[thread]`), local model choice, notification toggle. In-memory only; no persistence.
 - **`$lib/story/*`** — mock "installed content package" data (seed messages, reply beats,
-  milestones, achievements, the library catalog). Deliberately **not** routed through i18n — a real
-  story package ships its own localized content, separate from the app's own UI chrome.
+  milestones, achievements). Deliberately **not** routed through i18n — a real story package ships
+  its own localized content, separate from the app's own UI chrome. `library.ts` is types only: the
+  catalog rows come from the real registry via `storyRuntime.installedPackages`, so an empty library
+  renders as empty instead of showing invented "also installed" stories.
+- **`$lib/state/reset.ts`** — the two "frisch starten" actions behind `/settings`:
+  `resetStoryProgress()` (savegames only) and `resetEverything()` (packages, characters, saves,
+  profile, settings, package assets). Both end in a full page load, because the state singletons
+  memoize their `init()`. Downloaded LLM weights survive on purpose — `appKeysToClear()` (pure,
+  spec'd) keeps the `riddlon:llm:*` markers so no multi-GB re-download is triggered.
 - **`$lib/components/chat/*`** — shared screen chrome: `AppHeader` (60px) + `InfoBand` (46px) are
   used on every screen so header height is identical everywhere (a specific piece of design
   feedback — see chat1.md), `MessageBubble`, `Composer`, `Avatar`, etc.

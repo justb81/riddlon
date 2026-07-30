@@ -41,9 +41,13 @@
 		"progressPercent": "{percent} %",
 		"chatCount": "{count} CHATS",
 		"libraryPreview": "Deine Bibliothek: {count} Geschichten. Neue importieren?",
+		"libraryPreviewSingle": "Deine Bibliothek: eine Geschichte. Neue importieren?",
+		"libraryPreviewEmpty": "Deine Bibliothek ist leer. Geschichte importieren?",
 		"emptyTitle": "Wähle einen Chat",
 		"emptyDesc": "Öffne links eine Unterhaltung, um weiterzuspielen. Die Geschichte läuft weiter, während du liest.",
-		"emptyNote": "LÄUFT VOLLSTÄNDIG AUF DEINEM GERÄT"
+		"emptyNote": "LÄUFT VOLLSTÄNDIG AUF DEINEM GERÄT",
+		"noStoryBand": "KEINE GESCHICHTE INSTALLIERT",
+		"noStoryHint": "Noch keine Geschichte installiert. Öffne den Riddlon-Chat, um eine zu importieren."
 	},
 	"convo": {
 		"clueCount": "HINWEISE {revealed}/{total}",
@@ -60,7 +64,12 @@
 		"offlineNote": "OFFLINE-BEREIT · KEIN KONTO ERFORDERLICH",
 		"systemContactNote": "Systemkontakt · keine Story-Figur",
 		"welcome": "Willkommen zurück, {name}. Du hast {count} Geschichten installiert — alle vollständig offline spielbar.",
+		"welcomeSingle": "Willkommen zurück, {name}. Eine Geschichte ist installiert — vollständig offline spielbar.",
+		"welcomeEmpty": "Hallo {name}. Deine Bibliothek ist leer — importiere eine Geschichte als ZIP oder über eine URL.",
 		"installedLabel": "INSTALLIERT",
+		"emptyLabel": "NICHTS INSTALLIERT",
+		"installDemo": "Demo-Geschichte installieren",
+		"installDemoNote": "„Lucys Portmonnaie“ — die mitgelieferte Beispielgeschichte, jederzeit wieder entfernbar.",
 		"status": {
 			"running": "LÄUFT",
 			"solved": "GELÖST",
@@ -84,7 +93,10 @@
 		"title": "Storyübersicht",
 		"chapterInfo": "{story} · KAPITEL {chapter} VON {total}",
 		"milestonesReached": "Meilensteine erreicht",
-		"continue": "Weiterspielen · Kapitel {chapter}"
+		"continue": "Weiterspielen · Kapitel {chapter}",
+		"emptyTitle": "Keine Geschichte aktiv",
+		"emptyDesc": "Sobald eine Geschichte installiert und gestartet ist, findest du hier ihre Meilensteine und Auszeichnungen.",
+		"emptyAction": "Bibliothek öffnen"
 	},
 	"settings": {
 		"title": "Profil & Einstellungen",
@@ -122,7 +134,17 @@
 		"modelUnsupported": "nicht unterstützt",
 		"modelBuiltIn": "im Browser integriert",
 		"notifyTitle": "Benachrichtigungen",
-		"notifyDesc": "Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen."
+		"notifyDesc": "Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen.",
+		"resetLabel": "NEU STARTEN",
+		"resetDesc": "Alles bleibt auf diesem Gerät — es gibt nichts, was serverseitig zurückgesetzt werden könnte.",
+		"resetProgressTitle": "Fortschritt zurücksetzen",
+		"resetProgressDesc": "Löscht alle Spielstände und startet die Geschichte von vorn. Installierte Geschichten und dein Profil bleiben.",
+		"resetAllTitle": "Alles löschen",
+		"resetAllDesc": "Löscht installierte Geschichten, Figuren, Spielstände, Profil und Einstellungen. Die Demo-Geschichte wird danach nicht neu installiert.",
+		"resetModelNote": "Das heruntergeladene Sprachmodell bleibt erhalten — es wird nicht erneut geladen.",
+		"resetConfirm": "Wirklich? Tippe erneut zum Bestätigen.",
+		"resetCancel": "Abbrechen",
+		"resetRunning": "Wird zurückgesetzt …"
 	},
 	"toast": {
 		"achievement": "AUSZEICHNUNG",
