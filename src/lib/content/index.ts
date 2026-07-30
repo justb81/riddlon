@@ -3,3 +3,7 @@ export * from './validate-package.js';
 export * from './load-package.js';
 export * from './semver.js';
 export * from './player-version.js';
+export * from './unzip.js';
+export * from './install-package.js';
+export * from './zip-import.js';
+export * from './url-import.js';

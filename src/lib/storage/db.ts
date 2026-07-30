@@ -13,6 +13,9 @@ export interface InstalledPackageRecord {
 	sizeBytes: number;
 	/** Denormalized for quick uninstall/lookup without re-parsing manifest.characters[]. */
 	characterIds: string[];
+	/** Package-relative asset path (e.g. a character's `avatar`) -> content-addressed
+	 *  blob-store key (see `putAsset`/`assetKeyForBlob`). Absent on records installed before #10. */
+	assetKeys?: Record<string, string>;
 	manifest: Manifest;
 }
 

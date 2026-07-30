@@ -15,7 +15,8 @@ function toSummary(record: InstalledPackageRecord): InstalledPackageSummary {
 		installedAt: record.installedAt,
 		coverAssetKey: record.coverAssetKey,
 		sizeBytes: record.sizeBytes,
-		characterIds: record.characterIds
+		characterIds: record.characterIds,
+		assetKeys: record.assetKeys
 	};
 }
 
@@ -23,6 +24,7 @@ export interface InstallPackageOptions {
 	characterIds: string[];
 	coverAssetKey?: string;
 	sizeBytes: number;
+	assetKeys?: Record<string, string>;
 }
 
 /**
@@ -48,6 +50,7 @@ export const storyRegistry = {
 			coverAssetKey: opts.coverAssetKey,
 			sizeBytes: opts.sizeBytes,
 			characterIds: opts.characterIds,
+			assetKeys: opts.assetKeys,
 			manifest
 		};
 		await db.put('packages', record);
