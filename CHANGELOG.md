@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/justb81/riddlon/compare/riddlon-v0.6.0...riddlon-v0.6.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **engine:** let storyRuntime run a live session per installed package ([f19e59d](https://github.com/justb81/riddlon/commit/f19e59d781b93edf05c9abd2bce2c427bcd56e15))
+
 ## [0.6.0](https://github.com/justb81/riddlon/compare/riddlon-v0.5.0...riddlon-v0.6.0) (2026-07-30)
 
 
