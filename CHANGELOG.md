@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/justb81/riddlon/compare/riddlon-v0.3.0...riddlon-v0.4.0) (2026-07-30)
+
+
+### Features
+
+* **content:** implement ZIP and URL story-package import ([#10](https://github.com/justb81/riddlon/issues/10), [#11](https://github.com/justb81/riddlon/issues/11)) ([110d449](https://github.com/justb81/riddlon/commit/110d44948a84341540a3423bdb3965626efcf564))
+* **content:** implement ZIP and URL story-package import ([#10](https://github.com/justb81/riddlon/issues/10), [#11](https://github.com/justb81/riddlon/issues/11)) ([1f6edb7](https://github.com/justb81/riddlon/commit/1f6edb79b6fa4075cb1687b86cc1cb2d6ce9f94e))
+* **content:** ship "Lucys Portmonnaie" as a real story package with a release pipeline ([a4a2bf6](https://github.com/justb81/riddlon/commit/a4a2bf696b605309fe933d579fb05498736193b0))
+* **content:** ship "Lucys Portmonnaie" as a real story package with a release pipeline ([a3af1eb](https://github.com/justb81/riddlon/commit/a3af1eb1cb8df28455d6abd58592acbc2fc3d2e0))
+
 ## [0.3.0](https://github.com/justb81/riddlon/compare/riddlon-v0.2.0...riddlon-v0.3.0) (2026-07-30)
 
 
