@@ -66,9 +66,17 @@ released yet:
 - assets: the `.zip` and its `.sha256`
 
 So **bump `version` in `manifest.json` and merge to `main`** — that is the whole release
-procedure. An unchanged version re-runs the build and publishes nothing. This is deliberately
-independent of release-please, which versions the app (`v<x.y.z>`); `deploy.yml` skips
-`story-*` tags so a content release never redeploys the site.
+procedure. Each package releases on its own: editing one story publishes only that story's
+new version, and every other package is skipped because its tag already exists. This is
+deliberately independent of release-please, which versions the app (`v<x.y.z>`); `deploy.yml`
+skips `story-*` tags so a content release never redeploys the site.
+
+**A published version is immutable.** Its zip is already installed on players' devices, so
+the workflow refuses to let a released version's content change underneath it: it compares
+each freshly built checksum against the one attached to the existing release and fails with
+"bump the version" on any difference. That's what turns "I forgot to bump" from a silent
+no-publish into a red build. It can only fire on real content changes — an unchanged story
+rebuilds byte-identically — so editing a story's `README.md` (never packed) doesn't trip it.
 
 Story versions follow semver against the _story_, not the app: patch for typo/tuning fixes,
 minor for added scenes or clues, major for a change that would invalidate an existing savegame.

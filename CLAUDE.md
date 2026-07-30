@@ -56,9 +56,12 @@ unzipped package layout from `docs/concept.md` §5 and released separately. Read
   runner, which is why validating shipped content needs no separate TS runner or new dependency —
   and packs a reproducible zip into `dist/stories/`.
 - `.github/workflows/stories.yml` publishes one GitHub release per package version, tagged
-  `story-<slug>-v<version>`. **Bumping `version` in a `manifest.json` and merging to `main` is the
+  `story-<slug>-v<version>` — each package releases independently, so editing one story never
+  re-releases the others. **Bumping `version` in a `manifest.json` and merging to `main` is the
   entire release procedure.** `deploy.yml` skips `story-*` tags so a content release doesn't
-  redeploy the site.
+  redeploy the site. A released version is immutable: the workflow diffs each built zip's
+  checksum against the released one and fails with "bump the version" rather than letting an
+  edit merge without publishing.
 
 The shipped package is the engine's acceptance fixture, not a copy of it: `__fixtures__/lucys-portmonnaie-walkthrough.ts`
 reads `stories/lucys-portmonnaie/` off disk (Node-only — specs only, never app code), so

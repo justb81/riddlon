@@ -50,6 +50,41 @@ jobs:
       # asset, and writes dist/stories/<slug>-v<version>.zip plus a build index.
       - run: npm run stories:build
 
+      # A published version is immutable: its zip is already installed on players' devices.
+      # Editing a story without bumping its version would otherwise merge silently and
+      # publish nothing, leaving the release serving stale content. Comparing the freshly
+      # built checksum against the released one catches exactly that — and only that, since
+      # an unchanged story rebuilds byte-identically (see scripts/build-stories.mjs).
+      - name: Reject content changes to an already-released version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          drift=0
+          tmp=$(mktemp -d)
+          while IFS=$'\t' read -r slug version tag zip sha; do
+            if ! gh release view "$tag" >/dev/null 2>&1; then
+              echo "· $slug v$version is unreleased — will publish"
+              continue
+            fi
+            rm -f "$tmp/$zip.sha256"
+            if ! gh release download "$tag" --pattern "$zip.sha256" --dir "$tmp" >/dev/null 2>&1; then
+              echo "· $tag has no checksum asset — cannot compare, skipping"
+              continue
+            fi
+            released=$(cut -d' ' -f1 "$tmp/$zip.sha256")
+            if [ "$released" = "$sha" ]; then
+              echo "· $slug v$version is unchanged from its release"
+            else
+              echo "✖ $slug: content differs from the published $tag"
+              echo "    released: $released"
+              echo "    built:    $sha"
+              echo "    Bump \"version\" in stories/$slug/manifest.json to publish this change."
+              drift=1
+            fi
+          done < <(jq -r '.[] | [.slug, .version, .tag, .zip, .sha256] | @tsv' dist/stories/index.json)
+          exit $drift
+
       - name: Create a release per story whose version has no tag yet
         if: github.event_name != 'pull_request'
         env:
