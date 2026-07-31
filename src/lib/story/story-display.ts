@@ -60,6 +60,7 @@ export interface SceneProgress {
 	type: string;
 	participantIds: string[];
 	goals: string[];
+	suggestedReplies: string[];
 	unlocked: boolean;
 	done: boolean;
 	/** Unlocked but not finished — at most the first such scene, so exactly one is "current". */
@@ -84,6 +85,7 @@ export function sceneProgress(bundle: StoryBundle, state: EngineState): ScenePro
 			type: node.type,
 			participantIds: [...node.participants],
 			goals: [...node.goals],
+			suggestedReplies: [...node.suggestedReplies],
 			unlocked,
 			done,
 			current

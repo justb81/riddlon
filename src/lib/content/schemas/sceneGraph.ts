@@ -8,6 +8,9 @@ const baseSceneFields = {
 	/** Whether this scene proactively sends an opening message once unlocked, or stays silent
 	 *  until the player writes first. Defaults to `true` (today's behavior). */
 	autoOpen: z.boolean().default(true),
+	/** Player-facing chip labels for the composer's suggestion row — what the player might say,
+	 *  as opposed to `goals`, which is what the character wants (#52). */
+	suggestedReplies: z.array(z.string()).default([]),
 	entryConditions: z.array(symbolicRefSchema).default([]),
 	exitConditions: z.array(symbolicRefSchema).default([]),
 	revealables: z.array(symbolicRefSchema).default([])
