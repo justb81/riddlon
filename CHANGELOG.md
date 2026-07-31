@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.0](https://github.com/justb81/riddlon/compare/riddlon-v0.8.0...riddlon-v0.9.0) (2026-07-31)
+
+
+### Features
+
+* **content:** add story-scoped identity masking for contacts ([#31](https://github.com/justb81/riddlon/issues/31)) ([b3fbea9](https://github.com/justb81/riddlon/commit/b3fbea977dd0ab40e3e3344a391938a75f921966))
+* **ui:** bring back package-authored suggestion chips, gated by disguise level ([02c833b](https://github.com/justb81/riddlon/commit/02c833b500fd8c99f9db32bab73285cc6a125f5b))
+* **ui:** bring back package-authored suggestion chips, gated by disguise level ([b4581e0](https://github.com/justb81/riddlon/commit/b4581e02751adb4120aca7b25c5d01e948778e1e))
+
+
+### Bug Fixes
+
+* **chat:** reveal LLM replies as one finished message, not token-by-token ([2f6d516](https://github.com/justb81/riddlon/commit/2f6d516d31c44ae676f3127fe663339ae0580935))
+* **chat:** reveal LLM replies as one finished message, not token-by-token ([41b3e1b](https://github.com/justb81/riddlon/commit/41b3e1bc2f9cb0cee3fb27979a0a802aafe36d8e)), closes [#49](https://github.com/justb81/riddlon/issues/49)
+* **chat:** stop silently dropping messages when a scene finishes ([fa0d872](https://github.com/justb81/riddlon/commit/fa0d87215858dacebd312a90057fe5a98a650f3e))
+* **chat:** stop silently dropping messages when a scene finishes ([d49cb21](https://github.com/justb81/riddlon/commit/d49cb21d5d79867bb55749773b2f956305b616cc))
+* **riddlon:** remove noop update/storage quick actions ([da35b09](https://github.com/justb81/riddlon/commit/da35b0976411c641a95e80d0ead89b83a2bc5c25)), closes [#36](https://github.com/justb81/riddlon/issues/36)
+
 ## [0.8.0](https://github.com/justb81/riddlon/compare/riddlon-v0.7.4...riddlon-v0.8.0) (2026-07-30)
 
 
