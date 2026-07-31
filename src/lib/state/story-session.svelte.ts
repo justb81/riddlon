@@ -20,6 +20,7 @@ import {
 	settableFlags,
 	type DirectorVerdict
 } from '$lib/llm/director.js';
+import { isLlmError } from '$lib/llm/errors.js';
 import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
 import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
 import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
@@ -53,13 +54,6 @@ function toChatMessage(message: SaveChatMessage): ChatMessage {
 	};
 }
 
-interface StreamingMessage {
-	sceneId: string;
-	id: string;
-	from: SpeakerId;
-	text: string;
-}
-
 class StorySession {
 	/** `init()` has finished, successfully or not — lets screens tell "still loading the resumed
 	 *  thread" apart from "genuinely empty" instead of flashing an empty conversation. */
@@ -69,7 +63,6 @@ class StorySession {
 	history = $state<SaveChatMessage[]>([]);
 	/** Scenes currently waiting on the model. */
 	typingSceneIds = $state<string[]>([]);
-	streaming = $state<StreamingMessage | null>(null);
 	openClueMessageId = $state<string | null>(null);
 	celebrationVisible = $state(false);
 	/** Set when a reply couldn't be produced (no model, load failure, aborted stream), so the
@@ -115,12 +108,7 @@ class StorySession {
 		const thread = storyRuntime.threadFor(threadKey);
 		if (!thread) return [];
 		const scenes = new Set(thread.sceneIds);
-		const messages = this.history.filter((m) => scenes.has(m.sceneId)).map(toChatMessage);
-		const streaming = this.streaming;
-		if (streaming && scenes.has(streaming.sceneId)) {
-			messages.push({ id: streaming.id, from: streaming.from, text: streaming.text });
-		}
-		return messages;
+		return this.history.filter((m) => scenes.has(m.sceneId)).map(toChatMessage);
 	}
 
 	lastMessageFor(threadKey: string): ChatMessage | undefined {
@@ -173,7 +161,6 @@ class StorySession {
 		this.#openedScenes = new Set(existing.chatHistory.map((m) => m.sceneId));
 		this.#busyScenes.clear();
 		this.typingSceneIds = [];
-		this.streaming = null;
 		this.errorCode = null;
 	}
 
@@ -257,20 +244,18 @@ class StorySession {
 		this.#busyScenes.add(sceneId);
 		this.#setTyping(sceneId, true);
 		this.errorCode = null;
-		let reply = '';
+		let reply: string;
 		try {
 			const session = await llm.session(`${threadKey}:${speakerId}`, {
 				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread, { idle })
 			});
-			const id = crypto.randomUUID();
-			for await (const delta of session.stream(trimmed)) {
-				reply += delta;
-				this.streaming = { sceneId, id, from: speakerId, text: reply };
-			}
-		} catch {
+			reply = await session.prompt(trimmed);
+		} catch (error) {
+			// A stream that broke mid-generation still leaves whatever was produced before the
+			// break (`LlmError.partial`) — persisted below rather than dropped, same as before.
+			reply = (isLlmError(error) && error.partial) || '';
 			this.errorCode = 'reply-failed';
 		} finally {
-			this.streaming = null;
 			this.#setTyping(sceneId, false);
 			this.#busyScenes.delete(sceneId);
 		}
