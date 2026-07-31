@@ -56,6 +56,10 @@
 	// A model is what produces every message here, so its absence is worth saying out loud
 	// rather than leaving the thread mysteriously silent.
 	const noModelNote = $derived(storySession.errorCode === 'no-model');
+	// `activeSceneId` is `null` once every unlocked scene here is already done and nothing further
+	// has unlocked — the character still answers (see `storySession.send()`'s idle mode), but say
+	// so rather than leaving it looking like an ordinary, goal-driven conversation.
+	const idleThreadNote = $derived(!!thread && thread.activeSceneId === null);
 
 	let draft = $state('');
 	let scrollEl: HTMLDivElement | undefined = $state();
@@ -178,6 +182,13 @@
 							class="my-2.5 max-w-[80%] self-center rounded-control bg-slate-100/6 px-3 py-2 text-center font-mono text-[10.5px] leading-snug text-slate-400"
 						>
 							{t('convo.noModelNote')}
+						</p>
+					{/if}
+					{#if idleThreadNote}
+						<p
+							class="my-2.5 max-w-[80%] self-center rounded-control bg-slate-100/6 px-3 py-2 text-center font-mono text-[10.5px] leading-snug text-slate-400"
+						>
+							{t('convo.idleThreadNote')}
 						</p>
 					{/if}
 				{/if}

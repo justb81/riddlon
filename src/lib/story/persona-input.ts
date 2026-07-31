@@ -33,7 +33,8 @@ export function buildScenePersonaPrompt(
 	ctx: PersonaContext,
 	characterId: string,
 	sceneId: string,
-	thread: PersonaThread
+	thread: PersonaThread,
+	opts: { idle?: boolean } = {}
 ): string {
 	const character = ctx.cast.find((c) => c.id === characterId);
 	const scene = ctx.bundle.graph.nodes.find((node) => node.id === sceneId);
@@ -42,6 +43,7 @@ export function buildScenePersonaPrompt(
 	const knownFacts = new Set(character?.knowledge.publicFacts ?? []);
 	const heldSecrets = new Set(character?.knowledge.secrets ?? []);
 	const secrets = ctx.bundle.secrets.filter((secret) => heldSecrets.has(secret.id));
+	const idle = opts.idle ?? false;
 
 	return buildPersonaPrompt({
 		character: {
@@ -53,8 +55,12 @@ export function buildScenePersonaPrompt(
 		},
 		storyTitle: ctx.storyTitle,
 		scene: {
-			goals: scene?.goals ?? [],
-			playerRole: scene?.type === 'group-chat-scene' ? scene.playerRole : undefined,
+			goals: idle ? [] : (scene?.goals ?? []),
+			// Idle mode: this scene is already resolved — its goals are known-accomplished, not
+			// dropped, so the character can still refer back to them (e.g. thank the player for
+			// the help) instead of pretending nothing happened.
+			resolvedGoals: idle ? (scene?.goals ?? []) : undefined,
+			playerRole: !idle && scene?.type === 'group-chat-scene' ? scene.playerRole : undefined,
 			isGroup: thread.kind === 'group',
 			otherParticipants: thread.participantIds
 				.filter((id) => id !== characterId)

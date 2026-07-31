@@ -19,6 +19,10 @@ export interface PersonaCharacter {
 
 export interface PersonaScene {
 	goals: readonly string[];
+	/** Goals of a scene that has already ended — not pursued any more, but the character still
+	 *  knows they were accomplished, so e.g. thanking the player for past help stays possible
+	 *  instead of the resolution being forgotten the moment the scene completes. */
+	resolvedGoals?: readonly string[];
 	/** Group scenes only (docs/concept.md §5.7). */
 	playerRole?: string;
 	isGroup: boolean;
@@ -78,6 +82,7 @@ export function buildPersonaPrompt(input: {
 			: '',
 		scene.playerRole ? `${input.playerName} will gerade: ${scene.playerRole}.` : '',
 		...section('Worauf du in diesem Gespräch hinauswillst:', scene.goals),
+		...section('Das ist zwischen euch bereits geklärt:', scene.resolvedGoals ?? []),
 		...section(
 			'Diese Leute kennst du und darfst du beim Namen nennen:',
 			(input.relationships ?? []).map((r) => `${r.displayName} (${r.relation})`)

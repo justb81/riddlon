@@ -135,4 +135,39 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 		expect(prompt).toContain('confront-max-with-evidence');
 		expect(prompt).toContain('Gruppenchat mit: Lucy, Sabine');
 	});
+
+	it('moves an idle scene’s goals from "pursuing" to "already resolved" instead of dropping them', () => {
+		const active = buildScenePersonaPrompt(
+			contextWith(),
+			LUCY_ID,
+			SCENE_LUCY_INTRO,
+			soloWith(LUCY_ID)
+		);
+		expect(active).toContain('Worauf du in diesem Gespräch hinauswillst');
+		expect(active).toContain('name-max-and-sabine-as-witnesses');
+		expect(active).not.toContain('Das ist zwischen euch bereits geklärt');
+
+		const idle = buildScenePersonaPrompt(
+			contextWith(),
+			LUCY_ID,
+			SCENE_LUCY_INTRO,
+			soloWith(LUCY_ID),
+			{ idle: true }
+		);
+		expect(idle).not.toContain('Worauf du in diesem Gespräch hinauswillst');
+		expect(idle).toContain('Das ist zwischen euch bereits geklärt');
+		expect(idle).toContain('name-max-and-sabine-as-witnesses');
+	});
+
+	it('drops a group scene’s playerRole once idle, without losing canon facts', () => {
+		const idle = buildScenePersonaPrompt(
+			contextWith(),
+			MAX_ID,
+			SCENE_GROUP_CONFRONTATION,
+			{ kind: 'group', participantIds: [LUCY_ID, MAX_ID, SABINE_ID] },
+			{ idle: true }
+		);
+		expect(idle).not.toContain('confront-max-with-evidence');
+		expect(idle).toContain('Das ist zwischen euch bereits geklärt');
+	});
 });

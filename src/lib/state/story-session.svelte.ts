@@ -221,17 +221,29 @@ class StorySession {
 		}
 	}
 
-	/** The player sends a message: persist it, get a reply, then let the director move the story. */
+	/**
+	 * The player sends a message: persist it, get a reply, then let the director move the story.
+	 *
+	 * `thread.activeSceneId` is `null` once every unlocked scene for this thread is already `done`
+	 * and nothing further has unlocked (a `group-chat-scene` never chains a `next`, so this is a
+	 * normal, permanent state, not a transient one). Falling back to the thread's last known scene
+	 * id — rather than refusing to send — is what lets the player keep chatting with a character
+	 * independent of where the graph currently stands; `#personaPromptFor`'s `idle` flag then swaps
+	 * that scene's goals for "already resolved" framing instead of dropping them.
+	 */
 	async send(threadKey: string, text: string): Promise<void> {
 		const trimmed = text.trim();
 		if (!trimmed) return;
 		const thread = storyRuntime.threadFor(threadKey);
-		const sceneId = thread?.activeSceneId;
-		if (!thread || !sceneId || this.#busyScenes.has(sceneId)) return;
+		if (!thread) return;
+		const activeSceneId = thread.activeSceneId;
+		const sceneId = activeSceneId ?? thread.sceneIds.at(-1) ?? null;
+		if (!sceneId) return;
 
 		// The player's own message is theirs either way — it is kept even when no reply can be
 		// produced, so nothing they typed silently disappears.
 		await this.#persist(sceneId, SPEAKER_ME, trimmed);
+		if (this.#busyScenes.has(sceneId)) return;
 		if (!llm.ready) {
 			this.errorCode = 'no-model';
 			return;
@@ -241,13 +253,14 @@ class StorySession {
 		const speakerId = pickResponder(cast, trimmed);
 		if (!speakerId) return;
 
+		const idle = activeSceneId == null;
 		this.#busyScenes.add(sceneId);
 		this.#setTyping(sceneId, true);
 		this.errorCode = null;
 		let reply = '';
 		try {
 			const session = await llm.session(`${threadKey}:${speakerId}`, {
-				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread)
+				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread, { idle })
 			});
 			const id = crypto.randomUUID();
 			for await (const delta of session.stream(trimmed)) {
@@ -265,7 +278,8 @@ class StorySession {
 		const answer = reply.trim();
 		if (!answer) return;
 		const message = await this.#persist(sceneId, speakerId, answer);
-		await this.#runDirector(sceneId, thread, message);
+		// No scene left to advance once idle — its exit conditions are already satisfied.
+		if (!idle) await this.#runDirector(sceneId, thread, message);
 	}
 
 	/**
@@ -383,7 +397,12 @@ class StorySession {
 	}
 
 	/** Thin over `buildScenePersonaPrompt`, which is pure and spec'd — see `story/persona-input.ts`. */
-	#personaPromptFor(characterId: string, sceneId: string, thread: StoryThread): string {
+	#personaPromptFor(
+		characterId: string,
+		sceneId: string,
+		thread: StoryThread,
+		opts: { idle?: boolean } = {}
+	): string {
 		const bundle = storyRuntime.bundle;
 		if (!bundle) return '';
 		return buildScenePersonaPrompt(
@@ -396,7 +415,8 @@ class StorySession {
 			},
 			characterId,
 			sceneId,
-			thread
+			thread,
+			opts
 		);
 	}
 
