@@ -99,6 +99,27 @@ export function visibleCharacterIds(bundle: StoryBundle, state: EngineState): Se
 	return new Set([...ids].filter((id) => isCharacterVisible(id, bundle, state)));
 }
 
+/** Chat-overview/header identity-masking (issue #31): can this character's real name be shown
+ *  yet, or should the UI still render `castBinding.identityMask.maskedDisplayName`. A binding
+ *  with no `identityMask` is always revealed. */
+export function isIdentityRevealed(
+	characterId: string,
+	bundle: StoryBundle,
+	state: EngineState
+): boolean {
+	const binding = bundle.story.castBindings.find((b) => b.characterRef === characterId);
+	if (!binding?.identityMask) return true;
+	return evaluateCondition(
+		binding.identityMask.revealCondition,
+		buildEvaluationContext(state, bundle)
+	);
+}
+
+export function maskedCharacterIds(bundle: StoryBundle, state: EngineState): Set<string> {
+	const ids = new Set(bundle.story.castBindings.map((b) => b.characterRef));
+	return new Set([...ids].filter((id) => !isIdentityRevealed(id, bundle, state)));
+}
+
 export interface ProgressSummary {
 	unlockedSceneIds: string[];
 	completedSceneIds: string[];

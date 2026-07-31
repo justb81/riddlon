@@ -11,6 +11,9 @@ export interface EffectiveCharacterState {
 	availability: { state: 'hidden' | 'visible'; unlockCondition?: string };
 	/** Scoped strictly to the ONE story this binding came from. */
 	relationships: Record<string, string>;
+	/** docs/concept.md §7's "Unbekannt" opening beat (issue #31) — a story-scoped override of
+	 *  `displayName` until `revealCondition` holds. Always from `binding`, never `identity`. */
+	identityMask?: { maskedDisplayName: string; revealCondition: string };
 }
 
 /**
@@ -50,7 +53,8 @@ export function resolveEffectiveCharacterState(
 			state: binding.availability.initialState,
 			unlockCondition: binding.availability.unlockCondition
 		},
-		relationships: binding.relationships
+		relationships: binding.relationships,
+		identityMask: binding.identityMask
 	};
 }
 

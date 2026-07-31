@@ -80,6 +80,9 @@ class StoryRuntime {
 	title = $state<string | null>(null);
 	progress = $state<ProgressSummary | null>(null);
 	visibleCharacterIds = $state<string[]>([]);
+	/** Characters whose `castBinding.identityMask` hasn't lifted yet (issue #31) — the ids
+	 *  `displayNameFor` renders as `identityMask.maskedDisplayName` instead of the real name. */
+	maskedCharacterIds = $state<string[]>([]);
 	/** The active package's cast, identity merged with this story's binding only. */
 	cast = $state<EffectiveCharacterState[]>([]);
 	scenes = $state<SceneProgress[]>([]);
@@ -119,7 +122,12 @@ class StoryRuntime {
 	}
 
 	displayNameFor(characterId: string): string {
-		return this.cast.find((c) => c.id === characterId)?.displayName ?? characterId;
+		const character = this.cast.find((c) => c.id === characterId);
+		if (!character) return characterId;
+		if (character.identityMask && this.maskedCharacterIds.includes(characterId)) {
+			return character.identityMask.maskedDisplayName;
+		}
+		return character.displayName;
 	}
 
 	threadFor(key: string): StoryThread | undefined {
@@ -277,6 +285,7 @@ class StoryRuntime {
 		this.lastEffects = effects;
 		this.progress = session.engine.progress();
 		this.visibleCharacterIds = [...session.engine.visibleCharacterIds()];
+		this.maskedCharacterIds = [...session.engine.maskedCharacterIds()];
 		this.scenes = sceneProgress(bundle, state);
 		for (const scene of this.scenes) {
 			if (scene.done && !session.sceneTimes[scene.id]) session.sceneTimes[scene.id] = nowTime();
