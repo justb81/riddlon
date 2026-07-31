@@ -139,11 +139,6 @@
 		})();
 	}
 
-	function noop(): void {
-		// Genuinely not built yet (update-checking, storage management) — tracked explicitly
-		// rather than faking success (#36).
-	}
-
 	const displayEntries = $derived.by((): CatalogEntry[] =>
 		installed.map((pkg) => {
 			// Progress exists only for the *active* session; claiming "LÄUFT · Kapitel 1 von 1" for
@@ -180,8 +175,6 @@
 	});
 
 	const chips = [
-		{ id: 'updates', label: t('library.chipCheckUpdates'), onClick: noop },
-		{ id: 'storage', label: t('library.chipManageStorage'), onClick: noop },
 		{ id: 'settings', label: t('library.chipSettings'), onClick: () => goto(resolve('/settings')) }
 	];
 </script>

@@ -232,12 +232,19 @@ Die Story ist ein **Zustandsgraph**, keine reine Prompt-Kette. Jeder Knoten defi
 Eröffnungsnachricht schickt, oder stumm bleibt, bis der Spieler zuerst schreibt (`autoOpen: false`).
 Die `goals` gelten in beiden Fällen — sie bestimmen nur, was der Charakter sagt, nicht wann.
 
+`suggestedReplies` (Default `[]`) sind vorformulierte Antwortvorschläge für den Spieler — Chips
+über dem Composer, die beim Antippen genau wie eine getippte Nachricht gesendet werden. Anders als
+`goals`, die beschreiben, was der Charakter erreichen will, sind das mögliche Spieleräußerungen.
+Die App zeigt sie nur bei der spielsichtbarsten der drei Tarnstufen an (App-2-Einstellung, kein
+Feld dieses Formats).
+
 ```json
 {
 	"id": "b2e4f6a8-1c3d-4e5f-9a7b-0c1d2e3f4a5b",
 	"type": "chat-scene",
 	"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 	"goals": ["seed-timeline", "seed-suspect-description"],
+	"suggestedReplies": ["Wo warst du gestern Abend?", "Kennst du Lucys Portmonnaie?"],
 	"autoOpen": true,
 	"entryConditions": ["flag:max-contact-unlocked"],
 	"exitConditions": ["flag:max-questioned"],

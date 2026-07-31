@@ -70,6 +70,7 @@ function makeTestBundle(): StoryBundle {
 					type: 'chat-scene',
 					participants: [MAX_ID],
 					goals: [],
+					suggestedReplies: [],
 					autoOpen: true,
 					entryConditions: ['flag:max-unlocked'],
 					exitConditions: [],

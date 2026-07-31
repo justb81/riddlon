@@ -9,6 +9,7 @@
 	import MessageBubble from '$lib/components/chat/MessageBubble.svelte';
 	import TypingIndicator from '$lib/components/chat/TypingIndicator.svelte';
 	import Composer from '$lib/components/chat/Composer.svelte';
+	import type { Chip } from '$lib/components/chat/ChipRow.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
 	import { storySession } from '$lib/state/story-session.svelte.js';
@@ -50,6 +51,18 @@
 	const typing = $derived(threadKey ? storySession.typingFor(threadKey) : false);
 
 	const showClueStrip = $derived(profile.disguise !== 'pure');
+	// Suggestion chips are the game's most visible piece of chrome — the composer otherwise reads
+	// as an ordinary chat input — so they only appear at the top disguise level, never at 'pure'
+	// or 'subtle'.
+	const chips: Chip[] = $derived.by(() => {
+		const sceneId = thread?.activeSceneId;
+		if (profile.disguise !== 'game' || !sceneId) return [];
+		return (storyRuntime.sceneById(sceneId)?.suggestedReplies ?? []).map((label, i) => ({
+			id: `${sceneId}-${i}`,
+			label,
+			onClick: () => sendText(label)
+		}));
+	});
 	const progress = $derived(storyRuntime.progress);
 	const openContradictions = $derived(progress?.openContradictionCount ?? 0);
 
@@ -82,6 +95,11 @@
 	function send(): void {
 		const text = draft;
 		draft = '';
+		void storySession.send(threadKey, text);
+	}
+
+	/** A tapped chip sends its label exactly as if the player had typed and sent it. */
+	function sendText(text: string): void {
 		void storySession.send(threadKey, text);
 	}
 
@@ -196,6 +214,6 @@
 			</div>
 		</div>
 
-		<Composer bind:draft placeholder={t('convo.messagePlaceholder')} onSend={send} />
+		<Composer bind:draft {chips} placeholder={t('convo.messagePlaceholder')} onSend={send} />
 	{/if}
 </AppFrame>

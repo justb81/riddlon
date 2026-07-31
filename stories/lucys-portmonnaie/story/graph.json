@@ -9,6 +9,7 @@
 				"open-as-unknown-contact",
 				"reveal-identity-as-lucy"
 			],
+			"suggestedReplies": ["Ja, war ich.", "Wer bist du eigentlich?", "Wieso fragst du?"],
 			"entryConditions": [],
 			"exitConditions": ["flag:lucy-identified"],
 			"revealables": ["fact:club-name", "fact:theft-date"],
@@ -24,6 +25,11 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+			"suggestedReplies": [
+				"Klar, ich helfe dir.",
+				"Max und Sabine waren auch da.",
+				"Was ist denn passiert?"
+			],
 			"entryConditions": ["flag:lucy-identified"],
 			"exitConditions": ["flag:witnesses-named"],
 			"revealables": ["fact:club-theft", "clue:stolen-item"],
@@ -43,6 +49,11 @@
 			"type": "chat-scene",
 			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"suggestedReplies": [
+				"Wo warst du gestern Abend?",
+				"Kennst du Lucys Portmonnaie?",
+				"Hast du etwas Verdächtiges gesehen?"
+			],
 			"autoOpen": false,
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:max-questioned"],
@@ -64,6 +75,11 @@
 			"type": "chat-scene",
 			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"suggestedReplies": [
+				"Wo warst du gestern Abend?",
+				"Hast du etwas Verdächtiges gesehen?",
+				"Kennst du Hans?"
+			],
 			"autoOpen": false,
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:sabine-questioned"],
@@ -85,6 +101,11 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["report-findings", "go-quiet-afterwards"],
+			"suggestedReplies": [
+				"Ich habe mit Max und Sabine gesprochen.",
+				"Die Zeiten passen nicht zusammen.",
+				"Ich glaube, jemand lügt."
+			],
 			"entryConditions": [
 				"flag:max-questioned",
 				"flag:sabine-questioned",
@@ -99,6 +120,11 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["raise-hans-suspicion", "ask-player-to-recheck-with-max-and-sabine"],
+			"suggestedReplies": [
+				"Was hat Hans gesagt?",
+				"Das überrascht mich.",
+				"Ich frage nochmal nach."
+			],
 			"entryConditions": ["flag:lucy-suspicion-only-via-delayed-event"],
 			"exitConditions": ["flag:suspicion-relayed"],
 			"revealables": ["secret:hans-tip", "clue:hans-accusation"],
@@ -118,6 +144,11 @@
 			"type": "chat-scene",
 			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 			"goals": ["confront-with-hans-claim", "deny-being-at-the-cloakroom"],
+			"suggestedReplies": [
+				"Hans sagt, du warst an der Garderobe.",
+				"Stimmt das?",
+				"Wieso hast du das nicht erwähnt?"
+			],
 			"entryConditions": ["flag:suspicion-relayed"],
 			"exitConditions": ["flag:max-denies-hans-claim"],
 			"revealables": ["clue:max-whereabouts"],
@@ -133,6 +164,10 @@
 			"type": "chat-scene",
 			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
 			"goals": ["confirm-hans-claim"],
+			"suggestedReplies": [
+				"Hast du Max an der Garderobe gesehen?",
+				"Kannst du Hans' Aussage bestätigen?"
+			],
 			"entryConditions": ["flag:suspicion-relayed"],
 			"exitConditions": ["flag:sabine-confirms-hans-claim"],
 			"revealables": ["clue:max-whereabouts", "secret:sabine-saw-max"],
@@ -148,6 +183,10 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["report-findings", "confirm-suspicion", "announce-group-chat"],
+			"suggestedReplies": [
+				"Ich glaube, wir sollten alle zusammen reden.",
+				"Lass uns einen Gruppenchat starten."
+			],
 			"entryConditions": ["flag:max-denies-hans-claim", "flag:sabine-confirms-hans-claim"],
 			"exitConditions": ["flag:hans-info-confirmed"],
 			"revealables": [],
@@ -162,6 +201,11 @@
 				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
 			],
 			"goals": ["resolve-case"],
+			"suggestedReplies": [
+				"Max, du hattest die Handtasche.",
+				"Wer war wirklich an der Garderobe?",
+				"Ich präsentiere die Beweise."
+			],
 			"entryConditions": ["flag:hans-info-confirmed"],
 			"exitConditions": [],
 			"revealables": ["secret:max-took-wallet"],

@@ -32,6 +32,25 @@ describe('sceneNodeSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('defaults suggestedReplies to an empty array when omitted', () => {
+		const result = sceneNodeSchema.parse({
+			id: SCENE_ID,
+			type: 'chat-scene',
+			participants: [MAX_ID]
+		});
+		expect(result.suggestedReplies).toEqual([]);
+	});
+
+	it('parses authored suggestedReplies', () => {
+		const result = sceneNodeSchema.safeParse({
+			id: SCENE_ID,
+			type: 'chat-scene',
+			participants: [MAX_ID],
+			suggestedReplies: ['Wo warst du gestern Abend?', 'Kennst du Lucy?']
+		});
+		expect(result.success).toBe(true);
+	});
+
 	it('rejects an unknown scene type', () => {
 		const result = sceneNodeSchema.safeParse({
 			id: SCENE_ID,
