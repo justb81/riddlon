@@ -94,8 +94,6 @@
 		"importUrlPlaceholder": "URL der Story-ZIP einfügen …",
 		"importUrlApply": "Importieren",
 		"importing": "Wird installiert …",
-		"chipCheckUpdates": "Updates prüfen",
-		"chipManageStorage": "Speicher verwalten",
 		"chipSettings": "Einstellungen"
 	},
 	"story": {
