@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { StoryBundle } from '$lib/content/index.js';
 import { recordClueClaim, resolveClue } from './clues.js';
 import { createInitialState } from './state.js';
-import { isCharacterVisible, progress, recompute, visibleCharacterIds } from './graph.js';
+import {
+	isCharacterVisible,
+	isIdentityRevealed,
+	maskedCharacterIds,
+	progress,
+	recompute,
+	visibleCharacterIds
+} from './graph.js';
 
 const PACKAGE_ID = '11111111-1111-4111-8111-111111111111';
 const LUCY_ID = '22222222-2222-4222-8222-222222222222';
@@ -56,7 +63,11 @@ function makeTestBundle(): StoryBundle {
 					roleInStory: 'quest-giver',
 					knowledge: { publicFacts: [], secrets: [] },
 					availability: { initialState: 'visible' },
-					relationships: {}
+					relationships: {},
+					identityMask: {
+						maskedDisplayName: 'Unbekannt',
+						revealCondition: 'flag:lucy-identified'
+					}
 				},
 				{
 					characterRef: MAX_ID,
@@ -216,6 +227,30 @@ describe('isCharacterVisible / visibleCharacterIds', () => {
 		const state = createInitialState(bundle);
 		state.unlockedCharacterIds.add(MAX_ID);
 		expect(isCharacterVisible(MAX_ID, bundle, state)).toBe(true);
+	});
+});
+
+describe('isIdentityRevealed / maskedCharacterIds', () => {
+	it('a character with an identityMask is masked until its revealCondition holds', () => {
+		const bundle = makeTestBundle();
+		const state = createInitialState(bundle);
+		expect(isIdentityRevealed(LUCY_ID, bundle, state)).toBe(false);
+		state.flags['flag:lucy-identified'] = true;
+		expect(isIdentityRevealed(LUCY_ID, bundle, state)).toBe(true);
+	});
+
+	it('a binding with no identityMask is always revealed', () => {
+		const bundle = makeTestBundle();
+		const state = createInitialState(bundle);
+		expect(isIdentityRevealed(MAX_ID, bundle, state)).toBe(true);
+	});
+
+	it('maskedCharacterIds reflects only the masked, not-yet-revealed character', () => {
+		const bundle = makeTestBundle();
+		const state = createInitialState(bundle);
+		expect(maskedCharacterIds(bundle, state)).toEqual(new Set([LUCY_ID]));
+		state.flags['flag:lucy-identified'] = true;
+		expect(maskedCharacterIds(bundle, state)).toEqual(new Set());
 	});
 });
 

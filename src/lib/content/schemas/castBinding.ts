@@ -11,6 +11,17 @@ export const availabilitySchema = z.object({
 	unlockCondition: symbolicRefSchema.optional()
 });
 
+/** docs/concept.md §7's "Unbekannt" opening beat — a name shown until `revealCondition` holds,
+ *  layered on the binding since the real name lives on the story-independent CharacterIdentity
+ *  (issue #31). Sibling to `availability`, not nested in it: gating a contact's existence and
+ *  masking its name are different concerns — a binding can be `visible` and still masked. */
+export const identityMaskSchema = z.object({
+	maskedDisplayName: z.string().min(1),
+	revealCondition: symbolicRefSchema
+});
+
+export type IdentityMask = z.infer<typeof identityMaskSchema>;
+
 /** docs/concept.md §5.3 — per-story role overlay for a character. */
 export const castBindingSchema = z.object({
 	characterRef: uuidV4Schema,
@@ -23,7 +34,8 @@ export const castBindingSchema = z.object({
 		.default({ publicFacts: [], secrets: [] }),
 	availability: availabilitySchema.default({ initialState: 'visible' }),
 	// Keyed by the OTHER character's UUID (docs/concept.md §5.3 end), not an array.
-	relationships: z.record(uuidV4Schema, z.string().min(1)).default({})
+	relationships: z.record(uuidV4Schema, z.string().min(1)).default({}),
+	identityMask: identityMaskSchema.optional()
 });
 
 export type CastBinding = z.infer<typeof castBindingSchema>;

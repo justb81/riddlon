@@ -19,6 +19,10 @@
 			"relationships": {
 				"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e": "friend",
 				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e": "friend"
+			},
+			"identityMask": {
+				"maskedDisplayName": "Unbekannt",
+				"revealCondition": "flag:lucy-identified"
 			}
 		},
 		{

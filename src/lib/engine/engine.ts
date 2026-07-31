@@ -4,6 +4,7 @@ import * as clues from './clues.js';
 import { armDueEvents, fireDueEvents } from './delayed-events.js';
 import {
 	isCharacterVisible,
+	maskedCharacterIds,
 	progress,
 	recompute,
 	visibleCharacterIds,
@@ -89,5 +90,9 @@ export class StoryEngine {
 
 	isCharacterVisible(characterId: string): boolean {
 		return isCharacterVisible(characterId, this.bundle, this.state);
+	}
+
+	maskedCharacterIds(): Set<string> {
+		return maskedCharacterIds(this.bundle, this.state);
 	}
 }

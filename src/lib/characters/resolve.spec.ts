@@ -67,4 +67,31 @@ describe('resolveEffectiveCharacterState — docs/concept.md §7 validation stor
 		expect(inLucysPortmonnaie.id).toBe(inSecondPackage.id);
 		expect(inLucysPortmonnaie.displayName).toBe(inSecondPackage.displayName);
 	});
+
+	it('carries a binding-scoped identityMask (issue #31) and never leaks it to another story', () => {
+		const identity = identityFor(LUCY_ID, 'Lucy');
+		const masked = resolveEffectiveCharacterState(identity, {
+			...bindingFor(LUCY_ID),
+			identityMask: { maskedDisplayName: 'Unbekannt', revealCondition: 'flag:lucy-identified' }
+		});
+		const inSecondPackage = resolveEffectiveCharacterState(
+			identity,
+			secondPackageLucyCastBinding()
+		);
+
+		expect(masked.identityMask).toEqual({
+			maskedDisplayName: 'Unbekannt',
+			revealCondition: 'flag:lucy-identified'
+		});
+		// identity's own displayName is untouched — masking is a display-layer override, not a
+		// rewrite of the identity itself.
+		expect(masked.displayName).toBe('Lucy');
+		// a second package's binding for the same identity has no mask configured
+		expect(inSecondPackage.identityMask).toBeUndefined();
+	});
+
+	it('leaves identityMask undefined when the binding configures none', () => {
+		const state = resolveEffectiveCharacterState(identityFor(LUCY_ID, 'Lucy'), bindingFor(LUCY_ID));
+		expect(state.identityMask).toBeUndefined();
+	});
 });

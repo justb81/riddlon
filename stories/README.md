@@ -98,9 +98,6 @@ closing one includes filling the gap in `lucys-portmonnaie/` and deleting its bu
 
 - **Seed chats** (#30) — §7 step 6 has new contacts arrive with pre-generated history. No schema
   home; the scene's `goals` are the only hint the model gets, so an unlocked thread opens empty.
-- **Identity masking** (#31) — §7 steps 1–3 show a contact as "Unbekannt" until they introduce
-  themselves. Modelled here as a scene plus `flag:lucy-identified`, but the name itself lives on
-  the story-independent character identity, so every surface renders "Lucy" from message one.
 - **Achievement conditions** (#32) — `achievementSchema` is id/label/description only (an explicit
   open point in concept §9), so the three endings are declared but nothing evaluates when they
   are earned. Blocks #17.
