@@ -110,12 +110,7 @@ export interface LlmSession {
 
 export interface LlmAdapterConfig {
 	modelId: LocalModelId;
-	/**
-	 * 'session' gives every logical session its own backend handle. 'inline' shares one handle and
-	 * renders persona + history into each prompt instead — necessary for the polyfill, where a
-	 * second `create()` means a full engine rebuild. Defaults per provider kind.
-	 */
-	personaMode?: 'session' | 'inline';
+	/** Caps live backend handles kept warm at once (LRU-evicted); defaults to 4. */
 	maxLiveSessions?: number;
 }
 

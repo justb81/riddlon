@@ -1,33 +1,27 @@
 /**
  * The adapter `engine/` and `ui/` talk to. Everything model- and backend-specific stops here.
  *
- * Two behaviours in this file exist purely because of how the WebLLM polyfill works, and both are
- * invisible from the outside:
+ * Every logical session — one per character, plus the director — gets its own real backend handle,
+ * on both providers. That used to be true only for the native Prompt API: the WebLLM path went
+ * through `prompt-api-polyfill`, whose backend rebuilt a whole `MLCEngine` on every `create()`, so
+ * this file kept one shared handle and baked persona + history into prompt text instead
+ * (`personaMode: 'inline'`) to avoid paying that reload per character. Issue #69 replaced that path
+ * with `webllm-direct.ts`, whose one persistent engine makes a WebLLM `create()` just as cheap as a
+ * native one — so the inline-baking special case is gone, and per-session isolation (no more
+ * character bleed, no more the director inheriting a half-finished roleplay) now holds for both.
  *
- *  - Every `LanguageModel.create()` under the polyfill builds a fresh MLCEngine — a full weight load
- *    plus shader compile, tens of seconds. So `load()` creates exactly one backend handle and keeps
- *    it warm, and logical sessions share it (`personaMode: 'inline'`): persona and history travel in
- *    each prompt instead of living in a per-character session. The native provider has no such cost,
- *    so it gets a real handle per session (`'session'`).
- *  - Aborting mid-generation leaves the backend's conversation state undefined and neither
- *    implementation documents a guarantee, so an interrupted handle is discarded and transparently
- *    rebuilt from the turns we recorded ourselves.
- *
- * Because history lives here rather than only inside the backend, a rebuild is lossless — and
- * persisting it later (#5/#7 savegames) needs no interface change.
+ * Aborting mid-generation leaves the backend's conversation state undefined and neither
+ * implementation documents a guarantee, so an interrupted handle is discarded and transparently
+ * rebuilt from the turns we recorded ourselves. Because history lives here rather than only inside
+ * the backend, a rebuild is lossless — and persisting it later (#5/#7 savegames) needs no interface
+ * change.
  */
 
 import { findModel, type LocalModelId } from './catalog.js';
 import { LlmError, classifyLoadError } from './errors.js';
 import { clampFraction, normalizeProgressEvent, phaseForFraction } from './progress.js';
 import { readableToAsyncIterable, throwIfAborted, toDeltas } from './stream.js';
-import {
-	DEFAULT_MAX_HISTORY_TURNS,
-	appendTurn,
-	buildTurnPrompt,
-	toInitialPrompts,
-	windowTurns
-} from './turns.js';
+import { DEFAULT_MAX_HISTORY_TURNS, appendTurn, toInitialPrompts, windowTurns } from './turns.js';
 import type {
 	AdapterDeps,
 	LanguageModelSessionLike,
@@ -41,8 +35,10 @@ import type {
 	ResolvedProvider
 } from './types.js';
 
-/** Key of the handle `load()` warms, and the one every session shares in inline mode. */
-const SHARED_HANDLE = '__shared__';
+/** Key of the throwaway handle `load()` warms up just to trigger and report the download. */
+const WARMUP_HANDLE = '__warmup__';
+
+const DEFAULT_MAX_LIVE_SESSIONS = 4;
 
 /** Everything a session needs from its adapter, so sessions themselves stay dumb. */
 interface AdapterRuntime {
@@ -146,8 +142,9 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 	const modelId = config.modelId;
 
 	let provider: ResolvedProvider | undefined;
-	let personaMode: NonNullable<LlmAdapterConfig['personaMode']> = 'inline';
-	let maxLiveSessions = 1;
+	let maxLiveSessions = DEFAULT_MAX_LIVE_SESSIONS;
+	/** Whether `load()` has already warmed up the engine once. */
+	let warmedUp = false;
 
 	/** Live backend handles, least-recently-used first. */
 	const handles = new Map<string, LanguageModelSessionLike>();
@@ -156,15 +153,9 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 	async function ensureProvider(): Promise<ResolvedProvider> {
 		if (!provider) {
 			provider = await deps.resolveProvider(modelId);
-			// The polyfill can only afford one live engine; the built-in model has no load cost.
-			personaMode = config.personaMode ?? (provider.kind === 'native' ? 'session' : 'inline');
-			maxLiveSessions = config.maxLiveSessions ?? (provider.kind === 'native' ? 4 : 1);
+			maxLiveSessions = config.maxLiveSessions ?? DEFAULT_MAX_LIVE_SESSIONS;
 		}
 		return provider;
-	}
-
-	function handleKeyFor(sessionKey: string): string {
-		return personaMode === 'inline' ? SHARED_HANDLE : sessionKey;
 	}
 
 	async function createHandle(options: {
@@ -227,7 +218,7 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 
 	async function backendFor(session: AdapterSession): Promise<LanguageModelSessionLike> {
 		await ensureProvider();
-		const key = handleKeyFor(session.key);
+		const key = session.key;
 
 		const existing = handles.get(key);
 		if (existing) {
@@ -240,10 +231,8 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 		evictFor(key);
 		return createHandle({
 			key,
-			// Inline mode primes the shared handle with nothing: persona and history go into every
-			// prompt instead, because the handle is shared across characters.
-			systemPrompt: personaMode === 'inline' ? '' : session.config.systemPrompt,
-			turns: personaMode === 'inline' ? [] : session.historyForReplay(),
+			systemPrompt: session.config.systemPrompt,
+			turns: session.historyForReplay(),
 			temperature: session.config.temperature,
 			topK: session.config.topK
 		});
@@ -252,19 +241,14 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 	const runtime: AdapterRuntime = {
 		async prepareTurn(session, text) {
 			const backend = await backendFor(session);
-			const input =
-				personaMode === 'inline'
-					? buildTurnPrompt(session.config.systemPrompt, session.historyForReplay(), text)
-					: text;
-			return { input, backend };
+			return { input: text, backend };
 		},
 		discardHandleFor(key) {
-			destroyHandle(handleKeyFor(key));
+			destroyHandle(key);
 		},
 		releaseSession(key) {
 			sessions.delete(key);
-			// The shared handle outlives any single session, so only per-session handles go.
-			if (personaMode !== 'inline') destroyHandle(key);
+			destroyHandle(key);
 		}
 	};
 
@@ -286,24 +270,24 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 			throwIfAborted(opts.signal);
 			await ensureProvider();
 
-			if (handles.has(SHARED_HANDLE)) {
+			if (warmedUp) {
 				opts.onProgress?.({ phase: 'prepare', fraction: 1 });
 				return;
 			}
 
-			// One warm handle, created once — nothing else may trigger the first create(), or the
-			// splash's progress bar would miss the very download it exists to show.
+			// A throwaway handle, created once — nothing else may trigger the first create(), or the
+			// splash's progress bar would miss the very download it exists to show. It doesn't need to
+			// stick around: the provider caches the download independently, and every real session
+			// gets its own handle anyway.
 			await createHandle({
-				key: SHARED_HANDLE,
+				key: WARMUP_HANDLE,
 				systemPrompt: '',
 				turns: [],
 				signal: opts.signal,
 				onProgress: opts.onProgress
 			});
-
-			// In session mode this handle was only ever a vehicle for the download (which the
-			// provider caches independently), so don't let it squat a slot.
-			if (personaMode !== 'inline') destroyHandle(SHARED_HANDLE);
+			destroyHandle(WARMUP_HANDLE);
+			warmedUp = true;
 
 			opts.onProgress?.({ phase: 'prepare', fraction: 1 });
 		},
@@ -313,11 +297,10 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 			const existing = sessions.get(key);
 			if (existing) {
 				// Same key, new instruction (the scene moved on): keep the conversation, swap the
-				// persona. In session mode the instruction lives inside the backend handle, so that
-				// handle has to go — `createHandle` rebuilds it from `historyForReplay()`, which makes
-				// the swap lossless. Inline mode renders the persona into every prompt anyway.
-				if (existing.reconfigure(sessionConfig) && personaMode !== 'inline') {
-					destroyHandle(handleKeyFor(key));
+				// persona. The instruction lives inside the backend handle, so that handle has to go —
+				// `createHandle` rebuilds it from `historyForReplay()`, which makes the swap lossless.
+				if (existing.reconfigure(sessionConfig)) {
+					destroyHandle(key);
 				}
 				return existing;
 			}
@@ -331,6 +314,7 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 			for (const key of [...handles.keys()]) destroyHandle(key);
 			sessions.clear();
 			provider = undefined;
+			warmedUp = false;
 		}
 	};
 }

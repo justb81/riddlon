@@ -18,7 +18,7 @@ import { LLM_MODELS } from './catalog.js';
 // against the current drive, doubling it into `C:\C:\Users\...`.
 const SRC = fileURLToPath(new URL('../../', import.meta.url));
 const LLM_DIR = join('lib', 'llm');
-const BACKEND_PACKAGES = ['@mlc-ai/web-llm', 'prompt-api-polyfill'];
+const BACKEND_PACKAGES = ['@mlc-ai/web-llm'];
 const MLC_MODEL_IDS = Object.values(LLM_MODELS).map((model) => model.mlcModelId);
 
 function sourceFiles(): string[] {
@@ -77,8 +77,8 @@ describe('backend containment', () => {
 	});
 
 	it('no cloud provider SDK is referenced anywhere in src', () => {
-		// docs/concept.md §2/§8: local inference only. The polyfill can reach five backends; four of
-		// them are cloud services, and nothing of ours may configure or import them.
+		// docs/concept.md §2/§8: local inference only. Nothing of ours may configure or import a
+		// cloud-hosted model provider.
 		const forbidden = ['firebase', '@google/genai', '@huggingface/transformers', 'openai'];
 		const configGlobals = ['FIREBASE_CONFIG', 'GEMINI_CONFIG', 'OPENAI_CONFIG'];
 		const offenders: string[] = [];

@@ -39,29 +39,6 @@ export function toInitialPrompts(
 	return messages;
 }
 
-/**
- * Renders persona + history + the new message into a single prompt string.
- *
- * Needed for the shared-handle path: under the WebLLM polyfill a second `create()` rebuilds the
- * whole engine, so all characters share one backend session and their persona has to travel with
- * each prompt rather than living in the session's system instruction.
- */
-export function buildTurnPrompt(
-	systemPrompt: string,
-	turns: readonly LlmTurn[],
-	message: string
-): string {
-	const parts: string[] = [];
-	if (systemPrompt.trim()) parts.push(systemPrompt.trim());
-
-	for (const turn of turns) {
-		parts.push(`${turn.role === 'user' ? 'User' : 'Assistant'}: ${turn.content}`);
-	}
-
-	parts.push(`User: ${message}`, 'Assistant:');
-	return parts.join('\n\n');
-}
-
 export function appendTurn(
 	turns: readonly LlmTurn[],
 	role: LlmTurn['role'],

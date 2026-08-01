@@ -121,23 +121,26 @@ describe('load progress', () => {
 	});
 });
 
-describe('session pooling under the polyfill (inline persona)', () => {
-	it('shares one backend engine across characters', async () => {
-		// This is the constraint that matters: a second create() under the polyfill means a full
-		// multi-gigabyte engine rebuild, so switching between Lucy and Max must not cause one.
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill' });
-		await adapter.load();
-
+/**
+ * Issue #69: the WebLLM path used to share one backend handle across every character (baking
+ * persona + history into prompt text instead), because a second `create()` under
+ * `prompt-api-polyfill` meant a full multi-gigabyte engine rebuild. `webllm-direct.ts` replaced
+ * that with one persistent engine reused across cheap per-session handles, so the polyfill kind now
+ * pools sessions exactly like the native provider — these mirror the native assertions below to
+ * prove that parity holds.
+ */
+describe.each(['native', 'polyfill'] as const)('session pooling (%s)', (kind) => {
+	it('gives each character its own backend session', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind });
 		const lucy = await adapter.createSession('lucy', LUCY);
 		const max = await adapter.createSession('max', MAX);
 		await lucy.prompt('Hallo?');
 		await max.prompt('Und du?');
-
-		expect(provider.LanguageModel.createCount).toBe(1);
+		expect(provider.LanguageModel.createCount).toBe(2);
 	});
 
-	it('keeps each character in its own history despite the shared engine', async () => {
-		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+	it('keeps each character in its own history', async () => {
+		const { adapter } = setup('llama-3.2-3b', { kind, chunks: ['ok'] });
 		const lucy = await adapter.createSession('lucy', LUCY);
 		const max = await adapter.createSession('max', MAX);
 		await lucy.prompt('Frage an Lucy');
@@ -147,24 +150,64 @@ describe('session pooling under the polyfill (inline persona)', () => {
 		expect(max.turns.map((t) => t.content)).toEqual(['Frage an Max', 'ok']);
 	});
 
-	it('sends persona and history inside the prompt, since the engine is shared', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+	it('primes each session with its own persona instead of inlining it', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind, chunks: ['ok'] });
 		const lucy = await adapter.createSession('lucy', LUCY);
-		await lucy.prompt('Erste Frage');
-		await lucy.prompt('Zweite Frage');
+		await lucy.prompt('Wo warst du?');
 
-		const second = provider.LanguageModel.calls.at(-1)?.input ?? '';
-		expect(second).toContain('Du bist Lucy.');
-		expect(second).toContain('Erste Frage');
-		expect(second).toContain('Zweite Frage');
+		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
+			{ role: 'system', content: 'Du bist Lucy.' }
+		]);
+		expect(provider.LanguageModel.calls.at(-1)?.input).toBe('Wo warst du?');
 	});
 
-	it('does not tear down the shared engine when one session is destroyed', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill' });
+	it('tears down a session’s own handle when it is destroyed', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind });
 		const lucy = await adapter.createSession('lucy', LUCY);
 		await lucy.prompt('Hallo?');
 		await lucy.destroy();
+		expect(provider.LanguageModel.destroyCount).toBe(1);
+	});
+
+	it('does not leave the warm-up handle occupying a slot', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind });
+		await adapter.load();
+		expect(provider.LanguageModel.liveSessions).toBe(0);
+	});
+
+	it('keeps several sessions live below the pool limit', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { kind, chunks: ['ok'] });
+		const first = await adapter.createSession('a', LUCY);
+		const second = await adapter.createSession('b', MAX);
+		await first.prompt('eins');
+		await second.prompt('zwei');
+
+		// maxLiveSessions defaults to 4, so nothing should have been evicted.
+		expect(provider.LanguageModel.liveSessions).toBe(2);
 		expect(provider.LanguageModel.destroyCount).toBe(0);
+	});
+
+	it('rebuilds an evicted session from the recorded history', async () => {
+		const { provider, resolveProvider } = createFakeProvider({ kind, chunks: ['ok'] });
+		const adapter = createLlmAdapter(
+			{ modelId: 'llama-3.2-3b', maxLiveSessions: 1 },
+			{ resolveProvider }
+		);
+
+		const lucy = await adapter.createSession('lucy', LUCY);
+		await lucy.prompt('Erste Frage');
+
+		const max = await adapter.createSession('max', MAX);
+		await max.prompt('Andere Frage');
+		expect(provider.LanguageModel.destroyCount).toBe(1);
+
+		// Lucy comes back: her handle is gone, so it must be recreated carrying her history.
+		await lucy.prompt('Zweite Frage');
+		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
+			{ role: 'system', content: 'Du bist Lucy.' },
+			{ role: 'user', content: 'Erste Frage' },
+			{ role: 'assistant', content: 'ok' }
+		]);
 	});
 });
 
@@ -177,34 +220,25 @@ describe('session pooling under the polyfill (inline persona)', () => {
 describe('a scene change on an ongoing session', () => {
 	const LUCY_SCENE_2: LlmSessionConfig = { systemPrompt: 'Du bist Lucy. Nenne Max und Sabine.' };
 
-	it('inlines the new persona on the next turn, under the polyfill', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
-		const first = await adapter.createSession('lucy', LUCY);
-		await first.prompt('Wer bist du?');
+	it.each(['native', 'polyfill'] as const)(
+		'rebuilds the backend handle with the new system prompt (%s)',
+		async (kind) => {
+			const { provider, adapter } = setup('llama-3.2-3b', { kind, chunks: ['ok'] });
+			const first = await adapter.createSession('lucy', LUCY);
+			await first.prompt('Wer bist du?');
 
-		const second = await adapter.createSession('lucy', LUCY_SCENE_2);
-		await second.prompt('Und jetzt?');
+			const second = await adapter.createSession('lucy', LUCY_SCENE_2);
+			await second.prompt('Und jetzt?');
 
-		const input = provider.LanguageModel.calls.at(-1)?.input ?? '';
-		expect(input).toContain('Nenne Max und Sabine.');
-	});
-
-	it('rebuilds the backend handle with the new system prompt, on the native provider', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native', chunks: ['ok'] });
-		const first = await adapter.createSession('lucy', LUCY);
-		await first.prompt('Wer bist du?');
-
-		const second = await adapter.createSession('lucy', LUCY_SCENE_2);
-		await second.prompt('Und jetzt?');
-
-		// The instruction lives inside the handle here, so the swap has to recreate it — and replay
-		// what was already said, or the character would forget the conversation mid-scene.
-		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
-			{ role: 'system', content: 'Du bist Lucy. Nenne Max und Sabine.' },
-			{ role: 'user', content: 'Wer bist du?' },
-			{ role: 'assistant', content: 'ok' }
-		]);
-	});
+			// The instruction lives inside the handle, so the swap has to recreate it — and replay
+			// what was already said, or the character would forget the conversation mid-scene.
+			expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
+				{ role: 'system', content: 'Du bist Lucy. Nenne Max und Sabine.' },
+				{ role: 'user', content: 'Wer bist du?' },
+				{ role: 'assistant', content: 'ok' }
+			]);
+		}
+	);
 
 	it('is the same session, with its history intact', async () => {
 		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
@@ -242,69 +276,6 @@ describe('a scene change on an ongoing session', () => {
 	});
 });
 
-describe('session pooling on the native provider', () => {
-	it('gives each character its own backend session', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native' });
-		const lucy = await adapter.createSession('lucy', LUCY);
-		const max = await adapter.createSession('max', MAX);
-		await lucy.prompt('Hallo?');
-		await max.prompt('Und du?');
-		expect(provider.LanguageModel.createCount).toBe(2);
-	});
-
-	it('primes each session with its own persona instead of inlining it', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native', chunks: ['ok'] });
-		const lucy = await adapter.createSession('lucy', LUCY);
-		await lucy.prompt('Wo warst du?');
-
-		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
-			{ role: 'system', content: 'Du bist Lucy.' }
-		]);
-		expect(provider.LanguageModel.calls.at(-1)?.input).toBe('Wo warst du?');
-	});
-
-	it('does not leave the warm-up handle occupying a slot', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native' });
-		await adapter.load();
-		expect(provider.LanguageModel.liveSessions).toBe(0);
-	});
-
-	it('keeps several sessions live below the pool limit', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'native', chunks: ['ok'] });
-		const first = await adapter.createSession('a', LUCY);
-		const second = await adapter.createSession('b', MAX);
-		await first.prompt('eins');
-		await second.prompt('zwei');
-
-		// maxLiveSessions defaults to 4 for native, so nothing should have been evicted.
-		expect(provider.LanguageModel.liveSessions).toBe(2);
-		expect(provider.LanguageModel.destroyCount).toBe(0);
-	});
-
-	it('rebuilds an evicted session from the recorded history', async () => {
-		const { provider, resolveProvider } = createFakeProvider({ kind: 'native', chunks: ['ok'] });
-		const adapter = createLlmAdapter(
-			{ modelId: 'llama-3.2-3b', personaMode: 'session', maxLiveSessions: 1 },
-			{ resolveProvider }
-		);
-
-		const lucy = await adapter.createSession('lucy', LUCY);
-		await lucy.prompt('Erste Frage');
-
-		const max = await adapter.createSession('max', MAX);
-		await max.prompt('Andere Frage');
-		expect(provider.LanguageModel.destroyCount).toBe(1);
-
-		// Lucy comes back: her handle is gone, so it must be recreated carrying her history.
-		await lucy.prompt('Zweite Frage');
-		expect(provider.LanguageModel.lastCreateOptions?.initialPrompts).toEqual([
-			{ role: 'system', content: 'Du bist Lucy.' },
-			{ role: 'user', content: 'Erste Frage' },
-			{ role: 'assistant', content: 'ok' }
-		]);
-	});
-});
-
 describe('abort and failure handling', () => {
 	it('rejects before generating when already aborted', async () => {
 		const { provider, adapter } = setup('llama-3.2-3b');
@@ -339,16 +310,20 @@ describe('abort and failure handling', () => {
 
 	it('discards the interrupted handle so the next turn starts clean', async () => {
 		const { provider, adapter } = setup('llama-3.2-3b', {
-			kind: 'polyfill',
 			chunks: ['x'],
 			failStreamAfter: 0
 		});
 		const session = await adapter.createSession('lucy', LUCY);
 		await adapter.load();
+		// The warm-up handle from load() was already created and torn down (it doesn't occupy a slot).
 		expect(provider.LanguageModel.createCount).toBe(1);
+		expect(provider.LanguageModel.destroyCount).toBe(1);
 
 		await collect(session.stream('Wo warst du?')).catch(() => undefined);
-		expect(provider.LanguageModel.destroyCount).toBe(1);
+		// The failed turn's own handle — a second one, distinct from the warm-up handle — gets
+		// discarded too.
+		expect(provider.LanguageModel.createCount).toBe(2);
+		expect(provider.LanguageModel.destroyCount).toBe(2);
 	});
 });
 
@@ -398,7 +373,7 @@ describe('history windowing', () => {
 	it('trims replayed history to the configured window', async () => {
 		const { provider, resolveProvider } = createFakeProvider({ kind: 'native', chunks: ['ok'] });
 		const adapter = createLlmAdapter(
-			{ modelId: 'llama-3.2-3b', personaMode: 'session', maxLiveSessions: 1 },
+			{ modelId: 'llama-3.2-3b', maxLiveSessions: 1 },
 			{ resolveProvider }
 		);
 

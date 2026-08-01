@@ -1,38 +1,46 @@
 /**
- * Native first, WebLLM polyfill second — and the only file in the app that knows either exists.
+ * Native first, direct WebLLM second — and the only file in the app that knows either exists.
  *
- * Ordering matters here. `prompt-api-polyfill` installs itself on `globalThis.LanguageModel` as an
- * import side effect when no native one is present, so the native probe has to run *before* the
- * import, and we always consume the module's named export rather than reading the global back. That
- * way "is there a built-in model?" stays answerable and we never shadow the browser's own API.
- *
- * The polyfill picks its backend from a window global, first match with a truthy `apiKey` winning,
- * and with *no* config set it silently falls back to Transformers.js. So `WEBLLM_CONFIG` must be set
- * before the import, every time — and the four cloud backends are aliased to a throwing stub at
- * build time (see vite.config.ts) so they cannot be reached even by accident.
+ * The WebLLM path used to go through `prompt-api-polyfill`, whose own backend rebuilt the whole
+ * `MLCEngine` on every logical session (issue #69). `webllm-direct.ts` now owns one persistent
+ * engine instead, so this file's only remaining job is the native-vs-WebLLM choice: probe
+ * `globalThis.LanguageModel` for a real built-in implementation, and fall back to WebLLM when
+ * there isn't one. `LanguageModel` is still read as a global rather than declared here on
+ * `Window`, since a native implementation is the browser's own, not something this module installs.
  */
 
 import { browser } from '$app/environment';
 import { findModel, type LocalModelId } from './catalog.js';
 import { LlmError } from './errors.js';
+import { createWebLlmLanguageModel } from './webllm-direct.js';
 import type { LanguageModelLike, ResolvedProvider } from './types.js';
-
-interface WebLlmConfig {
-	/** The polyfill requires a truthy value to select the backend; WebLLM never sends it anywhere. */
-	apiKey: string;
-	modelName: string;
-}
 
 declare global {
 	interface Window {
 		LanguageModel?: LanguageModelLike & { __isPolyfill?: boolean };
-		WEBLLM_CONFIG?: WebLlmConfig;
 	}
 }
 
-/** Memoized per model id: switching models must re-import with a different `WEBLLM_CONFIG`. */
+/** Memoized per model id: switching models resolves a fresh `ResolvedProvider`. */
 let cached: { modelId: LocalModelId; provider: ResolvedProvider } | undefined;
 let inFlight: { modelId: LocalModelId; promise: Promise<ResolvedProvider> } | undefined;
+
+/**
+ * Dev-only override (issue #69's step 1: measuring `resetChat()` timing needs a real WebLLM
+ * session, which a device with a native Prompt API would otherwise always shadow) — skips
+ * `resolveNative()` so `resolveFresh` falls straight through to the polyfill. Never surfaced to
+ * the player; only `/dev/llm` sets it. Caller must `resetProvider()` after flipping it, same as
+ * any other change that should affect the next resolve.
+ */
+let forceWebLlm = false;
+
+export function setForceWebLlm(force: boolean): void {
+	forceWebLlm = force;
+}
+
+export function isForcingWebLlm(): boolean {
+	return forceWebLlm;
+}
 
 export async function resolveProvider(modelId: LocalModelId): Promise<ResolvedProvider> {
 	if (!browser) throw new LlmError('no-webgpu');
@@ -53,14 +61,18 @@ export async function resolveProvider(modelId: LocalModelId): Promise<ResolvedPr
 }
 
 async function resolveFresh(modelId: LocalModelId): Promise<ResolvedProvider> {
-	const native = await resolveNative();
-	if (native) return native;
-	return resolvePolyfill(modelId);
+	if (!forceWebLlm) {
+		const native = await resolveNative();
+		if (native) return native;
+	}
+	return resolveWebLlm(modelId);
 }
 
 async function resolveNative(): Promise<ResolvedProvider | undefined> {
 	const candidate = window.LanguageModel;
-	// A polyfill installed by an earlier resolve is not a native implementation.
+	// `__isPolyfill` is a defensive check, not a live code path: nothing in this app sets a global
+	// `LanguageModel` anymore, so a candidate here is either the browser's real implementation or
+	// nothing at all.
 	if (!candidate || candidate.__isPolyfill) return undefined;
 
 	try {
@@ -78,20 +90,9 @@ async function resolveNative(): Promise<ResolvedProvider | undefined> {
 	return { kind: 'native', LanguageModel: candidate };
 }
 
-async function resolvePolyfill(modelId: LocalModelId): Promise<ResolvedProvider> {
+async function resolveWebLlm(modelId: LocalModelId): Promise<ResolvedProvider> {
 	const model = findModel(modelId);
-
-	// Must be set before the import, and re-set on every resolve: the WebLLM backend reads
-	// `modelName` off this global at create() time, not at import time.
-	window.WEBLLM_CONFIG = { apiKey: 'riddlon-local', modelName: model.mlcModelId };
-
-	let LanguageModel: LanguageModelLike;
-	try {
-		const module = await import('prompt-api-polyfill');
-		LanguageModel = module.LanguageModel as unknown as LanguageModelLike;
-	} catch (error) {
-		throw new LlmError('download-failed', { cause: error });
-	}
+	const LanguageModel = createWebLlmLanguageModel(model.mlcModelId);
 
 	logResolved('polyfill', model.mlcModelId);
 	return { kind: 'polyfill', LanguageModel, mlcModelId: model.mlcModelId };

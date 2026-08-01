@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	DEFAULT_MAX_HISTORY_TURNS,
-	appendTurn,
-	buildTurnPrompt,
-	toInitialPrompts,
-	windowTurns
-} from './turns.js';
+import { DEFAULT_MAX_HISTORY_TURNS, appendTurn, toInitialPrompts, windowTurns } from './turns.js';
 import type { LlmTurn } from './types.js';
 
 function conversation(pairs: number): LlmTurn[] {
@@ -61,25 +55,6 @@ describe('toInitialPrompts', () => {
 
 	it('omits an empty system prompt rather than sending a blank one', () => {
 		expect(toInitialPrompts('   ')).toEqual([]);
-	});
-});
-
-describe('buildTurnPrompt', () => {
-	it('renders persona, history and the new message into one prompt', () => {
-		const prompt = buildTurnPrompt('Du bist Lucy.', conversation(1), 'Wo warst du?');
-		expect(prompt).toBe(
-			[
-				'Du bist Lucy.',
-				'User: frage 0',
-				'Assistant: antwort 0',
-				'User: Wo warst du?',
-				'Assistant:'
-			].join('\n\n')
-		);
-	});
-
-	it('works without persona or history', () => {
-		expect(buildTurnPrompt('', [], 'Hallo')).toBe('User: Hallo\n\nAssistant:');
 	});
 });
 
