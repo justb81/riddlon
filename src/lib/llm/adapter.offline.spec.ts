@@ -84,9 +84,12 @@ describe('offline conversation turn', () => {
 		expect(session.turns).toHaveLength(6);
 	});
 
-	it('serves a second character offline without rebuilding the engine', async () => {
-		// A rebuild would mean re-reading weights, which is exactly what must not be needed offline.
-		const { provider, resolveProvider } = createFakeProvider({ kind: 'polyfill', chunks: ['ok'] });
+	it('serves a second character offline, each in its own handle', async () => {
+		// Every character gets its own backend handle (issue #69), but that is not a network cost:
+		// `webllm-direct.ts` reuses one persistent engine underneath every handle, so a second `create()`
+		// never re-reads weights. That layer isn't modelled by this fake — what this asserts is the
+		// thing the fake *can* prove, that neither character's turn ever touches a network API.
+		const { resolveProvider } = createFakeProvider({ kind: 'polyfill', chunks: ['ok'] });
 		const adapter = createLlmAdapter({ modelId: 'llama-3.2-3b' }, { resolveProvider });
 		await adapter.load();
 
@@ -97,6 +100,7 @@ describe('offline conversation turn', () => {
 		await lucy.prompt('Hallo Lucy');
 		await max.prompt('Hallo Max');
 
-		expect(provider.LanguageModel.createCount).toBe(1);
+		expect(lucy.turns).toHaveLength(2);
+		expect(max.turns).toHaveLength(2);
 	});
 });

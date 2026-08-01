@@ -17,6 +17,7 @@
 	} from '$lib/llm/catalog.js';
 	import { i18nKeyForLlmError } from '$lib/llm/errors.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
+	import { isForcingWebLlm, setForceWebLlm } from '$lib/llm/provider.js';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 
 	const SYSTEM_PROMPT =
@@ -26,6 +27,18 @@
 	// the app always picks native-first / best-fit automatically), this harness exists specifically
 	// to force a particular catalog model regardless of what the device would auto-select.
 	let selectedModel = $state<LocalModelId>(DEFAULT_MODEL_ID);
+
+	// Bypasses the native Prompt API (Gemini Nano) so the polyfill/WebLLM path can be exercised on
+	// a device where native would otherwise always win — see issue #69's step 1 (measuring
+	// `resetChat()` timing needs a real WebLLM session, not native's already-cheap per-session
+	// handle). Forces a fresh provider resolution and reloads the currently selected model.
+	let forceWebLlm = $state(isForcingWebLlm());
+
+	async function toggleForceWebLlm() {
+		forceWebLlm = !forceWebLlm;
+		setForceWebLlm(forceWebLlm);
+		await llm.selectModel(selectedModel, { force: true });
+	}
 
 	let input = $state('Wo warst du gegen acht?');
 	let answer = $state('');
@@ -117,6 +130,17 @@
 				{llm.errorCode} — {t(i18nKeyForLlmError(llm.errorCode))}
 			</p>
 		{/if}
+	</section>
+
+	<section class="flex flex-col gap-2 rounded-tile border border-line bg-slate-100/3 p-4">
+		<label class="flex items-center gap-2.5 text-label">
+			<input type="checkbox" checked={forceWebLlm} onchange={() => void toggleForceWebLlm()} />
+			WebLLM erzwingen (native Prompt API / Gemini Nano umgehen)
+		</label>
+		<p class="text-caption text-slate-500">
+			Für #69: misst reale WebLLM-Session-Kosten statt der ohnehin billigen nativen Session. Setzt
+			den Provider zurück und lädt das aktuell gewählte Modell neu.
+		</p>
 	</section>
 
 	<section class="flex flex-col gap-2">

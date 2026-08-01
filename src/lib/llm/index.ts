@@ -2,8 +2,8 @@
  * Public surface of the local-inference module (docs/concept.md §3.2).
  *
  * Everything the story engine and UI need is here. Nothing outside this directory may import
- * `prompt-api-polyfill` or `@mlc-ai/web-llm` — `no-backend-leakage.spec.ts` enforces that, and it's
- * what keeps "swap the model" a config change (issue #12, AC 1).
+ * `@mlc-ai/web-llm` — `no-backend-leakage.spec.ts` enforces that, and it's what keeps "swap the
+ * model" a config change (issue #12, AC 1).
  *
  * The `llm` runes singleton is deliberately not re-exported: it lives in `llm.svelte.ts` and is
  * imported directly, matching how `$lib/state/*.svelte.ts` stores are consumed elsewhere.

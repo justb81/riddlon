@@ -210,10 +210,15 @@ class LlmStore {
 		return this.#ensureAdapter(modelId).createSession(key, config);
 	}
 
-	/** Switches models: tears down the live engine so the next load picks up the new weights. */
-	async selectModel(modelId: LocalModelId): Promise<void> {
+	/**
+	 * Switches models: tears down the live engine so the next load picks up the new weights.
+	 * `force` skips the no-op guard even when `modelId` is unchanged — needed after flipping
+	 * something that changes how the *same* model id resolves, like `/dev/llm`'s force-WebLLM
+	 * override, where the live engine has to be rebuilt against a different backend.
+	 */
+	async selectModel(modelId: LocalModelId, opts: { force?: boolean } = {}): Promise<void> {
 		if (!browser) return;
-		if (this.#adapterModelId === modelId && this.status === 'ready') return;
+		if (!opts.force && this.#adapterModelId === modelId && this.status === 'ready') return;
 
 		await this.#adapter?.dispose();
 		this.#adapter = undefined;
