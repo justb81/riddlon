@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/justb81/riddlon/compare/riddlon-v0.9.0...riddlon-v0.9.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **llm:** replace prompt-api-polyfill's WebLLM path with a direct engine ([d3b2e3a](https://github.com/justb81/riddlon/commit/d3b2e3a84ccbfcfa50b6c94fb20311acc6a0dc36))
+* **llm:** replace prompt-api-polyfill's WebLLM path with a direct engine ([#69](https://github.com/justb81/riddlon/issues/69)) ([1a6deaf](https://github.com/justb81/riddlon/commit/1a6deaff480d29847d7d533bf78b7c7646f4022d))
+
 ## [0.9.0](https://github.com/justb81/riddlon/compare/riddlon-v0.8.0...riddlon-v0.9.0) (2026-07-31)
 
 
