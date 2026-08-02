@@ -273,9 +273,20 @@ weiterhin "alles, was der Charakter kennt" (Rückwärtskompatibilität für Pake
 }
 ```
 
-- **Clues**: einzelne Hinweise, ggf. mit widersprüchlichen Versionen je Quelle (referenziert über Charakter-UUID).
-- **Secrets**: Wissen, das ein Charakter zurückhält, bis Bedingungen erfüllt sind.
-- **Facts**: unveränderliche Kanon-Wahrheiten, die das LLM nicht verletzen darf.
+```json
+{
+	"id": "secret:hans-tip",
+	"type": "secret",
+	"label": "Hans belastet Max",
+	"statement": "Hans hat gesehen, wie Max kurz vor Mitternacht allein an der Garderobe stand, genau dort, wo Lucys Jacke mit dem Portmonnaie hing.",
+	"heldBy": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
+	"revealCondition": "flag:report-to-lucy-done"
+}
+```
+
+- **Clues**: einzelne Hinweise, ggf. mit widersprüchlichen Versionen je Quelle (referenziert über Charakter-UUID). Tragen nur ein `label` — das ist auch der Text, der im Story-Overview-Panel angezeigt wird.
+- **Secrets**: Wissen, das ein Charakter zurückhält, bis Bedingungen erfüllt sind. Tragen wie Facts ein volles `statement`, das dem Modell zugeführt wird (`label` bleibt als kurze Zusammenfassung z. B. für Dev-Tooling erhalten) — ein reines Label lässt das Modell die Beziehung zwischen den genannten Personen erraten, was bei kleinen Modellen zu Inversionen führt (z. B. „Max belastet Hans" statt umgekehrt).
+- **Facts**: unveränderliche Kanon-Wahrheiten, die das LLM nicht verletzen darf. Tragen ebenfalls ein volles `statement`.
 
 ### 5.6 Verzögerte Ereignisse (Delayed Events)
 

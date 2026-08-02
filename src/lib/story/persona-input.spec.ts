@@ -119,7 +119,7 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 			SCENE_LUCY_INTRO,
 			soloWith(LUCY_ID)
 		);
-		expect(lucy).not.toContain('Max hat das Portmonnaie genommen');
+		expect(lucy).not.toContain('Lucys Portmonnaie heimlich aus ihrer Jacke');
 
 		const max = buildScenePersonaPrompt(
 			contextWith(['flag:evidence-presented']),
@@ -127,7 +127,7 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 			SCENE_GROUP_CONFRONTATION,
 			{ kind: 'group', participantIds: [LUCY_ID, MAX_ID, SABINE_ID] }
 		);
-		expect(max).toContain('Max hat das Portmonnaie genommen');
+		expect(max).toContain('Lucys Portmonnaie heimlich aus ihrer Jacke');
 	});
 
 	it('carries the group scene’s playerRole and names the others present', () => {
@@ -210,6 +210,7 @@ describe('scene-level relevantFactIds/relevantSecretIds filtering (#79)', () => 
 			id: 'secret:a',
 			type: 'secret' as const,
 			label: 'Secret A label',
+			statement: 'Secret A statement.',
 			heldBy: [],
 			revealCondition: 'flag:x'
 		}
@@ -232,7 +233,7 @@ describe('scene-level relevantFactIds/relevantSecretIds filtering (#79)', () => 
 		const prompt = buildScenePersonaPrompt(contextForScene(scene), 'char-1', 's1', solo);
 		expect(prompt).toContain('Fact A statement.');
 		expect(prompt).toContain('Fact B statement.');
-		expect(prompt).toContain('Secret A label');
+		expect(prompt).toContain('Secret A statement.');
 	});
 
 	it('excludes facts/secrets not named in relevantFactIds/relevantSecretIds when set', () => {
@@ -246,6 +247,6 @@ describe('scene-level relevantFactIds/relevantSecretIds filtering (#79)', () => 
 		const prompt = buildScenePersonaPrompt(contextForScene(scene), 'char-1', 's1', solo);
 		expect(prompt).toContain('Fact A statement.');
 		expect(prompt).not.toContain('Fact B statement.');
-		expect(prompt).not.toContain('Secret A label');
+		expect(prompt).not.toContain('Secret A statement.');
 	});
 });
