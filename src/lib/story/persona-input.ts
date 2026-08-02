@@ -42,7 +42,20 @@ export function buildScenePersonaPrompt(
 
 	const knownFacts = new Set(character?.knowledge.publicFacts ?? []);
 	const heldSecrets = new Set(character?.knowledge.secrets ?? []);
-	const secrets = ctx.bundle.secrets.filter((secret) => heldSecrets.has(secret.id));
+	// #79: an authored `relevantFactIds`/`relevantSecretIds` list narrows what the scene forwards,
+	// on top of what the character's cast binding knows. Absent list (undefined) means no
+	// narrowing — every known fact/held secret still goes in, matching pre-#79 behavior.
+	const relevantFacts = scene?.relevantFactIds;
+	const relevantSecrets = scene?.relevantSecretIds;
+	const facts = ctx.bundle.facts.filter(
+		(fact) =>
+			knownFacts.has(fact.id) && (relevantFacts === undefined || relevantFacts.includes(fact.id))
+	);
+	const secrets = ctx.bundle.secrets.filter(
+		(secret) =>
+			heldSecrets.has(secret.id) &&
+			(relevantSecrets === undefined || relevantSecrets.includes(secret.id))
+	);
 	const idle = opts.idle ?? false;
 
 	return buildPersonaPrompt({
@@ -74,9 +87,7 @@ export function buildScenePersonaPrompt(
 			relation
 		})),
 		knowledge: {
-			facts: ctx.bundle.facts
-				.filter((fact) => knownFacts.has(fact.id))
-				.map((fact) => fact.statement),
+			facts: facts.map((fact) => fact.statement),
 			// docs/concept.md §5.5: the two lists must stay apart, or a withheld secret reads as
 			// something the character may say.
 			revealableSecrets: secrets

@@ -51,6 +51,29 @@ describe('sceneNodeSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('parses authored relevantFactIds/relevantSecretIds (#79)', () => {
+		const result = sceneNodeSchema.safeParse({
+			id: SCENE_ID,
+			type: 'chat-scene',
+			participants: [MAX_ID],
+			relevantFactIds: ['fact:club-theft'],
+			relevantSecretIds: ['secret:hans-tip']
+		});
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.relevantFactIds).toEqual(['fact:club-theft']);
+		expect(result.success && result.data.relevantSecretIds).toEqual(['secret:hans-tip']);
+	});
+
+	it('leaves relevantFactIds/relevantSecretIds undefined when omitted, for back-compat', () => {
+		const result = sceneNodeSchema.parse({
+			id: SCENE_ID,
+			type: 'chat-scene',
+			participants: [MAX_ID]
+		});
+		expect(result.relevantFactIds).toBeUndefined();
+		expect(result.relevantSecretIds).toBeUndefined();
+	});
+
 	it('rejects an unknown scene type', () => {
 		const result = sceneNodeSchema.safeParse({
 			id: SCENE_ID,

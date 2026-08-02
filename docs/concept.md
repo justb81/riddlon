@@ -238,6 +238,12 @@ Die `goals` gelten in beiden Fällen — sie bestimmen nur, was der Charakter sa
 Die App zeigt sie nur bei der spielsichtbarsten der drei Tarnstufen an (App-2-Einstellung, kein
 Feld dieses Formats).
 
+`relevantFactIds`/`relevantSecretIds` (optional, kein Default) schränken ein, welche Einträge aus
+`world/facts.json`/`world/secrets.json` für diese Szene ins Modell-Prompt gehen — zusätzlich zu dem,
+was der Charakter laut seiner Cast-Bindung überhaupt kennt/hält. Ein kleines Modell bleibt mit
+weniger, aber thematisch passenden Aussagen eher regelkonform; fehlt eine der beiden Listen, gilt
+weiterhin "alles, was der Charakter kennt" (Rückwärtskompatibilität für Pakete ohne diese Felder).
+
 ```json
 {
 	"id": "b2e4f6a8-1c3d-4e5f-9a7b-0c1d2e3f4a5b",
@@ -249,6 +255,8 @@ Feld dieses Formats).
 	"entryConditions": ["flag:max-contact-unlocked"],
 	"exitConditions": ["flag:max-questioned"],
 	"revealables": ["clue:time-window", "clue:suspect-description-a"],
+	"relevantFactIds": ["fact:club-theft", "fact:cloakroom-unstaffed"],
+	"relevantSecretIds": [],
 	"next": [{ "target": "scene-report-to-lucy", "when": ["flag:max-and-sabine-questioned"] }]
 }
 ```

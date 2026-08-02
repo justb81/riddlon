@@ -13,6 +13,8 @@
 			"entryConditions": [],
 			"exitConditions": ["flag:lucy-identified"],
 			"revealables": ["fact:club-name", "fact:theft-date"],
+			"relevantFactIds": ["fact:club-name", "fact:theft-date", "fact:lucy-max-sabine-are-friends"],
+			"relevantSecretIds": [],
 			"next": [
 				{
 					"target": "32e477b0-6721-47cb-867e-cc181ed7c72f",
@@ -33,6 +35,8 @@
 			"entryConditions": ["flag:lucy-identified"],
 			"exitConditions": ["flag:witnesses-named"],
 			"revealables": ["fact:club-theft", "clue:stolen-item"],
+			"relevantFactIds": ["fact:club-theft", "fact:lucy-max-sabine-are-friends"],
+			"relevantSecretIds": ["secret:hans-tip"],
 			"next": [
 				{
 					"target": "0974a346-476c-4222-976e-ee43854fc709",
@@ -63,6 +67,8 @@
 				"clue:stolen-item",
 				"clue:suspect-description"
 			],
+			"relevantFactIds": ["fact:club-theft", "fact:cloakroom-unstaffed", "fact:hans-is-barkeeper"],
+			"relevantSecretIds": [],
 			"next": [
 				{
 					"target": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
@@ -89,6 +95,8 @@
 				"clue:stolen-item",
 				"clue:suspect-description"
 			],
+			"relevantFactIds": ["fact:club-theft", "fact:cloakroom-unstaffed", "fact:hans-is-barkeeper"],
+			"relevantSecretIds": [],
 			"next": [
 				{
 					"target": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
@@ -113,6 +121,8 @@
 			],
 			"exitConditions": ["flag:report-to-lucy-done"],
 			"revealables": [],
+			"relevantFactIds": ["fact:club-theft"],
+			"relevantSecretIds": [],
 			"next": []
 		},
 		{
@@ -128,6 +138,8 @@
 			"entryConditions": ["flag:lucy-suspicion-only-via-delayed-event"],
 			"exitConditions": ["flag:suspicion-relayed"],
 			"revealables": ["secret:hans-tip", "clue:hans-accusation"],
+			"relevantFactIds": ["fact:hans-is-barkeeper"],
+			"relevantSecretIds": ["secret:hans-tip"],
 			"next": [
 				{
 					"target": "725e3554-0a53-49fa-9bb5-f80929dc685b",
@@ -152,6 +164,8 @@
 			"entryConditions": ["flag:suspicion-relayed"],
 			"exitConditions": ["flag:max-denies-hans-claim"],
 			"revealables": ["clue:max-whereabouts"],
+			"relevantFactIds": ["fact:cloakroom-unstaffed", "fact:hans-is-barkeeper"],
+			"relevantSecretIds": ["secret:max-took-wallet"],
 			"next": [
 				{
 					"target": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
@@ -171,6 +185,8 @@
 			"entryConditions": ["flag:suspicion-relayed"],
 			"exitConditions": ["flag:sabine-confirms-hans-claim"],
 			"revealables": ["clue:max-whereabouts", "secret:sabine-saw-max"],
+			"relevantFactIds": ["fact:cloakroom-unstaffed"],
+			"relevantSecretIds": ["secret:sabine-saw-max"],
 			"next": [
 				{
 					"target": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
@@ -190,6 +206,8 @@
 			"entryConditions": ["flag:max-denies-hans-claim", "flag:sabine-confirms-hans-claim"],
 			"exitConditions": ["flag:hans-info-confirmed"],
 			"revealables": [],
+			"relevantFactIds": ["fact:club-theft"],
+			"relevantSecretIds": ["secret:hans-tip"],
 			"next": []
 		},
 		{
@@ -209,6 +227,8 @@
 			"entryConditions": ["flag:hans-info-confirmed"],
 			"exitConditions": [],
 			"revealables": ["secret:max-took-wallet"],
+			"relevantFactIds": ["fact:club-theft", "fact:cloakroom-unstaffed"],
+			"relevantSecretIds": ["secret:max-took-wallet", "secret:sabine-saw-max", "secret:hans-tip"],
 			"playerRole": "confront-max-with-evidence",
 			"outcomes": [
 				{ "id": "max-confesses", "condition": "flag:evidence-presented" },

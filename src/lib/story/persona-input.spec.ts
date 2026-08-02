@@ -13,7 +13,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { EffectiveCharacterState } from '$lib/characters/index.js';
 import { resolveEffectiveCharacterState } from '$lib/characters/index.js';
+import type { StoryBundle } from '$lib/content/index.js';
 import { loadStoryBundle } from '$lib/content/load-package.js';
 import {
 	LUCY_ID,
@@ -21,6 +23,7 @@ import {
 	SABINE_ID,
 	SCENE_GROUP_CONFRONTATION,
 	SCENE_LUCY_INTRO,
+	SCENE_MAX_QUESTIONING_1,
 	SCENE_UNKNOWN_CONTACT,
 	WALKTHROUGH_PACKAGE_DIR,
 	readStoryPackageFiles
@@ -169,5 +172,80 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 		);
 		expect(idle).not.toContain('confront-max-with-evidence');
 		expect(idle).toContain('Das ist zwischen euch bereits geklärt');
+	});
+
+	it('trims Max’ facts to this scene’s relevantFactIds (#79)', () => {
+		// The questioning scene's authored relevantFactIds keeps club-theft/cloakroom/barkeeper —
+		// the club name, theft date and lucy-max-sabine friendship facts are known to Max but not
+		// listed, so they must not reach the model here.
+		const prompt = buildScenePersonaPrompt(
+			contextWith(),
+			MAX_ID,
+			SCENE_MAX_QUESTIONING_1,
+			soloWith(MAX_ID)
+		);
+		expect(prompt).toContain('Barkeeper');
+		expect(prompt).toContain('unbesetzt');
+		expect(prompt).not.toContain('Bahnhofsviertel');
+		expect(prompt).not.toContain('Samstag auf Sonntag');
+		expect(prompt).not.toContain('Schulzeit');
+	});
+});
+
+describe('scene-level relevantFactIds/relevantSecretIds filtering (#79)', () => {
+	const character: EffectiveCharacterState = {
+		id: 'char-1',
+		displayName: 'Testchar',
+		knowledge: { publicFacts: ['fact:a', 'fact:b'], secrets: ['secret:a'] },
+		availability: { state: 'visible' },
+		relationships: {}
+	};
+
+	const facts = [
+		{ id: 'fact:a', type: 'fact' as const, statement: 'Fact A statement.' },
+		{ id: 'fact:b', type: 'fact' as const, statement: 'Fact B statement.' }
+	];
+	const secrets = [
+		{
+			id: 'secret:a',
+			type: 'secret' as const,
+			label: 'Secret A label',
+			heldBy: [],
+			revealCondition: 'flag:x'
+		}
+	];
+
+	function contextForScene(scene: Record<string, unknown> & { id: string }): PersonaContext {
+		return {
+			bundle: { graph: { nodes: [scene] }, facts, secrets } as unknown as StoryBundle,
+			cast: [character],
+			isConditionMet: () => false,
+			storyTitle: 'Test Story',
+			playerName: 'Player'
+		};
+	}
+
+	const solo = { kind: 'solo' as const, participantIds: ['char-1'] };
+
+	it('includes every known fact/secret when the lists are absent (back-compat)', () => {
+		const scene = { id: 's1', type: 'chat-scene', goals: [] };
+		const prompt = buildScenePersonaPrompt(contextForScene(scene), 'char-1', 's1', solo);
+		expect(prompt).toContain('Fact A statement.');
+		expect(prompt).toContain('Fact B statement.');
+		expect(prompt).toContain('Secret A label');
+	});
+
+	it('excludes facts/secrets not named in relevantFactIds/relevantSecretIds when set', () => {
+		const scene = {
+			id: 's1',
+			type: 'chat-scene',
+			goals: [],
+			relevantFactIds: ['fact:a'],
+			relevantSecretIds: []
+		};
+		const prompt = buildScenePersonaPrompt(contextForScene(scene), 'char-1', 's1', solo);
+		expect(prompt).toContain('Fact A statement.');
+		expect(prompt).not.toContain('Fact B statement.');
+		expect(prompt).not.toContain('Secret A label');
 	});
 });
