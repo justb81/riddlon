@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.2](https://github.com/justb81/riddlon/compare/riddlon-v0.9.1...riddlon-v0.9.2) (2026-08-02)
+
+
+### Bug Fixes
+
+* **content:** bump lucys-portmonnaie to v1.2.2 for secret statements ([070de87](https://github.com/justb81/riddlon/commit/070de8723678fcf31b268107c65f9458b83aa4f7))
+* **content:** give secrets a full statement, not just a label ([05b0174](https://github.com/justb81/riddlon/commit/05b0174f03a824fd66f067fd3f837ffbc8a28e25))
+* **content:** give secrets a full statement, not just a label ([653b54b](https://github.com/justb81/riddlon/commit/653b54b757cacf701a990e40da2ff1fcc950afe1)), closes [#80](https://github.com/justb81/riddlon/issues/80)
+
 ## [0.9.1](https://github.com/justb81/riddlon/compare/riddlon-v0.9.0...riddlon-v0.9.1) (2026-08-01)
 
 
