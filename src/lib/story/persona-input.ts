@@ -92,10 +92,10 @@ export function buildScenePersonaPrompt(
 			// something the character may say.
 			revealableSecrets: secrets
 				.filter((secret) => ctx.isConditionMet(secret.revealCondition))
-				.map((secret) => secret.label),
+				.map((secret) => secret.statement),
 			withheldSecrets: secrets
 				.filter((secret) => !ctx.isConditionMet(secret.revealCondition))
-				.map((secret) => secret.label)
+				.map((secret) => secret.statement)
 		},
 		playerName: ctx.playerName
 	});

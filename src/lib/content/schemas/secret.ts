@@ -10,6 +10,9 @@ export const secretSchema = z.object({
 	id: symbolicRefSchema,
 	type: z.literal('secret'),
 	label: z.string().min(1),
+	// A full sentence, unlike `label` — this is what reaches the model (persona-input.ts), and a
+	// short label leaves it to invent who-did-what-to-whom, which is where a small model inverts it.
+	statement: z.string().min(1),
 	heldBy: z.array(uuidV4Schema).default([]),
 	revealCondition: symbolicRefSchema
 });

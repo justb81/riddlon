@@ -24,6 +24,7 @@ function withFactsAndSecrets(files: Record<string, unknown>): Record<string, unk
 			id: 'secret:hans-tip',
 			type: 'secret',
 			label: 'Hans belastet Max',
+			statement: 'Hans hat gesehen, wie Max kurz vor Mitternacht allein an der Garderobe stand.',
 			heldBy: [MAX_ID],
 			revealCondition: 'flag:report-to-lucy-done'
 		}
@@ -99,6 +100,7 @@ describe('validatePackage', () => {
 				id: 'secret:hans-tip',
 				type: 'secret',
 				label: 'Hans belastet Max',
+				statement: 'Hans hat gesehen, wie Max kurz vor Mitternacht allein an der Garderobe stand.',
 				heldBy: [MAX_ID],
 				revealCondition: 'flag:report-to-lucy-done'
 			}
