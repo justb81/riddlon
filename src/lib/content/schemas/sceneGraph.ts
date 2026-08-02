@@ -13,7 +13,13 @@ const baseSceneFields = {
 	suggestedReplies: z.array(z.string()).default([]),
 	entryConditions: z.array(symbolicRefSchema).default([]),
 	exitConditions: z.array(symbolicRefSchema).default([]),
-	revealables: z.array(symbolicRefSchema).default([])
+	revealables: z.array(symbolicRefSchema).default([]),
+	/** Restricts which `world/facts.json` / `world/secrets.json` entries this scene's characters
+	 *  bring into the model prompt (#79) — a small model stays on-topic and rule-compliant with
+	 *  fewer, more relevant statements. Optional: omitting either list falls back to today's
+	 *  "everything the character's cast binding knows" behavior, so existing packages don't break. */
+	relevantFactIds: z.array(symbolicRefSchema).optional(),
+	relevantSecretIds: z.array(symbolicRefSchema).optional()
 };
 
 /** docs/concept.md §5.4 */

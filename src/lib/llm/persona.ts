@@ -69,14 +69,17 @@ export function buildPersonaPrompt(input: {
 	const traits = [character.corePersonality, character.voiceStyle].filter(Boolean).join('; ');
 
 	return [
+		// The format/behavior rules go first, ahead of identity and role: a small model's
+		// instruction-following degrades with distance from the start of the system prompt, and
+		// these are the rules it must never break (#79).
+		'Schreib wie in einem Messenger: kurz, 1-2 Sätze, auf Deutsch, in der Ich-Form.',
+		'Bleib immer in der Rolle. Erkläre nie, dass du eine KI bist, und beschreib keine Handlungen',
+		'in Sternchen — es ist ein Chat, keine Erzählung.',
+		'',
 		`Du bist ${character.displayName}, eine Figur in der Geschichte „${input.storyTitle}“.`,
 		traits ? `So bist du: ${traits}.` : '',
 		character.roleInStory ? `Deine Rolle in dieser Geschichte: ${character.roleInStory}.` : '',
 		`Du chattest mit ${input.playerName}.`,
-		'',
-		'Schreib wie in einem Messenger: kurz, 1-2 Sätze, auf Deutsch, in der Ich-Form.',
-		'Bleib immer in der Rolle. Erkläre nie, dass du eine KI bist, und beschreib keine Handlungen',
-		'in Sternchen — es ist ein Chat, keine Erzählung.',
 		scene.isGroup
 			? `Es ist ein Gruppenchat mit: ${scene.otherParticipants.join(', ') || '(niemandem sonst)'}.`
 			: '',

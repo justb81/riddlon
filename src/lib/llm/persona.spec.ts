@@ -24,6 +24,19 @@ const base = {
 };
 
 describe('buildPersonaPrompt', () => {
+	it('puts the messenger-format rule first, ahead of identity and role (#79)', () => {
+		// A 1B model's instruction-following degrades with distance from the start of the system
+		// prompt — the format/behavior rules must lead, not trail identity/traits/role.
+		const prompt = buildPersonaPrompt(base);
+		const firstLine = prompt.split('\n')[0];
+		expect(firstLine).toBe(
+			'Schreib wie in einem Messenger: kurz, 1-2 Sätze, auf Deutsch, in der Ich-Form.'
+		);
+		expect(prompt.indexOf('Schreib wie in einem Messenger')).toBeLessThan(
+			prompt.indexOf('Du bist Lucy')
+		);
+	});
+
 	it('carries identity, role, goals and the canon rule', () => {
 		const prompt = buildPersonaPrompt(base);
 		expect(prompt).toContain('Du bist Lucy');
