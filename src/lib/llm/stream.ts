@@ -3,9 +3,9 @@
  *
  * Two things need normalising. Chrome has shipped `promptStreaming` in both shapes over its
  * lifetime — chunks as deltas, and chunks as cumulative snapshots of the whole answer so far — and
- * the polyfill yields deltas. The UI only ever wants deltas, so `toDeltas` detects and flattens the
- * cumulative shape. And `ReadableStream` is only async-iterable in newer browsers (the polyfill
- * patches it, but we shouldn't depend on that side effect), so we read it explicitly.
+ * the WebLLM backend yields deltas. The UI only ever wants deltas, so `toDeltas` detects and
+ * flattens the cumulative shape. And `ReadableStream` is only async-iterable in newer browsers, so
+ * we read it explicitly rather than depend on that.
  */
 
 /** Reads a `ReadableStream` as an async iterable, releasing the reader on early exit. */

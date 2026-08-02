@@ -82,17 +82,30 @@ package under `stories/` on a plain `npm test`.
 
 `src/lib/llm/` runs inference in the browser. It does **not** define its own backend vocabulary: the
 interface _is_ the [W3C/Chrome Prompt API](https://webmachinelearning.github.io/prompt-api/)
-(`LanguageModel.availability()` / `create()` / `promptStreaming()`), and browsers without a built-in
-one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend over WebGPU.
-**Native first, polyfill fallback** — a built-in model costs no download, so it wins when present.
+(`LanguageModel.availability()` / `create()` / `promptStreaming()`). Three providers implement it,
+tried in order — **native first, direct WebLLM second, Gemini BYOK last resort** — and `provider.ts`
+is the only file that knows any of the three exists:
 
-- **`catalog.ts`** — the only place a Riddlon model id maps to an MLC model id. Two entries, chosen
-  for German dialogue: `llama-3.2-1b` and `llama-3.2-3b` (default), forming the fallback ladder
-  `capabilities.ts`'s `bestSupportedModelId` auto-selects from when there's no native Prompt API —
-  the player never picks a model directly (the settings screen's model list is a read-only status
-  view, not a picker; see `model-status.ts`). Deliberately no larger tier: Llama 3.2 tops out at 3B,
-  and the older Llama 3.1 8B isn't worth doubling the download for the rare device that could hold it
-  but has no native Prompt API. `vramRequiredMB` is copied from
+1. **Native** — the browser's own built-in Prompt API (Gemini Nano in Chrome), probed off
+   `globalThis.LanguageModel`. Costs no download, so it wins whenever present.
+2. **WebLLM** (`webllm-direct.ts`) — a direct `@mlc-ai/web-llm` engine over WebGPU, for browsers with
+   no native model. There used to be a `prompt-api-polyfill` dependency driving this; issue #69
+   replaced it with a hand-written direct engine (see below), and the polyfill package is gone
+   entirely — not even a `package.json` dependency.
+3. **Gemini** (`gemini-direct.ts`, issue #84) — a player-supplied, BYOK Gemini API key, tried only
+   when the WebLLM catalog model can't run on this device (no WebGPU, or not enough VRAM) _and_ a key
+   is stored in settings. Never preferred over a usable local model; a rescue path for devices that
+   can play no other way, not an alternative players opt into for quality.
+
+- **`catalog.ts`** — the only place a Riddlon model id maps to an MLC model id. One entry today,
+  `llama-3.2-3b` (also `DEFAULT_MODEL_ID`), chosen for German dialogue. There used to be a
+  `llama-3.2-1b` fallback tier for weaker devices; issue #85's live-browser testing found it, and
+  every other tested sub-1GB-VRAM model, broke character or produced incoherent output, so a device
+  that can't hold 3B now falls to the `unsupported` state (or the Gemini fallback above) rather than
+  a smaller, unusable local tier. The player never picks a model directly (the settings screen's
+  model list is a read-only status view, not a picker; see `model-status.ts`). Deliberately no larger
+  tier either: Llama 3.2 tops out at 3B, and the older Llama 3.1 8B isn't worth doubling the download
+  for the rare device that could hold it but has no native Prompt API. `vramRequiredMB` is copied from
   `@mlc-ai/web-llm`'s own `prebuiltAppConfig` model list (`catalog.spec.ts` asserts the copies stay in
   sync), not hand-guessed — `catalog.ts` itself still never imports `@mlc-ai/web-llm` directly, since
   that's a heavy dependency this module is reachable from far outside the WebLLM-only code path.
@@ -100,17 +113,36 @@ one get it from Google's `prompt-api-polyfill` driving its **WebLLM** backend ov
   capability check) are separate figures and must never be conflated — the design mockup's
   "1,8 GB / 4,6 GB" were download sizes.
 - **`adapter.ts`** — `LlmAdapter` / `LlmSession`, what `engine/` and `ui/` code against. Injects its
-  provider, so `adapter.spec.ts` exercises the real logic against a fake in Node with no GPU.
-- **`provider.ts`** — the _only_ file touching `globalThis.LanguageModel`, `window.WEBLLM_CONFIG` or
-  `import('prompt-api-polyfill')`. The native probe must run before the polyfill import (the polyfill
-  installs itself on the global as an import side effect), and `WEBLLM_CONFIG` must be set before it
-  (with no config the polyfill silently falls back to Transformers.js).
+  provider, so `adapter.spec.ts` exercises the real logic against a fake in Node with no GPU. Every
+  logical session — one per character, plus the director — gets its own real backend handle on all
+  three providers; `webllm-direct.ts`'s one persistent `MLCEngine` (reused across sessions, KV-cache
+  reset on switch rather than a multi-gigabyte reload) is what makes that affordable for WebLLM too.
+- **`provider.ts`** — the only file touching `globalThis.LanguageModel`. Its `resolveProvider(modelId,
+capabilities?)` tries native, then WebLLM, then — only when `capabilities` says WebLLM can't run
+  `modelId` and a Gemini key is stored (`gemini-key.ts`) — Gemini. `capabilities` is optional and
+  supplied by `llm.svelte.ts` (which already probes WebGPU once at boot) purely so this module never
+  has to re-probe WebGPU itself; callers that omit it (tests, `/dev/llm`'s force-WebLLM harness) just
+  get the pre-#84 behaviour of an unsupported WebLLM model failing outright.
+- **`gemini-direct.ts`** — `createGeminiLanguageModel(apiKey, modelId)`, a `LanguageModelLike` over
+  the Gemini REST API via plain `fetch` (no SDK — same reasoning as the four stubbed cloud SDKs
+  below). `create()`/`availability()` never touch the network, only `prompt()`/`promptStreaming()`
+  do, so resolving this provider and the adapter's warm-up handle cost nothing. 401/403/429 responses
+  map to the `invalid-api-key`/`quota-exceeded` `LlmErrorCode`s.
+- **`gemini-key.ts`** — the BYOK key's own `localStorage` module (`riddlon:llm:gemini-key`), separate
+  from `profile.svelte.ts` (deliberately in-memory only) because this has to survive a reload. Never
+  leaves the device except inside the Gemini request itself.
 - **`llm.svelte.ts`** — the `llm` singleton the UI reads: status, real download progress, which
   backend won, which models are cached. `profile.model` holds the _choice_; `llm.activeModelId` holds
-  what's _loaded_ — they differ whenever a selected model hasn't been downloaded.
-- **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — the polyfill can also
-  reach Firebase/Gemini/OpenAI/Transformers.js. Those four SDKs are aliased to a throwing stub, so
-  "no cloud calls" (concept §2/§8) is enforced by the build, not by convention.
+  what's _loaded_ — they differ whenever a selected model hasn't been downloaded. `supported`/`canRun`
+  count a device as usable once a Gemini key is stored, even with no WebGPU — otherwise `#load` would
+  fail before ever reaching `provider.ts`'s own Gemini branch. `localUnusable` deliberately ignores
+  any stored key (native and WebLLM both fail here) and is what gates whether the settings screen
+  shows the Gemini key field at all, so the field doesn't vanish the moment a key makes the device
+  `supported` again.
+- **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — an unrelated, pre-#84
+  guard: Firebase/Gemini/OpenAI/Transformers.js are aliased to a throwing stub so nothing pulls in an
+  actual cloud SDK by accident (concept §2/§8's "no cloud calls" enforced by the build). The Gemini
+  BYOK path above is a separate, deliberate opt-in over plain `fetch`, not this stub's `Gemini`.
 - **`persona.ts`** — pure prompt building for one character in one scene: identity/voice from the
   character file, role and knowledge from this story's cast binding, `goals` from the scene,
   `relationships` resolved to names (a solo scene has no `otherParticipants`, so this is the only
@@ -134,41 +166,23 @@ Things that look wrong but aren't:
 - **`createSession(key, config)` returns the existing session but adopts the new `config`.** A
   thread keeps one session per character for the whole story while the _scene_ driving their goals
   advances underneath it, so the persona has to be re-applied on every turn; the conversation
-  history is kept, and `seedTurns` only ever applies to the first call. Under the polyfill the new
-  instruction just travels in the next prompt; on the native provider the backend handle carries it,
-  so that handle is destroyed and rebuilt from `historyForReplay()`. Skipping this is what made a
-  character replay the goals of the scene they were first spoken to in, forever — and since only the
-  director advances the graph, the story then stopped dead.
+  history is kept, and `seedTurns` only ever applies to the first call. The instruction lives inside
+  the backend handle on every provider, so that handle is destroyed and rebuilt from
+  `historyForReplay()`. Skipping this is what made a character replay the goals of the scene they
+  were first spoken to in, forever — and since only the director advances the graph, the story then
+  stopped dead.
 - The `boot.step.loadingModel` → `boot.step.preparingDevice` switch is a **threshold heuristic**
-  (fraction ≥ 0.85). The polyfill collapses download and shader-compile into one 0..1 fraction and
-  doesn't forward WebLLM's progress text, so there is no real phase boundary to read.
-- Under the polyfill **all characters share one backend session** (`personaMode: 'inline'`), with
-  persona and history rendered into each prompt. A second `create()` would rebuild the whole
-  MLCEngine, so per-character sessions would mean a multi-GB reload on every chat switch. The native
-  provider does get a real session each.
-- Inference runs on the **main thread** — the polyfill's WebLLM backend has no worker variant. Keep
-  typing/spinner animations CSS-only so they survive the decode loop.
-- A player turn costs **two** decode passes: the character reply, then the director verdict. Under
-  the polyfill both share the one backend handle, so it is a decode cost, not a model reload. The
+  (fraction ≥ 0.85). `webllm-direct.ts` collapses download and shader-compile into one 0..1 fraction
+  and doesn't forward WebLLM's progress text, so there is no real phase boundary to read.
+- Inference runs on the **main thread** — WebLLM has no worker variant here. Keep typing/spinner
+  animations CSS-only so they survive the decode loop.
+- A player turn costs **two** decode passes: the character reply, then the director verdict. The
   director session is created with `maxHistoryTurns: 0` and destroyed after each call — it must
   judge this exchange, not accumulate its own past verdicts.
-
-And one thing that **is** wrong, written down in `shared-handle.spec.ts` so a fix has something to
-change: `maxHistoryTurns: 0` and `destroy()` only clear _our_ record. A Prompt API handle is
-**stateful** — the polyfill appends every prompt and answer to its own conversation and prepends
-that to the next generation — so under the shared inline handle the director's JSON request is not
-a clean call at all: it is turn N of an ongoing German roleplay, in a handle created with an empty
-system instruction, right after an assistant message written in Lucy's voice. That is the leading
-explanation for a verdict that parses to `{}` forever, which stops the graph dead (nothing else can
-set a flag). The native path is fine — it gets a real session per key. Any fix has to reckon with
-the fact that a second `create()` under the polyfill is a full model reload; grammar-constrained
-JSON (`responseConstraint`, which the polyfill forwards to WebLLM's `response_format`) is the other
-half of the answer, but it latches onto the shared handle's `generationConfig` and would then
-constrain character replies too.
-
-- `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker. The
-  polyfill's `availability()` always reports `'available'`, so it can't answer this; each fallback is
-  wrong in a different way, and together the worst case is one unnecessary progress bar.
+- `isModelCached()` asks web-llm's `hasModelInCache` _and_ keeps a localStorage marker.
+  `webllm-direct.ts`'s own `availability()` always reports `'available'` (it can't tell "not yet
+  downloaded" from "downloading" without loading the engine), so it can't answer this itself; each
+  fallback is wrong in a different way, and together the worst case is one unnecessary progress bar.
 - Automated tests cannot run real inference — CI and the dev sandbox have no GPU. `npm test` covers
   the adapter against a fake; a real conversation turn is verified by hand via the dev-only
   `/dev/llm` and `/dev/story` harness routes — the latter also shows the last raw director answer

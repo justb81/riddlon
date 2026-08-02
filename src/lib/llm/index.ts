@@ -42,6 +42,12 @@ export {
 	isLlmError,
 	type LlmErrorCode
 } from './errors.js';
+export {
+	clearGeminiApiKey,
+	getGeminiApiKey,
+	hasGeminiApiKey,
+	setGeminiApiKey
+} from './gemini-key.js';
 export { deleteModel, isModelCached, markModelCached } from './model-cache.js';
 export { modelRowStatus, type ModelRowInput, type ModelRowStatus } from './model-status.js';
 export {

@@ -50,7 +50,7 @@ describe('offline conversation turn', () => {
 	it('completes a streamed turn with every network API booby-trapped', async () => {
 		const { adapter } = (() => {
 			const { resolveProvider } = createFakeProvider({
-				kind: 'polyfill',
+				kind: 'webllm',
 				chunks: ['Ich war ', 'gegen acht ', 'noch im Büro.']
 			});
 			return { adapter: createLlmAdapter({ modelId: 'llama-3.2-3b' }, { resolveProvider }) };
@@ -70,7 +70,7 @@ describe('offline conversation turn', () => {
 	});
 
 	it('completes several consecutive turns offline', async () => {
-		const { resolveProvider } = createFakeProvider({ kind: 'polyfill', chunks: ['ja'] });
+		const { resolveProvider } = createFakeProvider({ kind: 'webllm', chunks: ['ja'] });
 		const adapter = createLlmAdapter({ modelId: 'llama-3.2-3b' }, { resolveProvider });
 		await adapter.load();
 
@@ -89,7 +89,7 @@ describe('offline conversation turn', () => {
 		// `webllm-direct.ts` reuses one persistent engine underneath every handle, so a second `create()`
 		// never re-reads weights. That layer isn't modelled by this fake — what this asserts is the
 		// thing the fake *can* prove, that neither character's turn ever touches a network API.
-		const { resolveProvider } = createFakeProvider({ kind: 'polyfill', chunks: ['ok'] });
+		const { resolveProvider } = createFakeProvider({ kind: 'webllm', chunks: ['ok'] });
 		const adapter = createLlmAdapter({ modelId: 'llama-3.2-3b' }, { resolveProvider });
 		await adapter.load();
 

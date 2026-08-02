@@ -22,6 +22,7 @@ import {
 import { shouldAutoStartDownload } from './capabilities-rules.js';
 import { DEFAULT_MODEL_ID, MODEL_ORDER, type LocalModelId } from './catalog.js';
 import { LlmError, classifyLoadError, type LlmErrorCode } from './errors.js';
+import { hasGeminiApiKey } from './gemini-key.js';
 import { isModelCached, markModelCached } from './model-cache.js';
 import { resetProvider, resolveProvider } from './provider.js';
 import type { LlmAdapter, LlmSession, LlmSessionConfig, LlmStatus, ProviderKind } from './types.js';
@@ -52,10 +53,15 @@ class LlmStore {
 		return this.status === 'error';
 	}
 
+	/**
+	 * A device with neither a native Prompt API nor usable WebGPU still counts as `supported` once a
+	 * Gemini key is stored (issue #84) — `#load` would otherwise fail it with `no-webgpu` before ever
+	 * reaching `provider.ts`'s own Gemini fallback.
+	 */
 	get supported(): boolean {
 		const capabilities = this.capabilities;
 		if (!capabilities) return true;
-		return capabilities.hasNativeLanguageModel || capabilities.hasWebGpu;
+		return capabilities.hasNativeLanguageModel || capabilities.hasWebGpu || hasGeminiApiKey();
 	}
 
 	/** Whether a first-run download may begin without asking (unmetered connection). */
@@ -63,9 +69,24 @@ class LlmStore {
 		return shouldAutoStartDownload(this.capabilities?.metered);
 	}
 
+	/** Same reasoning as `supported`, for the one catalog model rather than the device overall. */
 	canRun(modelId: LocalModelId): boolean {
 		const capabilities = this.capabilities;
-		return capabilities ? canRunModel(capabilities, modelId) : true;
+		if (!capabilities) return true;
+		if (canRunModel(capabilities, modelId)) return true;
+		return hasGeminiApiKey();
+	}
+
+	/**
+	 * True once capabilities are known and neither native nor the default WebLLM model can run here
+	 * — deliberately ignoring any stored Gemini key, unlike `supported`/`canRun`. The settings screen
+	 * uses this (not `supported`) to decide whether to show the Gemini key field at all, so the field
+	 * doesn't disappear the moment a key makes the device `supported` again.
+	 */
+	get localUnusable(): boolean {
+		const capabilities = this.capabilities;
+		if (!capabilities) return false;
+		return !capabilities.hasNativeLanguageModel && !canRunModel(capabilities, DEFAULT_MODEL_ID);
 	}
 
 	/** `undefined` when `modelId` can run here (or capabilities haven't been probed yet). */
@@ -188,12 +209,18 @@ class LlmStore {
 			throw error;
 		}
 
-		this.backend = (await resolveProvider(modelId)).kind;
+		this.backend = (await resolveProvider(modelId, this.capabilities ?? undefined)).kind;
 		this.activeModelId = modelId;
 		this.progress = 1;
 		this.status = 'ready';
-		this.cached = { ...this.cached, [modelId]: true };
-		markModelCached(modelId);
+
+		// Only a WebLLM load actually downloaded `modelId`'s weights — marking it cached under a
+		// native or Gemini backend would make the (still unusable) catalog row look downloaded on
+		// the next boot.
+		if (this.backend === 'webllm') {
+			this.cached = { ...this.cached, [modelId]: true };
+			markModelCached(modelId);
+		}
 	}
 
 	/**
@@ -241,7 +268,10 @@ class LlmStore {
 
 	#ensureAdapter(modelId: LocalModelId): LlmAdapter {
 		if (!this.#adapter || this.#adapterModelId !== modelId) {
-			this.#adapter = createLlmAdapter({ modelId }, { resolveProvider });
+			this.#adapter = createLlmAdapter(
+				{ modelId },
+				{ resolveProvider: (id) => resolveProvider(id, this.capabilities ?? undefined) }
+			);
 			this.#adapterModelId = modelId;
 		}
 		return this.#adapter;

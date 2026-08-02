@@ -40,7 +40,7 @@ const DIRECTOR_PROMPT = buildDirectorPrompt({
 	]
 });
 
-describe.each(['native', 'polyfill'] as const)('the director pass (%s)', (kind) => {
+describe.each(['native', 'webllm'] as const)('the director pass (%s)', (kind) => {
 	it('gets its own historyless conversation, seeded only with the JSON instruction', async () => {
 		const { provider, resolveProvider } = createFakeProvider({
 			kind,

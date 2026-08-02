@@ -15,6 +15,8 @@ export type LlmErrorCode =
 	| 'oom'
 	| 'aborted'
 	| 'unsupported-model'
+	| 'invalid-api-key'
+	| 'quota-exceeded'
 	| 'unknown';
 
 export interface LlmErrorOptions {

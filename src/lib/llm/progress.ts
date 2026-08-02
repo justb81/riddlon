@@ -1,5 +1,5 @@
 /**
- * Turning the polyfill's single progress signal into something a progress bar can trust.
+ * Turning the WebLLM backend's single progress signal into something a progress bar can trust.
  *
  * The WebLLM backend collapses *both* the weight download and the shader-compile/VRAM-load into one
  * 0..1 fraction, and does not forward WebLLM's own progress `text`. So there is no real phase
@@ -45,7 +45,7 @@ export function clampFraction(value: number): number {
 /**
  * Reads the `loaded` fraction off a `downloadprogress` event.
  *
- * The polyfill dispatches a real `ProgressEvent` with `loaded` in 0..1 and `total` 1, but a native
+ * The WebLLM backend dispatches a real `ProgressEvent` with `loaded` in 0..1 and `total` 1, but a native
  * implementation may well use byte counts instead, so normalise against `total` when it looks like
  * one. Returns `undefined` for an event carrying nothing usable, so callers can ignore it rather
  * than snapping the bar to 0.

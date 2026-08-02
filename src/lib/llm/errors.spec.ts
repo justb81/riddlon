@@ -17,6 +17,8 @@ const ALL_CODES: LlmErrorCode[] = [
 	'oom',
 	'aborted',
 	'unsupported-model',
+	'invalid-api-key',
+	'quota-exceeded',
 	'unknown'
 ];
 

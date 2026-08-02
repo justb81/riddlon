@@ -2,17 +2,16 @@
  * A `LanguageModelLike` that behaves like the real providers without needing WebGPU.
  *
  * This is what makes `adapter.ts` testable in the Node test project: it fires the same
- * `downloadprogress` events the WebLLM polyfill fires, streams from a scripted chunk list, and
+ * `downloadprogress` events the WebLLM backend fires, streams from a scripted chunk list, and
  * records how often the adapter actually called `create()`/`destroy()` — which is the only way to
- * assert the session-pooling behaviour the polyfill forces on us.
+ * assert the session-pooling behaviour a real provider forces on us.
  *
  * It also models the one property of a real provider that is easy to forget and expensive to get
- * wrong: **a backend handle is stateful.** Both the built-in API and the polyfill append every
- * prompt and every answer to the handle's own conversation (`prompt-api-polyfill` does it in
- * `prompt()`/`promptStreaming()`), so what the model actually sees is `initialPrompts` plus that
- * whole accumulated history plus the new input — never just the string we passed. `conversations`
- * exposes exactly that, because a stateless fake makes the shared-handle path in `adapter.ts` look
- * far cleaner than it is (see `shared-handle.spec.ts`).
+ * wrong: **a backend handle is stateful.** Both the built-in API and the WebLLM backend append every
+ * prompt and every answer to the handle's own conversation, so what the model actually sees is
+ * `initialPrompts` plus that whole accumulated history plus the new input — never just the string we
+ * passed. `conversations` exposes exactly that, because a stateless fake makes the shared-handle path
+ * in `adapter.ts` look far cleaner than it is (see `shared-handle.spec.ts`).
  */
 
 import type {
@@ -84,7 +83,7 @@ export function createFakeLanguageModel(options: FakeLanguageModelOptions = {}):
 		let destroyed = false;
 
 		// The handle's own history, exactly as a real provider keeps it: seeded once, then extended
-		// by every completed turn. Only *completed* turns — the polyfill drops an aborted or failed
+		// by every completed turn. Only *completed* turns — a real provider drops an aborted or failed
 		// generation instead of recording half of it.
 		const messages: PromptApiMessage[] = [];
 		const conversation: FakeConversation = {
@@ -217,7 +216,7 @@ export function createFakeProvider(options: FakeLanguageModelOptions = {}): {
 	const resolvedFor: string[] = [];
 
 	const provider: FakeProvider = {
-		kind: options.kind ?? 'polyfill',
+		kind: options.kind ?? 'webllm',
 		LanguageModel,
 		mlcModelId: options.mlcModelId,
 		get resolvedFor() {

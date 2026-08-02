@@ -6,7 +6,8 @@
 	import InfoBand from '$lib/components/chat/InfoBand.svelte';
 	import Avatar from '$lib/components/chat/Avatar.svelte';
 	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { formatSizeLabel, llmModelOptions } from '$lib/llm/catalog.js';
+	import { DEFAULT_MODEL_ID, formatSizeLabel, llmModelOptions } from '$lib/llm/catalog.js';
+	import { clearGeminiApiKey, getGeminiApiKey, setGeminiApiKey } from '$lib/llm/gemini-key.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { modelRowStatus, type ModelRowKind, type ModelRowStatus } from '$lib/llm/model-status.js';
 	import { profile } from '$lib/state/profile.svelte.js';
@@ -20,6 +21,8 @@
 	// `capabilities.ts`'s `bestSupportedModelId`). Native first in display order, matching load
 	// priority. Each WebLLM row states its own VRAM requirement (from web-llm's own model list, see
 	// catalog.ts) so the detected capacity line above the list means something concrete per row.
+	// The Gemini row only ever appears once local inference is a dead end (issue #84): a device that
+	// can already run native or the WebLLM model never needs to see it.
 	const modelRows = $derived([
 		{ kind: 'native' as const, label: 'Gemini Nano', detail: t('settings.modelNativeDetail') },
 		...llmModelOptions().map((option) => ({
@@ -29,8 +32,43 @@
 				size: formatSizeLabel(option.approxDownloadBytes),
 				vram: formatSizeLabel(option.vramRequiredMB * 1024 * 1024)
 			})
-		}))
+		})),
+		...(llm.localUnusable
+			? [
+					{
+						kind: 'gemini' as const,
+						label: t('settings.modelGeminiLabel'),
+						detail: t('settings.modelGeminiDetail')
+					}
+				]
+			: [])
 	]);
+
+	// Mirrors `gemini-key.ts`'s localStorage state as a reactive field, since the store itself is
+	// deliberately not a rune (it has to survive a reload without a save/load dance).
+	let geminiKeyInput = $state(getGeminiApiKey() ?? '');
+	let geminiKeyStored = $state(getGeminiApiKey() !== undefined);
+
+	async function applyGeminiKeyChange(): Promise<void> {
+		// Forces the live engine to re-resolve its provider against the new key, the same mechanism
+		// `/dev/llm`'s force-WebLLM toggle uses.
+		await llm.selectModel(llm.activeModelId ?? DEFAULT_MODEL_ID, { force: true });
+	}
+
+	async function saveGeminiKey(): Promise<void> {
+		const trimmed = geminiKeyInput.trim();
+		if (!trimmed) return;
+		setGeminiApiKey(trimmed);
+		geminiKeyStored = true;
+		await applyGeminiKeyChange();
+	}
+
+	async function clearStoredGeminiKey(): Promise<void> {
+		clearGeminiApiKey();
+		geminiKeyInput = '';
+		geminiKeyStored = false;
+		await applyGeminiKeyChange();
+	}
 
 	// What the device actually reports, so a player can see why the app picked the fallback tier it
 	// did — `maxBufferBytes` is the same figure `capabilities.ts`'s VRAM check itself compares
@@ -76,7 +114,9 @@
 			status: llm.status,
 			progress: llm.progress,
 			hasNativeLanguageModel: llm.capabilities?.hasNativeLanguageModel,
-			unsupportedReason: kind === 'native' ? undefined : llm.unsupportedReason(kind)
+			unsupportedReason:
+				kind === 'native' || kind === 'gemini' ? undefined : llm.unsupportedReason(kind),
+			hasGeminiApiKey: geminiKeyStored
 		});
 	}
 
@@ -93,6 +133,8 @@
 						? 'settings.modelUnsupportedNoWebgpu'
 						: 'settings.modelUnsupportedVram'
 				);
+			case 'key-missing':
+				return t('settings.modelKeyMissing');
 			case 'downloading':
 				return t('settings.modelDownloading', { percent: status.percent });
 			case 'preparing':
@@ -294,6 +336,42 @@
 						</div>
 					{/each}
 				</div>
+
+				{#if llm.localUnusable}
+					<div
+						class="mt-3 rounded-tile border border-line bg-surface-raised px-3.5 py-3.5"
+						style="border-radius:12px 12px 12px 4px"
+					>
+						<p class="text-label leading-relaxed text-slate-300">
+							{t('settings.geminiKeyPrivacyNote')}
+						</p>
+						<div class="mt-2.5 flex gap-2">
+							<input
+								type="password"
+								bind:value={geminiKeyInput}
+								placeholder={t('settings.geminiKeyPlaceholder')}
+								class="min-w-0 flex-1 rounded-control border border-line-strong bg-slate-100/5 px-3.5 py-2.5 text-label text-slate-100 placeholder:text-slate-500 focus:border-accent/60 focus:outline-none"
+							/>
+							<button
+								type="button"
+								onclick={() => void saveGeminiKey()}
+								disabled={!geminiKeyInput.trim()}
+								class="flex-none rounded-control border border-accent/60 bg-accent/18 px-3.5 py-2.5 text-label font-medium text-slate-100 disabled:opacity-50"
+							>
+								{t('settings.geminiKeySave')}
+							</button>
+						</div>
+						{#if geminiKeyStored}
+							<button
+								type="button"
+								onclick={() => void clearStoredGeminiKey()}
+								class="mt-2 text-label font-medium text-slate-400 hover:text-slate-200"
+							>
+								{t('settings.geminiKeyClear')}
+							</button>
+						{/if}
+					</div>
+				{/if}
 
 				<button
 					type="button"

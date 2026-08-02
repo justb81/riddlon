@@ -124,12 +124,12 @@ describe('load progress', () => {
 /**
  * Issue #69: the WebLLM path used to share one backend handle across every character (baking
  * persona + history into prompt text instead), because a second `create()` under
- * `prompt-api-polyfill` meant a full multi-gigabyte engine rebuild. `webllm-direct.ts` replaced
- * that with one persistent engine reused across cheap per-session handles, so the polyfill kind now
+ * the polyfill package meant a full multi-gigabyte engine rebuild. `webllm-direct.ts` replaced
+ * that with one persistent engine reused across cheap per-session handles, so the webllm kind now
  * pools sessions exactly like the native provider — these mirror the native assertions below to
  * prove that parity holds.
  */
-describe.each(['native', 'polyfill'] as const)('session pooling (%s)', (kind) => {
+describe.each(['native', 'webllm'] as const)('session pooling (%s)', (kind) => {
 	it('gives each character its own backend session', async () => {
 		const { provider, adapter } = setup('llama-3.2-3b', { kind });
 		const lucy = await adapter.createSession('lucy', LUCY);
@@ -220,7 +220,7 @@ describe.each(['native', 'polyfill'] as const)('session pooling (%s)', (kind) =>
 describe('a scene change on an ongoing session', () => {
 	const LUCY_SCENE_2: LlmSessionConfig = { systemPrompt: 'Du bist Lucy. Nenne Max und Sabine.' };
 
-	it.each(['native', 'polyfill'] as const)(
+	it.each(['native', 'webllm'] as const)(
 		'rebuilds the backend handle with the new system prompt (%s)',
 		async (kind) => {
 			const { provider, adapter } = setup('llama-3.2-3b', { kind, chunks: ['ok'] });
@@ -241,7 +241,7 @@ describe('a scene change on an ongoing session', () => {
 	);
 
 	it('is the same session, with its history intact', async () => {
-		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+		const { adapter } = setup('llama-3.2-3b', { kind: 'webllm', chunks: ['ok'] });
 		const first = await adapter.createSession('lucy', LUCY);
 		await first.prompt('Wer bist du?');
 
@@ -263,7 +263,7 @@ describe('a scene change on an ongoing session', () => {
 	});
 
 	it('ignores seedTurns on a session that already exists', async () => {
-		const { adapter } = setup('llama-3.2-3b', { kind: 'polyfill', chunks: ['ok'] });
+		const { adapter } = setup('llama-3.2-3b', { kind: 'webllm', chunks: ['ok'] });
 		const first = await adapter.createSession('lucy', LUCY);
 		await first.prompt('Wer bist du?');
 
@@ -345,7 +345,7 @@ describe('lifecycle', () => {
 	});
 
 	it('destroys every handle on dispose', async () => {
-		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'polyfill' });
+		const { provider, adapter } = setup('llama-3.2-3b', { kind: 'webllm' });
 		const session = await adapter.createSession('lucy', LUCY);
 		await session.prompt('Hallo?');
 		await adapter.dispose();
@@ -361,8 +361,8 @@ describe('lifecycle', () => {
 	});
 
 	it('exposes the model it was configured with, and nothing about the backend', async () => {
-		const { adapter } = setup('llama-3.2-1b');
-		expect(adapter.modelId).toBe('llama-3.2-1b');
+		const { adapter } = setup('llama-3.2-3b');
+		expect(adapter.modelId).toBe('llama-3.2-3b');
 		expect(Object.keys(adapter).sort()).toEqual(
 			['availability', 'createSession', 'dispose', 'load', 'modelId'].sort()
 		);

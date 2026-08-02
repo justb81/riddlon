@@ -5,12 +5,15 @@
  * a config change rather than a code change (issue #12's first acceptance criterion).
  *
  * Model choice: the reference story is German, and Phi-3 Mini / Llama 3 8B (the placeholders in
- * docs/design/riddlon-app-mockup.dc.html) are both weak at it. Llama 3.2 3B is the default; 3.2 1B
- * is the fallback below it for weaker devices, auto-selected by `capabilities.ts`'s
- * `bestSupportedModelId` — never picked by the player (the settings screen's model list is
- * read-only). Deliberately no 8B tier: Llama 3.2 tops out at 3B, and stepping up to the older
- * Llama 3.1 8B for a marginal quality gain isn't worth doubling the download for the rare device
- * that can hold it but has no native Prompt API.
+ * docs/design/riddlon-app-mockup.dc.html) are both weak at it. Llama 3.2 3B is the only local tier
+ * and the default — never picked by the player (the settings screen's model list is read-only).
+ * There used to be a 3.2 1B fallback for weaker devices; live-browser testing (issue #85) found it,
+ * and every other tested sub-1GB-VRAM model, broke character or produced incoherent output. A
+ * device that can't run 3B falls to the `unsupported` state (or, if configured, the Gemini
+ * cloud fallback from issue #84) rather than a smaller, unusable local tier. Deliberately no 8B
+ * tier either: Llama 3.2 tops out at 3B, and stepping up to the older Llama 3.1 8B for a marginal
+ * quality gain isn't worth doubling the download for the rare device that can hold it but has no
+ * native Prompt API.
  *
  * `vramRequiredMB` for every entry here is taken from `@mlc-ai/web-llm`'s own `prebuiltAppConfig`
  * model list, which ships exactly this figure per model — `catalog.spec.ts` asserts our copies stay
@@ -21,7 +24,7 @@
  * would bundle it for everyone.
  */
 
-export type LocalModelId = 'llama-3.2-1b' | 'llama-3.2-3b';
+export type LocalModelId = 'llama-3.2-3b';
 
 export interface LlmModelDescriptor {
 	id: LocalModelId;
@@ -38,8 +41,8 @@ export interface LlmModelDescriptor {
 	/** From `prebuiltAppConfig`, used only to decide whether a device can run the model at all. */
 	vramRequiredMB: number;
 	/**
-	 * Real context window. The polyfill hardcodes its `contextWindow` getter to 1e6, which is wrong
-	 * for every model here, so history windowing uses this instead.
+	 * Real context window, used for history windowing (the Prompt API's own `contextWindow` getter
+	 * isn't reliable across providers).
 	 */
 	contextWindow: number;
 }
@@ -47,16 +50,6 @@ export interface LlmModelDescriptor {
 const GB = 1024 * 1024 * 1024;
 
 export const LLM_MODELS: Record<LocalModelId, LlmModelDescriptor> = {
-	'llama-3.2-1b': {
-		id: 'llama-3.2-1b',
-		label: 'Llama 3.2 1B',
-		mlcModelId: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-		// No download-size field exists in web-llm's model list (only vram/compute figures) — this
-		// stays a seeded estimate; correct it from a measured download if it drifts.
-		approxDownloadBytes: 900 * 1024 * 1024,
-		vramRequiredMB: 879,
-		contextWindow: 4096
-	},
 	'llama-3.2-3b': {
 		id: 'llama-3.2-3b',
 		label: 'Llama 3.2 3B',
@@ -70,7 +63,7 @@ export const LLM_MODELS: Record<LocalModelId, LlmModelDescriptor> = {
 export const DEFAULT_MODEL_ID: LocalModelId = 'llama-3.2-3b';
 
 /** Catalog order is the order the settings picker shows: smallest first. */
-export const MODEL_ORDER: readonly LocalModelId[] = ['llama-3.2-1b', 'llama-3.2-3b'];
+export const MODEL_ORDER: readonly LocalModelId[] = ['llama-3.2-3b'];
 
 export function llmModelOptions(): readonly LlmModelDescriptor[] {
 	return MODEL_ORDER.map((id) => LLM_MODELS[id]);

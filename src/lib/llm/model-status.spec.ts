@@ -9,7 +9,8 @@ const base: ModelRowInput = {
 	status: 'idle',
 	progress: 0,
 	hasNativeLanguageModel: false,
-	unsupportedReason: undefined
+	unsupportedReason: undefined,
+	hasGeminiApiKey: false
 };
 
 describe('modelRowStatus', () => {
@@ -33,9 +34,9 @@ describe('modelRowStatus', () => {
 			expect(modelRowStatus({ ...base, hasNativeLanguageModel: true, backend: null })).toEqual({
 				kind: 'inactive'
 			});
-			expect(
-				modelRowStatus({ ...base, hasNativeLanguageModel: true, backend: 'polyfill' })
-			).toEqual({ kind: 'inactive' });
+			expect(modelRowStatus({ ...base, hasNativeLanguageModel: true, backend: 'webllm' })).toEqual({
+				kind: 'inactive'
+			});
 		});
 
 		it('reports its own download/prepare progress while native is loading', () => {
@@ -102,14 +103,14 @@ describe('modelRowStatus', () => {
 				})
 			).toEqual({ kind: 'downloading', percent: 42 });
 
-			// A different model is loading — this row must not borrow its progress.
+			// Nothing is loading — this row must not borrow another row's progress.
 			expect(
 				modelRowStatus({
 					...webllmBase,
 					hasNativeLanguageModel: false,
 					status: 'downloading',
 					progress: 0.42,
-					loadingModelId: 'llama-3.2-1b'
+					loadingModelId: null
 				})
 			).toEqual({ kind: 'inactive' });
 		});
@@ -129,9 +130,48 @@ describe('modelRowStatus', () => {
 					...webllmBase,
 					hasNativeLanguageModel: false,
 					status: 'ready',
-					activeModelId: 'llama-3.2-1b'
+					activeModelId: null
 				})
 			).toEqual({ kind: 'inactive' });
+		});
+	});
+
+	describe('the Gemini row (issue #84)', () => {
+		const geminiBase: ModelRowInput = { ...base, kind: 'gemini' };
+
+		it('is inactive whenever native is present, regardless of a stored key', () => {
+			expect(
+				modelRowStatus({ ...geminiBase, hasNativeLanguageModel: true, hasGeminiApiKey: true })
+			).toEqual({ kind: 'inactive' });
+		});
+
+		it('reports a missing key once native is known absent', () => {
+			expect(
+				modelRowStatus({ ...geminiBase, hasNativeLanguageModel: false, hasGeminiApiKey: false })
+			).toEqual({ kind: 'key-missing' });
+		});
+
+		it('is inactive with a key stored but Gemini not the resolved backend', () => {
+			expect(
+				modelRowStatus({
+					...geminiBase,
+					hasNativeLanguageModel: false,
+					hasGeminiApiKey: true,
+					backend: 'webllm'
+				})
+			).toEqual({ kind: 'inactive' });
+		});
+
+		it('is active once Gemini has resolved and is ready', () => {
+			expect(
+				modelRowStatus({
+					...geminiBase,
+					hasNativeLanguageModel: false,
+					hasGeminiApiKey: true,
+					backend: 'gemini',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'active' });
 		});
 	});
 });

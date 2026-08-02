@@ -1,10 +1,11 @@
 /**
  * "Is this model already on the device?" — which decides warm vs. first-run boot.
  *
- * The polyfill cannot answer it: its `availability()` returns 'available' unconditionally, download
- * or no download. So for the WebLLM path we ask web-llm's own `hasModelInCache` directly, and the
- * appConfig we pass has to match what the polyfill's backend passes to `CreateMLCEngine`
- * (`{...prebuiltAppConfig, cacheBackend: 'cross-origin'}`) or we'd be inspecting a different cache.
+ * `webllm-direct.ts`'s `availability()` returns 'available' unconditionally, download or no
+ * download, so it cannot answer this itself. Instead we ask web-llm's own `hasModelInCache`
+ * directly, and the appConfig we pass has to match what `webllm-direct.ts` passes to
+ * `CreateMLCEngine` (`{...prebuiltAppConfig, cacheBackend: 'cross-origin'}`) or we'd be inspecting a
+ * different cache.
  *
  * Because that coupling is a guess about someone else's internals, a local marker backs it up. Each
  * alone is wrong in a different way — the marker goes stale when site data is cleared, the probe is

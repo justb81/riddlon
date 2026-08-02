@@ -3,7 +3,7 @@
  *
  * The interface here is deliberately a thin re-shaping of the W3C/Chrome Prompt API rather than a
  * vocabulary of our own: `engine/` and `ui/` code against `LlmAdapter`/`LlmSession`, and the two
- * concrete providers (the browser's built-in `LanguageModel`, or the WebLLM-backed polyfill) both
+ * concrete providers (the browser's built-in `LanguageModel`, or a direct WebLLM engine) both
  * arrive as the same `LanguageModelLike` shape. Swapping either the model or the provider therefore
  * touches nothing outside `$lib/llm` — see `no-backend-leakage.spec.ts`, which enforces that.
  *
@@ -17,7 +17,7 @@ import type { LocalModelId } from './catalog.js';
 /* The subset of the Prompt API we depend on                                  */
 /* -------------------------------------------------------------------------- */
 
-/** Per the Prompt API spec; the WebLLM polyfill only ever reports 'available' or 'unavailable'. */
+/** Per the Prompt API spec; the WebLLM provider only ever reports 'available' or 'unavailable'. */
 export type PromptApiAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'available';
 
 export interface PromptApiMessage {
@@ -32,7 +32,7 @@ export interface PromptApiCreateOptions {
 	signal?: AbortSignal;
 	/**
 	 * Called once with an `EventTarget` that emits `ProgressEvent('downloadprogress')` with
-	 * `loaded` in 0..1. This is the only progress signal the polyfill exposes.
+	 * `loaded` in 0..1. This is the only progress signal the WebLLM provider exposes.
 	 */
 	monitor?: (target: EventTarget) => void;
 }
@@ -53,13 +53,15 @@ export interface LanguageModelLike {
 }
 
 /** Which implementation backs `LanguageModelLike` right now. */
-export type ProviderKind = 'native' | 'polyfill';
+export type ProviderKind = 'native' | 'webllm' | 'gemini';
 
 export interface ResolvedProvider {
 	kind: ProviderKind;
 	LanguageModel: LanguageModelLike;
-	/** The concrete model the provider was configured with; `undefined` for the built-in model. */
+	/** The concrete WebLLM model the provider was configured with; `undefined` otherwise. */
 	mlcModelId?: string;
+	/** The concrete Gemini model the provider was configured with; only set for `kind: 'gemini'`. */
+	geminiModelId?: string;
 }
 
 /* -------------------------------------------------------------------------- */
