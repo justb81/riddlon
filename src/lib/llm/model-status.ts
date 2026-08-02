@@ -5,15 +5,20 @@
  * The list is read-only: the player never picks a model (see `capabilities.ts`'s
  * `bestSupportedModelId`), so every row only ever reports what the app already decided — which
  * backend actually won, and, since both a native Prompt API and a WebLLM catalog model can have a
- * real first-run download, which one (if any) is currently downloading/preparing.
+ * real first-run download, which one (if any) is currently downloading/preparing. The `'gemini'`
+ * row (issue #84) is the one exception with no download at all — it is either unusable for lack of
+ * a stored key, or active immediately.
  */
 
 import type { LlmErrorCode } from './errors.js';
 import type { LocalModelId } from './catalog.js';
 import type { LlmStatus, ProviderKind } from './types.js';
 
-/** `'native'` is the one synthetic row (the browser's built-in Prompt API); the rest are catalog ids. */
-export type ModelRowKind = 'native' | LocalModelId;
+/**
+ * `'native'` and `'gemini'` are the two synthetic rows (the browser's built-in Prompt API, and the
+ * BYOK cloud fallback); the rest are catalog ids.
+ */
+export type ModelRowKind = 'native' | 'gemini' | LocalModelId;
 
 export type ModelRowStatus =
 	/** Capabilities haven't been probed yet. */
@@ -22,6 +27,8 @@ export type ModelRowStatus =
 	| { kind: 'unavailable' }
 	/** WebLLM row only: this device can't run the model (no WebGPU, or not enough VRAM). */
 	| { kind: 'unsupported'; reason: LlmErrorCode }
+	/** Gemini row only: no API key has been stored in settings yet. */
+	| { kind: 'key-missing' }
 	| { kind: 'downloading'; percent: number }
 	| { kind: 'preparing'; percent: number }
 	/** This row is the backend actually in use right now. */
@@ -40,6 +47,8 @@ export interface ModelRowInput {
 	hasNativeLanguageModel: boolean | undefined;
 	/** WebLLM rows only: `undefined` when this model can run here (or capabilities are unknown yet). */
 	unsupportedReason: LlmErrorCode | undefined;
+	/** Gemini row only: whether a key is currently stored (see `gemini-key.ts`). */
+	hasGeminiApiKey: boolean;
 }
 
 export function modelRowStatus(input: ModelRowInput): ModelRowStatus {
@@ -48,6 +57,14 @@ export function modelRowStatus(input: ModelRowInput): ModelRowStatus {
 	if (input.kind === 'native') {
 		if (!input.hasNativeLanguageModel) return { kind: 'unavailable' };
 		if (input.backend !== 'native') return { kind: 'inactive' };
+		return backendProgressOrActive(input);
+	}
+
+	if (input.kind === 'gemini') {
+		// Same precedence as the WebLLM row: native wins outright, regardless of a stored key.
+		if (input.hasNativeLanguageModel) return { kind: 'inactive' };
+		if (!input.hasGeminiApiKey) return { kind: 'key-missing' };
+		if (input.backend !== 'gemini') return { kind: 'inactive' };
 		return backendProgressOrActive(input);
 	}
 

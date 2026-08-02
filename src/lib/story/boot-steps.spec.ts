@@ -96,8 +96,8 @@ describe('bootStepFor', () => {
 	});
 
 	it('is monotonic under a jittery progress feed', () => {
-		// The polyfill forces monotonicity within one session, but a rebuilt session restarts its
-		// fraction — the mapper must not be what lets the bar jump around.
+		// The WebLLM backend forces monotonicity within one session, but a rebuilt session restarts
+		// its fraction — the mapper must not be what lets the bar jump around.
 		const fractions = [0, 0.1, 0.1, 0.4, 0.55, 0.84, 0.86, 0.99, 1];
 		let previous = -1;
 		for (const fraction of fractions) {

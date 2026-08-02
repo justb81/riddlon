@@ -24,13 +24,15 @@
 	"llm": {
 		"error": {
 			"no-webgpu": "Dieser Browser kann keine lokale KI ausführen — WebGPU fehlt. Mit einem aktuellen Chrome, Edge oder Firefox funktioniert es.",
-			"insufficient-vram": "Für dieses Modell reicht der Grafikspeicher deines Geräts nicht. Wähle in den Einstellungen ein kleineres Modell.",
+			"insufficient-vram": "Für dieses Modell reicht der Grafikspeicher deines Geräts nicht. Hinterlege in den Einstellungen einen eigenen Gemini-API-Key, um die Geschichte trotzdem zu spielen.",
 			"offline": "Für die einmalige Einrichtung ist eine Internetverbindung nötig. Danach läuft alles offline.",
 			"download-failed": "Das Modell konnte nicht vollständig geladen werden. Prüfe deine Verbindung und versuche es erneut.",
-			"compile-failed": "Das Modell ließ sich auf dieser Grafikkarte nicht starten. Ein erneuter Versuch oder ein kleineres Modell hilft meist.",
-			"oom": "Dem Gerät ist der Grafikspeicher ausgegangen. Schließe andere Tabs oder wähle ein kleineres Modell.",
+			"compile-failed": "Das Modell ließ sich auf dieser Grafikkarte nicht starten. Ein erneuter Versuch hilft meist.",
+			"oom": "Dem Gerät ist der Grafikspeicher ausgegangen. Schließe andere Tabs und versuche es erneut.",
 			"aborted": "Vorgang abgebrochen.",
 			"unsupported-model": "Dieses Modell ist in der installierten KI-Version nicht verfügbar.",
+			"invalid-api-key": "Der hinterlegte Gemini-API-Key wurde abgelehnt. Prüfe ihn in den Einstellungen.",
+			"quota-exceeded": "Das Kontingent deines Gemini-API-Keys ist aufgebraucht. Versuche es später erneut.",
 			"unknown": "Die lokale KI konnte nicht gestartet werden."
 		}
 	},
@@ -157,6 +159,13 @@
 		"modelPreparing": "wird vorbereitet · {percent}%",
 		"modelUnsupportedNoWebgpu": "kein WebGPU",
 		"modelUnsupportedVram": "zu wenig Grafikspeicher",
+		"modelGeminiLabel": "Gemini (Cloud)",
+		"modelGeminiDetail": "eigener API-Key · verlässt das Gerät",
+		"modelKeyMissing": "kein Key hinterlegt",
+		"geminiKeyPrivacyNote": "Dieses Gerät kann kein lokales Modell ausführen. Mit einem eigenen Gemini-API-Key läuft die Geschichte trotzdem — dann verlassen deine Chat-Inhalte aber das Gerät und gehen an Google.",
+		"geminiKeyPlaceholder": "Gemini-API-Key",
+		"geminiKeySave": "Speichern",
+		"geminiKeyClear": "Key löschen",
 		"notifyTitle": "Benachrichtigungen",
 		"notifyDesc": "Verzögerte Nachrichten sind ungefähr — Zeitpunkte können abweichen.",
 		"resetLabel": "NEU STARTEN",

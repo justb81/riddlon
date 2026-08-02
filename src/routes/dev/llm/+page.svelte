@@ -28,7 +28,7 @@
 	// to force a particular catalog model regardless of what the device would auto-select.
 	let selectedModel = $state<LocalModelId>(DEFAULT_MODEL_ID);
 
-	// Bypasses the native Prompt API (Gemini Nano) so the polyfill/WebLLM path can be exercised on
+	// Bypasses the native Prompt API (Gemini Nano) so the WebLLM path can be exercised on
 	// a device where native would otherwise always win — see issue #69's step 1 (measuring
 	// `resetChat()` timing needs a real WebLLM session, not native's already-cheap per-session
 	// handle). Forces a fresh provider resolution and reloads the currently selected model.

@@ -126,11 +126,10 @@
 		const prompt = buildPrompt();
 		probing = true;
 		try {
-			// A separate key from the app's own 'director', so probing never disturbs a live pass.
-			// Under the polyfill both still share one backend handle — which is exactly the thing
-			// worth watching here: probe right after a page reload to see the director answer with a
-			// clean context, then again after a few chat turns to see what the accumulated roleplay
-			// does to it.
+			// A separate key from the app's own 'director', so probing never disturbs a live pass —
+			// each key gets its own backend handle (see adapter.ts). Probe right after a page reload
+			// to see the director answer with a clean context, then again after a few chat turns to
+			// see what accumulated history does to it.
 			const session = await llm.session('director-probe', {
 				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
 				maxHistoryTurns: 0

@@ -52,10 +52,9 @@ describe('bestSupportedModelId', () => {
 		expect(bestSupportedModelId(facts())).toBe('llama-3.2-3b');
 	});
 
-	it('falls back to the 1B model when the device cannot hold the 3B one', () => {
-		// Above the 1B floor (~220 MB) but below the 3B floor (566 MB).
+	it('falls back to the catalog default when the device cannot hold it either (issue #85: no smaller tier left)', () => {
 		const small = facts({ maxBufferBytes: 300 * 1024 * 1024 });
-		expect(bestSupportedModelId(small)).toBe('llama-3.2-1b');
+		expect(bestSupportedModelId(small)).toBe('llama-3.2-3b');
 	});
 
 	it('falls back to the catalog default when nothing fits', () => {

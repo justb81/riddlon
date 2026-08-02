@@ -320,8 +320,8 @@ class StorySession {
 		let raw: string;
 		try {
 			// A fresh, historyless session each time: the director must judge this exchange, not
-			// accumulate its own past verdicts. Under the polyfill this shares the one backend
-			// handle, so it costs a decode pass but no model reload.
+			// accumulate its own past verdicts. Every session gets its own real backend handle
+			// (see adapter.ts), so this costs a decode pass but no model reload.
 			const session = await llm.session('director', {
 				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
 				maxHistoryTurns: 0

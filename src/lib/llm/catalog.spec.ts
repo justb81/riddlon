@@ -60,14 +60,13 @@ describe('catalog', () => {
 
 	it('matches the sizes the settings picker will show', () => {
 		const labels = llmModelOptions().map((option) => formatSizeLabel(option.approxDownloadBytes));
-		expect(labels).toEqual(['900 MB', '1,9 GB']);
+		expect(labels).toEqual(['1,9 GB']);
 	});
 
 	it('pins the MLC model ids the WebLLM backend is configured with', () => {
 		// A dependency bump that renames these in prebuiltAppConfig would otherwise fail at runtime,
 		// in the browser, after a multi-gigabyte download.
 		const pinned: Record<LocalModelId, string> = {
-			'llama-3.2-1b': 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
 			'llama-3.2-3b': 'Llama-3.2-3B-Instruct-q4f16_1-MLC'
 		};
 		for (const [id, mlcModelId] of Object.entries(pinned)) {
