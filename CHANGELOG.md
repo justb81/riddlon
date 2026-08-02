@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/justb81/riddlon/compare/riddlon-v0.9.2...riddlon-v0.10.0) (2026-08-02)
+
+
+### Features
+
+* **llm:** drop unusable 1B model tier, add optional Gemini cloud fallback ([c5695d1](https://github.com/justb81/riddlon/commit/c5695d14cb57a513b49e39b27d353bb757a9e9ef))
+
 ## [0.9.2](https://github.com/justb81/riddlon/compare/riddlon-v0.9.1...riddlon-v0.9.2) (2026-08-02)
 
 
