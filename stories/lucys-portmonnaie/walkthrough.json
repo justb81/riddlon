@@ -1,0 +1,43 @@
+[
+	{ "setFlag": "flag:lucy-identified" },
+	{ "setFlag": "flag:witnesses-named" },
+	{
+		"claimClue": {
+			"clueId": "clue:time-window",
+			"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+			"value": "gegen 22 Uhr"
+		}
+	},
+	{ "setFlag": "flag:max-questioned" },
+	{
+		"claimClue": {
+			"clueId": "clue:time-window",
+			"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+			"value": "gegen Mitternacht"
+		}
+	},
+	{ "setFlag": "flag:sabine-questioned" },
+	{ "setFlag": "flag:report-to-lucy-done" },
+	{ "advance": "PT1H" },
+	{ "advance": "PT1H" },
+	{ "advance": "PT1H" },
+	{ "setFlag": "flag:suspicion-relayed" },
+	{
+		"claimClue": {
+			"clueId": "clue:max-whereabouts",
+			"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+			"value": "war nicht an der Garderobe"
+		}
+	},
+	{
+		"claimClue": {
+			"clueId": "clue:max-whereabouts",
+			"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+			"value": "war an der Garderobe"
+		}
+	},
+	{ "setFlag": "flag:max-denies-hans-claim" },
+	{ "setFlag": "flag:sabine-confirms-hans-claim" },
+	{ "setFlag": "flag:hans-info-confirmed" },
+	{ "setFlag": "flag:evidence-presented" }
+]

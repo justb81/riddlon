@@ -8,7 +8,7 @@ description: Turn a piece of free-form story text (plot, characters, twist) into
 Converts prose into a package under `stories/<slug>/` matching the layout
 `stories/README.md` and `docs/concept.md` §5 define, validated by the app's own
 `src/lib/content/validate-package.ts`. This skill exists to do that **cheaply**: one
-extraction pass, one write pass per file, one validation run. Do not re-read
+extraction pass, one write pass per file, one validation run, one playtest run. Do not re-read
 `docs/concept.md`, the zod schemas, or `stories/lucys-portmonnaie/` to re-derive the format —
 the reference below is already the complete, current contract. Do not spawn subagents for
 this — a single pass in the main thread is strictly cheaper than delegating.
@@ -65,27 +65,27 @@ genuinely ambiguous about who the player's contact is or how it ends.
      uses. **Do not include**: a walkthrough or beat→scene table, any flag chain, which
      secret unlocks when, or how the story resolves — all of that is only ever visible by
      reading the JSON itself, which is the point.
+   - `stories/<slug>/walkthrough.json` — the intended beat sequence from step 1, as a
+     scripted playtest (see `stories/README.md` "Playtesting" and step 6 below). Not packed
+     into the zip. Skip only if you're deliberately not playtesting this run.
 
-5. **Self-check reachability by hand — `stories:validate` will not catch this.** The
-   validator only checks schema shape, required files, duplicate ids, and dangling
-   references (`next[].target` exists, `characterRef`/`confirmedBy`/`heldBy` resolve to a
-   shipped character). It never simulates the flag graph, so a scene nothing ever unlocks,
-   or an `entryConditions`/`unlockCondition` flag with a typo that's never set, validates
-   cleanly and then silently never appears in play. Before validating, trace your own graph
-   once: every scene either has `entryConditions: []` or is some other scene's `next[]`
-   target or a `delayedEvents[]` `unlock-scene:` target; every `availability.unlockCondition`
-   is a flag some scene's `exitConditions` (or a `delayedEvents[]` `set-flag:` action) can
-   actually set; every flag you invented in an `entryConditions`/`next[].when` is spelled
-   exactly like the `exitConditions` entry meant to set it. The one legitimate exception is
-   a sentinel flag deliberately never set anywhere, on a scene reachable only through a
-   `delayedEvents[]` `unlock-scene:` action (`stories/lucys-portmonnaie`'s
-   `flag:lucy-suspicion-only-via-delayed-event` is exactly this) — that's intentional, not a
-   dead end, as long as the delayed event's own `condition` is reachable.
-
-6. **Validate**: `npm run stories:validate`. If it fails, fix only what the reported
+5. **Validate**: `npm run stories:validate`. If it fails, fix only what the reported
    `path`/`message` pairs point at with targeted `Edit` calls — don't rewrite whole files
-   and don't re-run validation more than needed to confirm the fix. A clean first pass is
-   the point of steps 1–5; validation is a safety net, not an editing loop.
+   and don't re-run validation more than needed to confirm the fix.
+
+6. **Playtest**: `npm run story:playtest -- stories/<slug>`. This is the check
+   `stories:validate` cannot do — it replays `walkthrough.json` through the real engine
+   (`src/lib/engine/`, no LLM, no browser) and reports which scenes/characters/outcomes were
+   actually reached. Write `walkthrough.json` as the sequence of `setFlag`/`claimClue`/
+   `resolveClue`/`action`/`advance` steps that walks your intended happy path from start to
+   the ending(s) you designed (mirror `stories/lucys-portmonnaie/walkthrough.json`'s shape).
+   Anything the tool reports as "never unlocked"/"never reached" that your walkthrough was
+   supposed to cover is a real bug — almost always a misspelled flag between one scene's
+   `exitConditions` and the next scene's `entryConditions`/`unlockCondition`, or an
+   entry-only-via-event scene whose delayed event's own `condition` never became true. Fix and
+   re-run once. A branch you didn't script (an alternate ending, a path not taken) is a
+   legitimate, expected warning, not a bug — don't chase every warning, only the ones on your
+   own intended path.
 
 7. **Report back**: slug, cast (names), scene count, and remind the user that shipping it is
    `npm run stories:bundle` for local preview and — per `stories/README.md` — bumping
@@ -137,7 +137,7 @@ force a longer or differently-shaped plot into the Lucy story's specific arrange
 - Generate all UUIDs in one bulk shell call (step 2), never one-by-one, never by hand.
 - One `Write` per file. No draft-then-revise; extract fully in your head first, then write.
 - No subagents, no worktrees — this is a single-pass, single-directory task.
-- Validate once at the end, not after each file.
+- Validate once, playtest once, not in a loop — fix what's reported, re-run only to confirm.
 - Don't run `stories:build`/`stories:bundle` unless the user asks — they're not needed to
   confirm the package is valid, and they touch `dist/`/`static/` build output.
 
