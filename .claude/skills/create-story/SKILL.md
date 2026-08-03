@@ -141,11 +141,12 @@ under `assetsBase`, must resolve to a file you actually wrote), `voiceStyle`,
 `corePersonality`, `originPackage` (the manifest's `id`), `shareable` (bool, default `true`).
 
 **`story/story.json`**:
+
 - `castBindings[]`: `characterRef` (uuid), `roleInStory` (free string, e.g.
   `"quest-giver"`/`"witness"`), `knowledge.publicFacts`/`knowledge.secrets` (arrays of
   symbolic ids, default `[]`), `availability.initialState` (`"visible"`|`"hidden"`, default
   `"visible"`) + `availability.unlockCondition` (symbolic ref, required if hidden),
-  `relationships` (object keyed by *other* character uuid → free label like `"friend"`),
+  `relationships` (object keyed by _other_ character uuid → free label like `"friend"`),
   `identityMask` (optional: `maskedDisplayName` + `revealCondition`).
 - `achievements[]` (optional, 0–3): `id` (uuid), `label`, `description` (optional). Purely
   descriptive — nothing evaluates these yet, so don't invent conditions for them.
@@ -163,6 +164,7 @@ default `true` — set `false` if the character should wait for the player to wr
 default `[]`), `relevantFactIds`/`relevantSecretIds` (optional allow-lists narrowing what
 this scene's characters bring into the model prompt — worth setting once a story has more
 than a handful of facts/secrets).
+
 - `chat-scene` only: `next[]` — `{ target: <scene uuid>, when: [<flags>] }`.
 - `group-chat-scene` only: `playerRole` (free string), `outcomes[]` —
   `{ id: <symbolic>, condition: <symbolic ref> }`.
