@@ -26,7 +26,8 @@ stories/<slug>/
 │   ├── facts.json
 │   └── secrets.json
 ├── assets/{covers,avatars}/            # cover + avatar images
-└── README.md                           # authoring notes — NOT packed into the zip
+├── README.md                            # authoring notes — NOT packed into the zip
+└── walkthrough.json                     # optional playtest script — NOT packed into the zip
 ```
 
 The manifest is the index: **a file the manifest doesn't declare is a file the player never
@@ -55,6 +56,31 @@ generated per build over the packed files, so a stale copy can never ship.
 
 `npm test` validates every package here too (`src/lib/content/story-packages.spec.ts`), so
 broken content fails ordinary CI, not just the release workflow.
+
+## Playtesting
+
+`stories:validate` checks schema shape, required files, duplicate ids, and dangling
+references — it never simulates the flag graph, so a scene nothing ever unlocks, or a
+condition flag with a typo that's never set, validates cleanly and then silently never
+appears in play.
+
+```bash
+npm run story:playtest -- stories/<slug> [path/to/walkthrough.json]
+```
+
+`scripts/playtest-story.mjs` replays a scripted walkthrough through the real engine
+(`src/lib/engine/`) — no LLM, no browser. Each step in `walkthrough.json` (defaulting to
+`stories/<slug>/walkthrough.json`) stands in for what a real conversation turn would have
+produced (a director verdict setting flags/clues) or for time passing (a delayed event
+becoming due): `setFlag`, `claimClue`, `resolveClue`, `action` (`unlock-scene:`/`set-flag:`/
+`unlock-character:`), `advance` (an ISO-8601 duration, fires any due delayed events), and
+`resume` (re-checks without advancing time). It prints every effect as it replays, then a
+coverage summary — scenes unlocked/completed, characters made visible, outcomes reached,
+delayed events armed/fired — so an orphaned scene or a dead flag shows up as "never
+unlocked"/"never reached" instead of shipping invisibly. An incomplete walkthrough doesn't
+fail the run: it only covers the branches it scripts, not necessarily every branch a
+player could take. See `stories/lucys-portmonnaie/walkthrough.json` for a worked example
+covering all 15 steps of `docs/concept.md` §7.
 
 ## Releasing
 
@@ -87,8 +113,10 @@ minor for added scenes or clues, major for a change that would invalidate an exi
    generate one, never copy another package's.
 2. Character UUIDs are **stable and global** (concept §5.1/§5.3): reuse an existing character's
    UUID to have the player's library recognise them across stories, and mint a new one otherwise.
-3. `npm run stories:validate` until clean, then open a PR. CI validates it; merging to `main`
-   releases it.
+3. `npm run stories:validate` until clean. Optionally add a `walkthrough.json` and run
+   `npm run story:playtest -- stories/<slug>` to confirm the graph is actually reachable —
+   the validator alone won't tell you that (see "Playtesting" above).
+4. Open a PR. CI validates it; merging to `main` releases it.
 
 ## Known format gaps
 

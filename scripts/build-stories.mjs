@@ -24,8 +24,13 @@ import { createServer } from 'vite';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STORIES_DIR = path.join(ROOT, 'stories');
 
-/** Repo-facing files that document a package for contributors but aren't part of it. */
-const NOT_PACKAGE_CONTENT = new Set(['README.md', '.DS_Store']);
+/**
+ * Repo-facing files that document/exercise a package for contributors but aren't part of it.
+ * `walkthrough.json` is `scripts/playtest-story.mjs`'s scripted step list (see that file) —
+ * authoring-only, same as `README.md`, and read straight off disk rather than through the
+ * manifest, so it never needs a `manifest.world` entry.
+ */
+const NOT_PACKAGE_CONTENT = new Set(['README.md', 'walkthrough.json', '.DS_Store']);
 
 /** Generated per build (see `checksums()`), so a stale copy on disk is never shipped. */
 const CHECKSUMS_PATH = 'signatures/checksums.json';

@@ -18,7 +18,8 @@
 		"test": "npm run test:unit -- --run",
 		"stories:validate": "node scripts/build-stories.mjs --check",
 		"stories:build": "node scripts/build-stories.mjs",
-		"stories:bundle": "node scripts/build-stories.mjs --static"
+		"stories:bundle": "node scripts/build-stories.mjs --static",
+		"story:playtest": "node scripts/playtest-story.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
