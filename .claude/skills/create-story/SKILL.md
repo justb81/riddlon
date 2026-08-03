@@ -66,12 +66,28 @@ genuinely ambiguous about who the player's contact is or how it ends.
      secret unlocks when, or how the story resolves — all of that is only ever visible by
      reading the JSON itself, which is the point.
 
-5. **Validate once**: `npm run stories:validate`. If it fails, fix only what the reported
+5. **Self-check reachability by hand — `stories:validate` will not catch this.** The
+   validator only checks schema shape, required files, duplicate ids, and dangling
+   references (`next[].target` exists, `characterRef`/`confirmedBy`/`heldBy` resolve to a
+   shipped character). It never simulates the flag graph, so a scene nothing ever unlocks,
+   or an `entryConditions`/`unlockCondition` flag with a typo that's never set, validates
+   cleanly and then silently never appears in play. Before validating, trace your own graph
+   once: every scene either has `entryConditions: []` or is some other scene's `next[]`
+   target or a `delayedEvents[]` `unlock-scene:` target; every `availability.unlockCondition`
+   is a flag some scene's `exitConditions` (or a `delayedEvents[]` `set-flag:` action) can
+   actually set; every flag you invented in an `entryConditions`/`next[].when` is spelled
+   exactly like the `exitConditions` entry meant to set it. The one legitimate exception is
+   a sentinel flag deliberately never set anywhere, on a scene reachable only through a
+   `delayedEvents[]` `unlock-scene:` action (`stories/lucys-portmonnaie`'s
+   `flag:lucy-suspicion-only-via-delayed-event` is exactly this) — that's intentional, not a
+   dead end, as long as the delayed event's own `condition` is reachable.
+
+6. **Validate**: `npm run stories:validate`. If it fails, fix only what the reported
    `path`/`message` pairs point at with targeted `Edit` calls — don't rewrite whole files
    and don't re-run validation more than needed to confirm the fix. A clean first pass is
-   the point of steps 1–4; validation is a safety net, not an editing loop.
+   the point of steps 1–5; validation is a safety net, not an editing loop.
 
-6. **Report back**: slug, cast (names), scene count, and remind the user that shipping it is
+7. **Report back**: slug, cast (names), scene count, and remind the user that shipping it is
    `npm run stories:bundle` for local preview and — per `stories/README.md` — bumping
    `version` in `manifest.json` and merging to `main` for a real release. Don't run `bundle`
    or `build` yourself unless asked; they're not required to validate content.
