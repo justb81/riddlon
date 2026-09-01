@@ -63,6 +63,6 @@ download and a model-weights download, both one-time and both cacheable.
 - The **Authoring Studio** (a separate, not-yet-built application).
 - Any **account, sync or multiplayer** feature — there is no server to hold them.
 - **Guaranteed background execution or push notifications** for delayed events; see
-  [§8.1.6](./08-crosscutting-concepts.md#816-delayed-events) and
+  [§8.1.6](./08-crosscutting-concepts.md#816-achievements-and-delayed-events) and
   [ADR 12](./09-architecture-decisions.md#adr-12-delayed-events-are-opportunistic-due-dates).
 - A **central registry** of character UUIDs shared between users. Reuse is detected locally only.

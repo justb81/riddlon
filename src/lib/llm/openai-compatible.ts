@@ -6,7 +6,7 @@
  * No SDK: the `openai` package would be dead weight in the bundle for every player who never
  * configures an endpoint, and the wire format below is small enough that plain `fetch` is the
  * honest implementation rather than a compromise. (That is a bundle-size argument, not a policy
- * one — there is no longer any rule against reaching a cloud provider; see `docs/concept.md` §2.)
+ * one — there is no longer any rule against reaching a cloud provider; see docs/arc42 §9 ADR 15.)
  *
  * `create()`/`availability()` never touch the network — only `prompt()`/`promptStreaming()` do —
  * so resolving this provider, and the adapter's warm-up handle, cost nothing.
