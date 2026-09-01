@@ -26,16 +26,28 @@ the code as it is today.
 
 ## Maintenance rules
 
-1. **arc42 is the only documentation format in this repository.** New architecture documentation
-   goes into one of the twelve chapters above — never into a new free-standing document, a new
-   `docs/*.md`, or a growing `README.md`.
-2. **One concept, one place.** If something is already described in a chapter, link to it instead
-   of restating it. Duplicated prose is how this repository's documentation drifted before.
-3. **Code comments reference sections** as `docs/arc42 §8.1.4` — the leading number is the chapter file.
+1. **arc42 is the only home for architecture documentation.** Anything explaining how the system is
+   built, why, or how it behaves goes into one of the twelve chapters above — never into a new
+   free-standing document, a new `docs/*.md`, or a growing `README.md`.
+2. **Task guides are the one exception, and the set is closed.** A guide answers "how do I do X
+   here", sits next to what it describes, and links into arc42 rather than restating it. Exactly
+   four exist; adding a fifth needs a reason this list cannot absorb:
+
+   | File                       | Purpose                                                           |
+   | -------------------------- | ----------------------------------------------------------------- |
+   | `README.md` (root)         | Entry point: what the project is, quick start, links into arc42   |
+   | `CLAUDE.md`                | Agent guidance: conventions, commands, sandbox recipes            |
+   | `stories/README.md`        | How to author, playtest and release a story package               |
+   | `stories/<slug>/README.md` | Content notes for one package: cast, beat-to-scene mapping, flags |
+
+3. **One concept, one place.** If something is already described in a chapter, link to it instead
+   of restating it. Duplicated prose is how this repository's documentation drifted before. A task
+   guide may name a step; the reasoning behind it belongs in the chapter.
+4. **Code comments reference sections** as `docs/arc42 §8.1.4` — the leading number is the chapter file.
    Keep the section numbers stable; if a section must be renumbered, update the references in the
    same commit (`grep -rn "docs/arc42" src/ scripts/ stories/`).
-4. **Every architectural change updates its chapter in the same pull request.** A decision that
+5. **Every architectural change updates its chapter in the same pull request.** A decision that
    changes a trade-off gets an ADR entry in chapter 9; a gap that is accepted rather than fixed
    gets an entry in chapter 11.
-5. **Describe the code as it is**, not as it was planned. A chapter that documents an unimplemented
+6. **Describe the code as it is**, not as it was planned. A chapter that documents an unimplemented
    intention belongs in chapter 11 (Risks and Technical Debt), clearly marked as open.

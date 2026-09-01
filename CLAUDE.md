@@ -24,11 +24,10 @@ before changing anything non-trivial; do not re-derive the design from the code.
 
 ## Documentation policy — arc42 only
 
-1. **All documentation goes into `docs/arc42/`, in English, in the matching chapter.** Never create a
-   new free-standing document, a new `docs/*.md`, a design note, a status file or a summary
-   markdown. If a fact does not fit one of the twelve chapters, it does not belong in the repository.
-   The two exceptions are this file (agent guidance) and the top-level `README.md` (a short entry
-   point that links into arc42).
+1. **All architecture documentation goes into `docs/arc42/`, in English, in the matching chapter.**
+   Never create a new free-standing document, a new `docs/*.md`, a design note, a status file or a
+   summary markdown. If a fact does not fit one of the twelve chapters, it does not belong in the
+   repository.
 2. **A change to behaviour or structure updates its chapter in the same commit.** A new trade-off
    gets an ADR entry in chapter 9; an accepted gap gets an entry in chapter 11.
 3. **One concept, one place.** Link to an existing section rather than restating it. Duplicated prose
@@ -38,8 +37,17 @@ before changing anything non-trivial; do not re-derive the design from the code.
 5. **Code comments reference sections** as `docs/arc42 §8.1.4`; the leading number names the chapter
    file. Renumbering a section means updating the references in the same commit
    (`grep -rn "docs/arc42" src scripts stories .claude`).
-6. **Per-package `stories/<slug>/README.md` files are content notes, not architecture** — cast,
-   beat-to-scene mapping, flags. Format, tooling and release procedure live in arc42.
+6. **Four task guides are the only documents outside arc42, and the set is closed.** A guide answers
+   "how do I do X here", sits next to what it describes, and links into arc42 instead of restating
+   it — the reasoning always stays in the chapter:
+
+   | File                       | Purpose                                                           |
+   | -------------------------- | ----------------------------------------------------------------- |
+   | `README.md`                | Entry point: what the project is, quick start, links into arc42   |
+   | `CLAUDE.md`                | This file                                                         |
+   | `stories/README.md`        | How to author, playtest and release a story package               |
+   | `stories/<slug>/README.md` | Content notes for one package: cast, beat-to-scene mapping, flags |
+
 7. Chapter maintenance rules are restated in [`docs/arc42/README.md`](./docs/arc42/README.md).
 
 ## Where things live

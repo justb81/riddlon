@@ -5,8 +5,9 @@ and the fixture the MVP is validated against. Lucy's wallet is stolen at a club;
 two witnesses whose accounts contradict each other, a delayed tip re-opens the case, and a group
 confrontation resolves it.
 
-Authoring notes only — this file is not packed into the released zip. For the package format, the
-build commands and the release procedure see
+Authoring notes for this one package — not packed into the released zip. For how to write, playtest
+and release a package see the authoring guide at [`stories/README.md`](../README.md); for the format
+itself and the build mechanics see
 [`docs/arc42` §8.1](../../docs/arc42/08-crosscutting-concepts.md#81-content-package-format) and
 [§7.3](../../docs/arc42/07-deployment-view.md#73-story-package-build-and-release).
 

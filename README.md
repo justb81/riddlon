@@ -59,7 +59,7 @@ npm run preview  # serve the production build locally
 
 ```
 src/                  # the Player PWA — see docs/arc42 §5
-stories/              # authored story packages, released independently — see docs/arc42 §7.3
+stories/              # authored story packages — see stories/README.md and docs/arc42 §7.3
 scripts/              # story validation, packing and playtest tooling
 docs/arc42/           # the architecture documentation
 docs/design/          # the Claude Design pixel reference — see docs/arc42 §8.7

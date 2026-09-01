@@ -97,17 +97,13 @@ byte-identically — so editing a package's `README.md`, which is never packed, 
 Story versions follow semver against the _story_, not the app: patch for typo and tuning fixes,
 minor for added scenes or clues, major for a change that would invalidate an existing savegame.
 
-### Adding a story
+### Authoring procedure
 
-1. `mkdir stories/<slug>` and write the package files (see
-   [§8.1](./08-crosscutting-concepts.md#81-content-package-format)). `manifest.id` must be a fresh
-   UUIDv4 — generate one, never copy another package's.
-2. Character UUIDs are stable and global: reuse an existing character's UUID to have the player's
-   library recognise them across stories, and mint a new one otherwise.
-3. Run `npm run stories:validate` until clean. Optionally add a `walkthrough.json` and run
-   `npm run story:playtest -- stories/<slug>` to confirm the graph is actually reachable — the
-   validator alone will not tell you that.
-4. Open a pull request. CI validates it; merging to `main` releases it.
+The step-by-step guide for writing a new package — directory layout, id minting, the mistakes that
+validate cleanly and then fail in play, the playtest workflow — is the task guide at
+[`stories/README.md`](../../stories/README.md). It is kept next to the content it describes rather
+than here, and links back to this chapter and to
+[§8.1](./08-crosscutting-concepts.md#81-content-package-format) for the normative detail.
 
 ## 7.4 Local Development
 
