@@ -26,11 +26,19 @@ const STORIES_DIR = path.join(ROOT, 'stories');
 
 /**
  * Repo-facing files that document/exercise a package for contributors but aren't part of it.
- * `walkthrough.json` is `scripts/playtest-story.mjs`'s scripted step list (see that file) —
+ * A `walkthrough*.json` is `scripts/playtest-story.mjs`'s scripted step list (see that file) —
  * authoring-only, same as `README.md`, and read straight off disk rather than through the
- * manifest, so it never needs a `manifest.world` entry.
+ * manifest, so it never needs a `manifest.world` entry. The prefix match covers the per-branch
+ * walkthroughs a branching story needs (`walkthrough-false-accusation.json`), which must not end
+ * up in the shipped zip either.
  */
-const NOT_PACKAGE_CONTENT = new Set(['README.md', 'walkthrough.json', '.DS_Store']);
+const NOT_PACKAGE_CONTENT = new Set(['README.md', '.DS_Store']);
+
+function isPackageContent(relativePath) {
+	const name = path.basename(relativePath);
+	if (NOT_PACKAGE_CONTENT.has(name)) return false;
+	return !(name.startsWith('walkthrough') && name.endsWith('.json'));
+}
 
 /** Generated per build (see `checksums()`), so a stale copy on disk is never shipped. */
 const CHECKSUMS_PATH = 'signatures/checksums.json';
@@ -54,7 +62,7 @@ async function listFiles(dir, prefix = '') {
 	const files = [];
 	for (const entry of entries) {
 		const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-		if (NOT_PACKAGE_CONTENT.has(relative)) continue;
+		if (!isPackageContent(relative)) continue;
 		if (entry.isDirectory()) files.push(...(await listFiles(path.join(dir, entry.name), relative)));
 		else files.push(relative);
 	}

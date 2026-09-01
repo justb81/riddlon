@@ -24,7 +24,8 @@ export function secondPackageManifest(): Manifest {
 		world: [],
 		assetsBase: 'assets/',
 		minPlayerVersion: '0.1.0',
-		capabilities: []
+		capabilities: [],
+		tags: []
 	};
 }
 

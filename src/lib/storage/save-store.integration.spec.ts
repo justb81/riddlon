@@ -27,6 +27,28 @@ describe('saveStore (real IndexedDB via fake-indexeddb)', () => {
 		expect(reloaded).toEqual(created);
 	});
 
+	it("writes the package's seed history into a new save, and keeps it across a reload (#30)", async () => {
+		const { saveStore } = await import('./save-store.js');
+		const seed = [
+			{
+				id: 'seed-1',
+				sceneId: 'scene-max',
+				from: 'max',
+				text: 'Kommst du am Samstag mit?',
+				sentAt: '2026-02-27T12:00:00.000Z',
+				seed: true
+			}
+		];
+		const created = await saveStore.createForPackage('package-a', seed);
+		expect(created?.chatHistory).toEqual(seed);
+
+		const { resetDbConnectionForTests } = await import('./db.js');
+		await resetDbConnectionForTests();
+		const reloaded = await saveStore.get(created!.id);
+		// Installed content, not a runtime artifact — it must not need re-seeding on every open.
+		expect(reloaded?.chatHistory).toEqual(seed);
+	});
+
 	it('appends chat messages and merges flag updates without clobbering unrelated flags', async () => {
 		const { saveStore } = await import('./save-store.js');
 		const save = await saveStore.createForPackage('package-a');

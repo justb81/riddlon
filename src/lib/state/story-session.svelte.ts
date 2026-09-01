@@ -23,6 +23,8 @@ import {
 import { isLlmError } from '$lib/llm/errors.js';
 import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
 import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
+import { formatMessageTimestamp } from '$lib/story/message-time.js';
+import { t } from '$lib/i18n/i18n.svelte.js';
 import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
 import {
 	isCharacterSpeaker,
@@ -38,17 +40,14 @@ import { profile } from './profile.svelte.js';
  *  a 3B model still answers with JSON. */
 const DIRECTOR_WINDOW = 6;
 
-function nowTime(sentAt: string): string {
-	const d = new Date(sentAt);
-	return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-}
-
 function toChatMessage(message: SaveChatMessage): ChatMessage {
 	return {
 		id: message.id,
 		from: message.from,
 		text: message.text,
-		time: nowTime(message.sentAt),
+		// Date-aware, because a thread can carry authored history days older than this session
+		// (#30) — see `story/message-time.ts`.
+		time: formatMessageTimestamp(message.sentAt, { yesterdayLabel: t('convo.yesterday') }),
 		sentAt: message.sentAt,
 		clueId: message.clueId
 	};
@@ -158,7 +157,9 @@ class StorySession {
 		// Claimed before anything else awaits, so a second call can't load the same save twice.
 		this.#loadedSaveId = saveId;
 		this.history = existing.chatHistory;
-		this.#openedScenes = new Set(existing.chatHistory.map((m) => m.sceneId));
+		// Seed messages are authored history, not a scene the player has already been greeted in —
+		// counting them would make `openThread` skip the character's actual first message (#30).
+		this.#openedScenes = new Set(existing.chatHistory.filter((m) => !m.seed).map((m) => m.sceneId));
 		this.#busyScenes.clear();
 		this.typingSceneIds = [];
 		this.errorCode = null;
@@ -284,7 +285,8 @@ class StorySession {
 		const declaredScene = {
 			goals: scene.goals,
 			exitConditions: this.#exitConditionsFor(sceneId),
-			revealables: this.#revealablesFor(sceneId)
+			revealables: this.#revealablesFor(sceneId),
+			outcomeConditions: this.#outcomeConditionsFor(sceneId)
 		};
 		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
 
@@ -411,6 +413,13 @@ class StorySession {
 
 	#exitConditionsFor(sceneId: string): string[] {
 		return [...(this.#sceneNode(sceneId)?.exitConditions ?? [])];
+	}
+
+	/** A group scene's own outcome conditions — see `settableFlags` on why they are settable. */
+	#outcomeConditionsFor(sceneId: string): string[] {
+		const node = this.#sceneNode(sceneId);
+		if (node?.type !== 'group-chat-scene') return [];
+		return node.outcomes.map((outcome) => outcome.condition);
 	}
 
 	#revealablesFor(sceneId: string): string[] {

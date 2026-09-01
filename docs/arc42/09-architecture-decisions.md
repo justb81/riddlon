@@ -157,9 +157,9 @@ dependable cross-platform way to run exactly-timed background work in a purely l
 evaluated on the next app open, resume or foreground. Firing is sticky.
 
 **Consequences.** Timing is approximate by contract, and the format says so. Dramaturgy must not
-depend on exact timing or on a notification being delivered. A story can express "the window has
-elapsed" but not, today, "nudge the player _if_ they haven't replied" — see
-[§11](./11-risks-and-technical-debt.md).
+depend on exact timing or on a notification being delivered. The condition is re-checked at due time
+so a revocable condition works too — see
+[ADR 16](#adr-16-a-delayed-event-is-dropped-not-re-armed-by-default).
 
 ## ADR 13: Story content lives outside the app and releases separately
 
@@ -225,3 +225,45 @@ device capabilities it took solely to gate the Gemini tier. Quality goals
 [§1.2](./01-introduction-and-goals.md#12-quality-goals) 1 and 2 are reworded: offline capability now
 holds for the local backends, and local inference is "preferred where the device allows" rather than
 the default mode everywhere.
+
+## ADR 16: A delayed event is dropped, not re-armed, by default
+
+**Context.** An event used to be committed the moment its condition first held: `fireDueEvents()`
+checked only the due date, so nothing could call a pending event off. Any beat of the form "follow up
+_unless_ the player has done X since" was unexpressible, and the reference story's "no reaction yet"
+nudge therefore shipped with the weaker meaning "the nudge window has elapsed", leaving the decision
+to send to presentation code — exactly the split [§1.2](./01-introduction-and-goals.md) wants to
+avoid. Re-checking the condition at due time is what
+[ADR 12](#adr-12-delayed-events-are-opportunistic-due-dates) always implied; what it does _not_
+settle is what happens to an event whose condition went false.
+
+**Decision.** Re-evaluate the condition at due time and let the package choose, via
+`onDueConditionFalse`, between `drop` (abandoned for good) and `rearm` (forgotten rather than fired,
+so it can arm again later with a fresh delay). Default to `drop`. The two are observably different —
+"nudge unless they replied" wants drop, "remind them when they go idle again" wants re-arm — so
+neither may be baked in silently; a default is still needed, and a stale event firing late and
+unconditionally is the behaviour nobody asked for.
+
+**Consequences.** The fire-once guarantee is unchanged: a dropped event is marked fired, and a
+re-armed one is re-armed by `armDueEvents()` like any other, which means its delay is counted from
+the moment the condition holds again rather than from the original arming. A `delayed-event-cancelled`
+effect makes the distinction visible to the UI and to `story:playtest`, since a silently missing
+event looks exactly like a bug in the graph.
+
+## ADR 17: Seed chats live in the savegame
+
+**Context.** A story unlocks contacts as the plot needs them, and an empty thread is a strong tell
+that a contact was just spawned. Authored history fixes that, but it has to live somewhere: engine
+state, a presentation-only overlay, or the chat log itself.
+
+**Decision.** Materialize a package's `seedChats` into the savegame's `chatHistory` once, when the
+playthrough's save is created, marked with `seed: true`.
+
+**Consequences.** Seed history survives a reload for the same reason the rest of the conversation
+does, with no second code path and no re-seeding on every open — it is installed content, not a
+runtime artifact, and the engine never needs to know it exists. The marker is load-bearing: "which
+scenes have already been opened" is derived from the chat log, and counting a seed message there
+would suppress that character's first real message forever. Two costs are accepted: a save created
+before a package update carries that version's seed history for good (package updates are an open
+gap, [§11.1](./11-risks-and-technical-debt.md)), and seed messages are part of the director's
+context window like any other history.

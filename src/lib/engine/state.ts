@@ -38,6 +38,9 @@ export interface EngineState {
 	unlockedCharacterIds: Set<string>;
 	clues: Record<string, ClueRuntimeState>;
 	pendingDelayedEvents: PendingDelayedEventState[];
+	/** Achievements whose `conditions` have held at least once — sticky, so an achievement is
+	 *  earned exactly once and a later state change never takes it back (#32). */
+	earnedAchievementIds: Set<string>;
 }
 
 /** Every mutation the engine can produce — the sole contract `ui/` and `llm/` observe. */
@@ -50,8 +53,12 @@ export type EngineEffect =
 	| { type: 'clue-recorded'; clueId: string; characterId: string; value: string }
 	| { type: 'clue-conflict-detected'; clueId: string }
 	| { type: 'clue-resolved'; clueId: string }
+	| { type: 'achievement-earned'; achievementId: string }
 	| { type: 'delayed-event-armed'; eventId: string; dueAt: string }
-	| { type: 'delayed-event-fired'; eventId: string; action: EngineAction | undefined };
+	| { type: 'delayed-event-fired'; eventId: string; action: EngineAction | undefined }
+	/** Came due while its `condition` no longer held (#33). `rearmed` distinguishes the two
+	 *  authored reactions: dropped for good, or put back to pending for a later resume. */
+	| { type: 'delayed-event-cancelled'; eventId: string; rearmed: boolean };
 
 /** Fresh state for a newly-started playthrough — every clue in the bundle starts with no claims. */
 export function createInitialState(bundle: StoryBundle): EngineState {
@@ -67,7 +74,8 @@ export function createInitialState(bundle: StoryBundle): EngineState {
 		reachedOutcomeIds: new Set(),
 		unlockedCharacterIds: new Set(),
 		clues,
-		pendingDelayedEvents: []
+		pendingDelayedEvents: [],
+		earnedAchievementIds: new Set()
 	};
 }
 

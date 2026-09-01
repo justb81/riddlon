@@ -50,6 +50,10 @@ export interface LibraryCharacterRecord extends CharacterIdentity {
 export interface SaveChatMessage {
 	id: string;
 	sceneId: string;
+	/** Authored history installed with the package rather than a message from this playthrough
+	 *  (#30). Seed messages must not count as "this scene already opened", or a seeded contact
+	 *  would never send their first real message — see `story-session.svelte.ts`. */
+	seed?: boolean;
 	/** `me`, `system`, or a character UUID from the package's cast. */
 	from: string;
 	text: string;
@@ -96,6 +100,9 @@ export interface SaveRecord {
 	pendingDelayedEvents: PendingDelayedEvent[];
 	/** Added for #8; absent on records written before clue tracking existed. */
 	clueStates: ClueStateRecord[];
+	/** Achievement ids already earned this playthrough (#32); absent on older records. Sticky,
+	 *  so the `achievement-earned` effect never re-fires on a resume. */
+	earnedAchievementIds: string[];
 }
 
 export interface PlayerProfileRecord extends PlayerProfile {

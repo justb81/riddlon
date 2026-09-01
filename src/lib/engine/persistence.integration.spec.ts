@@ -82,6 +82,7 @@ describe('stateFromSaveRecord', () => {
 		expect(state.unlockedCharacterIds).toEqual(new Set());
 		expect(state.clues).toEqual({});
 		expect(state.pendingDelayedEvents).toEqual([]);
+		expect(state.earnedAchievementIds).toEqual(new Set());
 		expect(state.flags).toEqual({ 'flag:a': true });
 	});
 });

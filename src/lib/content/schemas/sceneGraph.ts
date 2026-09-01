@@ -22,6 +22,24 @@ const baseSceneFields = {
 	relevantSecretIds: z.array(symbolicRefSchema).optional()
 };
 
+/**
+ * One authored ending of a group scene (docs/arc42 §8.1.7). `condition` is what the engine
+ * evaluates; the rest is what the celebration screen shows instead of an authoring slug (#55).
+ * `tone` exists because reaching an outcome is not automatically good news — a story that lets
+ * the player accuse the wrong person needs that ending to read as a setback, not as confetti.
+ */
+export const sceneOutcomeSchema = z.object({
+	id: symbolicRefSchema,
+	condition: symbolicRefSchema,
+	/** Player-facing name of this ending. Falls back to `id` in the UI when absent. */
+	label: z.string().min(1).optional(),
+	/** The closing paragraph for this ending — the one moment that deserves authored words. */
+	closingText: z.string().min(1).optional(),
+	tone: z.enum(['success', 'setback']).default('success')
+});
+
+export type SceneOutcome = z.infer<typeof sceneOutcomeSchema>;
+
 /** docs/arc42 §8.1.4 */
 export const chatSceneSchema = z.object({
 	...baseSceneFields,
@@ -36,7 +54,7 @@ export const groupChatSceneSchema = z.object({
 	...baseSceneFields,
 	type: z.literal('group-chat-scene'),
 	playerRole: z.string().min(1),
-	outcomes: z.array(z.object({ id: symbolicRefSchema, condition: symbolicRefSchema })).default([])
+	outcomes: z.array(sceneOutcomeSchema).default([])
 });
 
 export const sceneNodeSchema = z.discriminatedUnion('type', [

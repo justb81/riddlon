@@ -98,29 +98,39 @@ export interface AchievementDisplay {
 	label: string;
 	description?: string;
 	earned: boolean;
+	/** Whether the package says when this achievement is earned at all (`conditions` non-empty). */
+	awardable: boolean;
 }
 
 /**
- * The package's declared achievements, all unearned.
+ * The package's declared achievements with what the engine has actually awarded (#32).
  *
- * This is not a stub: `achievementSchema` is id/label/description only, so a package can *name*
- * an achievement but cannot say when it is earned (#32) — and achievement ids and outcome ids
- * are separate namespaces, so they cannot be matched up either. Reporting them all as open is
- * the only honest reading of the data, and it is strictly better than the old behaviour, which
- * evaluated conditions the app had invented on the story's behalf.
+ * `earned` comes from `EngineState.earnedAchievementIds` — evaluated by `engine/graph.ts` from
+ * the package's own `conditions`, never by this layer: the app must not decide on a story's
+ * behalf when its endings are reached, which is what the deleted demo module used to do.
+ * `awardable` is false for an achievement that declares no conditions, so a screen can say
+ * "this one is decoration" instead of showing an eternally open checkbox.
  */
-export function achievementDisplays(bundle: StoryBundle): AchievementDisplay[] {
+export function achievementDisplays(bundle: StoryBundle, state: EngineState): AchievementDisplay[] {
 	return bundle.story.achievements.map((achievement) => ({
 		id: achievement.id,
 		label: achievement.label,
 		description: achievement.description,
-		earned: false
+		earned: state.earnedAchievementIds.has(achievement.id),
+		awardable: achievement.conditions.length > 0
 	}));
 }
 
 export interface ReachedOutcome {
 	id: string;
 	sceneId: string;
+	/** Authored ending name; falls back to the raw outcome id, which is an authoring slug. */
+	label: string;
+	/** The authored closing paragraph, when the package ships one (#55). */
+	closingText?: string;
+	/** Whether this ending is a win or a setback — the celebration screen must not throw confetti
+	 *  at a player who just accused the wrong person. */
+	tone: 'success' | 'setback';
 }
 
 /**
@@ -134,7 +144,13 @@ export function reachedOutcomes(bundle: StoryBundle, state: EngineState): Reache
 		if (node.type !== 'group-chat-scene') continue;
 		for (const outcome of node.outcomes) {
 			if (state.reachedOutcomeIds.has(outcome.id)) {
-				reached.push({ id: outcome.id, sceneId: node.id });
+				reached.push({
+					id: outcome.id,
+					sceneId: node.id,
+					label: outcome.label ?? outcome.id,
+					closingText: outcome.closingText,
+					tone: outcome.tone
+				});
 			}
 		}
 	}

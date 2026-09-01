@@ -19,6 +19,7 @@ import {
 } from '$lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
 import { isClueConflicting } from './clues.js';
 import { StoryEngine } from './engine.js';
+import { saveRecordPatchFromState, stateFromSaveRecord } from './persistence.js';
 
 const PACKAGE_ID = '11111111-1111-4111-8111-111111111111';
 const MAX_ID = '33333333-3333-4333-8333-333333333333';
@@ -40,7 +41,8 @@ function makeTestBundle(): StoryBundle {
 			world: [],
 			assetsBase: 'assets/',
 			minPlayerVersion: '0.1.0',
-			capabilities: []
+			capabilities: [],
+			tags: []
 		},
 		story: {
 			castBindings: [
@@ -59,9 +61,11 @@ function makeTestBundle(): StoryBundle {
 					trigger: 'time-based',
 					approxDelay: 'PT1H',
 					condition: 'flag:max-unlocked',
-					action: 'unlock-scene:scene-followup'
+					action: 'unlock-scene:scene-followup',
+					onDueConditionFalse: 'drop'
 				}
-			]
+			],
+			seedChats: []
 		},
 		graph: {
 			nodes: [
@@ -290,5 +294,133 @@ describe('walkthrough: docs/arc42 §1.3 "Lucys Portmonnaie" end-to-end (#7, #8, 
 			outcomeId: 'max-confesses'
 		});
 		expect(engine.progress().reachedOutcomeIds).toEqual(['max-confesses']);
+	});
+});
+
+/**
+ * #39: the reference story's "Ohne Falschbeschuldigung gelöst" was correct-but-vacuous while no
+ * content path could set `flag:false-accusation`. Both branches of the shipped package are played
+ * here, so the achievement's negative case is a real one.
+ */
+describe('walkthrough: the wrong-accusation branch (#39)', () => {
+	/** Flag order of the shipped walkthrough, up to and including the group chat unlocking. */
+	const UP_TO_GROUP_CHAT = [
+		'flag:lucy-identified',
+		'flag:witnesses-named',
+		'flag:max-questioned',
+		'flag:sabine-questioned',
+		'flag:report-to-lucy-done',
+		'flag:suspicion-relayed',
+		'flag:max-denies-hans-claim',
+		'flag:sabine-confirms-hans-claim',
+		'flag:hans-info-confirmed'
+	];
+
+	function achievementIdByLabelPrefix(engine: StoryEngine, prefix: string): string {
+		const achievement = engine.bundle.story.achievements.find((candidate) =>
+			candidate.label.startsWith(prefix)
+		);
+		if (!achievement) throw new Error(`no achievement labelled "${prefix}…" in the package`);
+		return achievement.id;
+	}
+
+	function playToGroupChat(): StoryEngine {
+		let now = 1_700_000_000_000;
+		const engine = makeWalkthroughEngine(() => now);
+		for (const flag of UP_TO_GROUP_CHAT) {
+			// The evidence gate needs two independent sources on the time window before the first
+			// report scene completes, same as the scripted walkthrough.
+			if (flag === 'flag:report-to-lucy-done') {
+				engine.recordClueClaim('clue:time-window', WALKTHROUGH_MAX_ID, 'gegen 22 Uhr', now);
+				engine.recordClueClaim('clue:time-window', WALKTHROUGH_SABINE_ID, 'gegen Mitternacht', now);
+			}
+			engine.setFlag(flag, now);
+			if (flag === 'flag:report-to-lucy-done') {
+				now += 3 * HOUR_MS;
+				engine.resume(now);
+			}
+		}
+		return engine;
+	}
+
+	it('earns "Ohne Falschbeschuldigung" on the clean path', () => {
+		const engine = playToGroupChat();
+		const clean = achievementIdByLabelPrefix(engine, 'Ohne Falsch');
+
+		const effects = engine.setFlag('flag:evidence-presented');
+
+		expect(effects).toContainEqual({ type: 'achievement-earned', achievementId: clean });
+	});
+
+	it('withholds it when the player accused the wrong person, but still solves the case', () => {
+		const engine = playToGroupChat();
+		const clean = achievementIdByLabelPrefix(engine, 'Ohne Falsch');
+		const solved = achievementIdByLabelPrefix(engine, 'Fall gelöst');
+
+		// The accusation is its own authored ending — a setback, not the end of the story.
+		const accusation = engine.setFlag('flag:false-accusation');
+		expect(accusation).toContainEqual({
+			type: 'outcome-reached',
+			sceneId: SCENE_GROUP_CONFRONTATION,
+			outcomeId: 'false-accusation-made'
+		});
+
+		const effects = engine.setFlag('flag:evidence-presented');
+		expect(effects).toContainEqual({
+			type: 'outcome-reached',
+			sceneId: SCENE_GROUP_CONFRONTATION,
+			outcomeId: 'max-confesses'
+		});
+		expect(engine.state.earnedAchievementIds.has(solved)).toBe(true);
+		expect(engine.state.earnedAchievementIds.has(clean)).toBe(false);
+	});
+});
+
+/** #32's fire-once-across-reloads requirement, through the real save round-trip. */
+describe('StoryEngine — earned achievements survive a reload', () => {
+	const ACHIEVEMENT = '88888888-8888-4888-8888-888888888888';
+
+	function withAchievement(): StoryBundle {
+		const bundle = makeTestBundle();
+		return {
+			...bundle,
+			story: {
+				...bundle.story,
+				achievements: [
+					{ id: ACHIEVEMENT, label: 'Kontakt gefunden', conditions: ['flag:max-unlocked'] }
+				]
+			}
+		};
+	}
+
+	it('awards once, then resumes from the save without re-emitting the effect', () => {
+		const bundle = withAchievement();
+		const engine = new StoryEngine(bundle, { clock: () => 0 });
+
+		expect(engine.setFlag('flag:max-unlocked')).toContainEqual({
+			type: 'achievement-earned',
+			achievementId: ACHIEVEMENT
+		});
+
+		const patch = saveRecordPatchFromState(engine.state);
+		expect(patch.earnedAchievementIds).toEqual([ACHIEVEMENT]);
+
+		const resumed = new StoryEngine(bundle, {
+			clock: () => 0,
+			state: stateFromSaveRecord({
+				id: 'save-1',
+				packageId: bundle.manifest.id,
+				createdAt: '2026-01-01T00:00:00.000Z',
+				updatedAt: '2026-01-01T00:00:00.000Z',
+				chatHistory: [],
+				...patch
+			})
+		});
+
+		expect(resumed.state.earnedAchievementIds.has(ACHIEVEMENT)).toBe(true);
+		expect(resumed.resume()).not.toContainEqual({
+			type: 'achievement-earned',
+			achievementId: ACHIEVEMENT
+		});
 	});
 });

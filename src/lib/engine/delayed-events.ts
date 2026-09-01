@@ -14,6 +14,10 @@ import {
  * an event is "armed" (a due-date is persisted) the moment its `condition` first holds, and
  * only ever checked opportunistically via `fireDueEvents` on app open/resume. No
  * setTimeout, no service-worker background sync.
+ *
+ * The condition is checked twice: once to arm, and again when the event comes due (#33). Arming
+ * alone used to commit the event, which made "follow up *unless* the player has since done X"
+ * unexpressible — the nudge fired regardless.
  */
 
 /** Arms every `delayedEvents[]` entry whose condition now holds and isn't already armed. */
@@ -38,8 +42,18 @@ export function armDueEvents(state: EngineState, bundle: StoryBundle, now: numbe
 }
 
 /**
- * Fires every armed event whose `dueAt` has elapsed and that hasn't fired yet — the
- * fire-once guarantee #9 requires. Applies the event's action directly to `state`.
+ * Fires every armed event whose `dueAt` has elapsed, that hasn't fired yet, and whose
+ * `condition` still holds — the fire-once guarantee #9 requires, plus #9's own second
+ * requirement that the condition be true *at fire time* (#33).
+ *
+ * An event that comes due with a false condition follows its authored `onDueConditionFalse`:
+ * `drop` marks it fired without applying the action, so it can never come back; `rearm` forgets
+ * the pending entry, which lets `armDueEvents` arm it again — with a fresh delay counted from
+ * the moment the condition holds once more, i.e. "remind them when they go idle again" rather
+ * than "fire the instant they do".
+ *
+ * The context is rebuilt per event on purpose: one event's action can set a flag another
+ * event's condition reads, and a stale context would judge that one against pre-fire state.
  */
 export function fireDueEvents(
 	state: EngineState,
@@ -47,16 +61,34 @@ export function fireDueEvents(
 	now: number
 ): EngineEffect[] {
 	const effects: EngineEffect[] = [];
+	const rearmedEventIds = new Set<string>();
 
 	for (const pending of state.pendingDelayedEvents) {
 		if (pending.fired) continue;
 		if (new Date(pending.dueAt).getTime() > now) continue;
 
-		pending.fired = true;
 		const definition = bundle.story.delayedEvents.find((event) => event.id === pending.eventId);
+		if (
+			definition &&
+			!evaluateCondition(definition.condition, buildEvaluationContext(state, bundle))
+		) {
+			const rearmed = definition.onDueConditionFalse === 'rearm';
+			if (rearmed) rearmedEventIds.add(pending.eventId);
+			else pending.fired = true;
+			effects.push({ type: 'delayed-event-cancelled', eventId: pending.eventId, rearmed });
+			continue;
+		}
+
+		pending.fired = true;
 		const action = definition ? parseAction(definition.action) : undefined;
 		if (action) effects.push(...applyEngineAction(state, action));
 		effects.push({ type: 'delayed-event-fired', eventId: pending.eventId, action });
+	}
+
+	if (rearmedEventIds.size > 0) {
+		state.pendingDelayedEvents = state.pendingDelayedEvents.filter(
+			(pending) => !rearmedEventIds.has(pending.eventId)
+		);
 	}
 
 	return effects;

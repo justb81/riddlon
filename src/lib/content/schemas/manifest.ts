@@ -16,7 +16,14 @@ export const manifestSchema = z.object({
 	world: z.array(z.string().min(1)).default([]),
 	assetsBase: z.string().min(1),
 	minPlayerVersion: semverSchema,
-	capabilities: z.array(z.string()).default([])
+	capabilities: z.array(z.string()).default([]),
+	/**
+	 * Free-form classification shown on the library card and the case file (#53). A list rather
+	 * than a single `genre`, because a single one immediately wants to be two, and because it is
+	 * the obvious sort/filter key once a library holds more than one story. Authored content, so
+	 * the strings are in the package's own `language` and never translated by the app.
+	 */
+	tags: z.array(z.string().min(1)).default([])
 });
 
 export type Manifest = z.infer<typeof manifestSchema>;

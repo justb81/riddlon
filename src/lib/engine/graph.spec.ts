@@ -54,7 +54,8 @@ function makeTestBundle(): StoryBundle {
 			world: [],
 			assetsBase: 'assets/',
 			minPlayerVersion: '0.1.0',
-			capabilities: []
+			capabilities: [],
+			tags: []
 		},
 		story: {
 			castBindings: [
@@ -78,7 +79,8 @@ function makeTestBundle(): StoryBundle {
 				}
 			],
 			achievements: [],
-			delayedEvents: []
+			delayedEvents: [],
+			seedChats: []
 		},
 		graph: {
 			nodes: [
@@ -117,7 +119,7 @@ function makeTestBundle(): StoryBundle {
 					exitConditions: [],
 					revealables: [],
 					playerRole: 'confront',
-					outcomes: [{ id: 'max-confesses', condition: 'flag:confession-done' }]
+					outcomes: [{ id: 'max-confesses', condition: 'flag:confession-done', tone: 'success' }]
 				}
 			]
 		},
@@ -296,5 +298,98 @@ describe('progress', () => {
 		// claims themselves are never dropped (see `clues.ts`).
 		expect(resolved.openContradictionCount).toBe(0);
 		expect(resolved.knownClueCount).toBe(1);
+	});
+});
+
+/** #32: an achievement is earned when its own `conditions` hold, and never by app-side guesswork. */
+describe('recompute — earned achievements', () => {
+	const ACHIEVEMENT_SOLVED = '88888888-8888-4888-8888-888888888888';
+	const ACHIEVEMENT_CLEAN = '99999999-9999-4999-8999-999999999999';
+	const ACHIEVEMENT_DECORATIVE = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+	function withAchievements(bundle: StoryBundle): StoryBundle {
+		return {
+			...bundle,
+			story: {
+				...bundle.story,
+				achievements: [
+					{
+						id: ACHIEVEMENT_SOLVED,
+						label: 'Fall gelöst',
+						conditions: ['outcome-reached:max-confesses']
+					},
+					{
+						id: ACHIEVEMENT_CLEAN,
+						label: 'Ohne Falschbeschuldigung',
+						conditions: ['outcome-reached:max-confesses', 'not:flag:false-accusation']
+					},
+					{ id: ACHIEVEMENT_DECORATIVE, label: 'Nur benannt', conditions: [] }
+				]
+			}
+		};
+	}
+
+	/** Everything the group scene needs to unlock and reach `max-confesses`. */
+	function solve(state: ReturnType<typeof createInitialState>): void {
+		state.flags['flag:max-unlocked'] = true;
+		state.flags['flag:max-questioned'] = true;
+		state.flags['flag:report-done'] = true;
+		state.flags['flag:confession-done'] = true;
+	}
+
+	it('awards an achievement in the same pass that reaches the outcome it depends on', () => {
+		const bundle = withAchievements(makeTestBundle());
+		const state = createInitialState(bundle);
+		solve(state);
+
+		const effects = recompute(state, bundle);
+
+		expect(effects).toEqual(
+			expect.arrayContaining([
+				{ type: 'outcome-reached', sceneId: SCENE_GROUP, outcomeId: 'max-confesses' },
+				{ type: 'achievement-earned', achievementId: ACHIEVEMENT_SOLVED },
+				{ type: 'achievement-earned', achievementId: ACHIEVEMENT_CLEAN }
+			])
+		);
+		expect(state.earnedAchievementIds.has(ACHIEVEMENT_SOLVED)).toBe(true);
+	});
+
+	it('withholds a multi-condition achievement whose negative condition was violated', () => {
+		const bundle = withAchievements(makeTestBundle());
+		const state = createInitialState(bundle);
+		solve(state);
+		state.flags['flag:false-accusation'] = true;
+
+		recompute(state, bundle);
+
+		expect(state.earnedAchievementIds.has(ACHIEVEMENT_SOLVED)).toBe(true);
+		expect(state.earnedAchievementIds.has(ACHIEVEMENT_CLEAN)).toBe(false);
+	});
+
+	it('never awards an achievement that declares no conditions', () => {
+		const bundle = withAchievements(makeTestBundle());
+		const state = createInitialState(bundle);
+		solve(state);
+
+		recompute(state, bundle);
+
+		// `evaluateAll([])` is vacuously true, so this is the case that would otherwise be handed
+		// out at story start.
+		expect(state.earnedAchievementIds.has(ACHIEVEMENT_DECORATIVE)).toBe(false);
+	});
+
+	it('emits the effect once, and keeps the achievement earned when its condition stops holding', () => {
+		const bundle = withAchievements(makeTestBundle());
+		const state = createInitialState(bundle);
+		solve(state);
+		recompute(state, bundle);
+
+		const again = recompute(state, bundle);
+		expect(again.filter((effect) => effect.type === 'achievement-earned')).toEqual([]);
+
+		// A story could revoke a flag an achievement's condition reads; the award stays.
+		state.flags['flag:false-accusation'] = true;
+		recompute(state, bundle);
+		expect(state.earnedAchievementIds.has(ACHIEVEMENT_CLEAN)).toBe(true);
 	});
 });

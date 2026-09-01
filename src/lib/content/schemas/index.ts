@@ -7,5 +7,6 @@ export * from './clue.js';
 export * from './fact.js';
 export * from './secret.js';
 export * from './delayedEvent.js';
+export * from './seedChat.js';
 export * from './story.js';
 export * from './playerProfile.js';

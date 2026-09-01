@@ -6,6 +6,7 @@ import { storyGraphSchema } from './schemas/sceneGraph.js';
 import { cluesFileSchema, type Clue } from './schemas/clue.js';
 import { factsFileSchema, type Fact } from './schemas/fact.js';
 import { secretsFileSchema, type Secret } from './schemas/secret.js';
+import { SEED_CHAT_PLAYER_SPEAKER } from './schemas/seedChat.js';
 import { CURRENT_PLAYER_VERSION, SUPPORTED_FORMAT_MAJOR } from './player-version.js';
 import { compareSemver, parseSemver } from './semver.js';
 
@@ -121,6 +122,77 @@ function checkCharacterRefs<T>(
 			}
 		});
 	}
+}
+
+/**
+ * Strips any number of `not:` wrappers, so a condition is checked by what it actually names.
+ * Mirrors `engine/conditions.ts`'s recursion into `not:`.
+ */
+function unwrapNegation(ref: string): string {
+	let current = ref;
+	while (current.startsWith('not:')) current = current.slice('not:'.length);
+	return current;
+}
+
+/**
+ * Reports conditions that name a package entity which does not exist — a condition whose
+ * referent is missing can never become true, so the achievement or ending hanging off it is
+ * silently unreachable (#32).
+ *
+ * Prefixes this player does not know are deliberately *not* reported: `engine/conditions.ts`
+ * treats an unknown prefix as `false` rather than throwing precisely so a newer package stays
+ * installable, and failing validation here would undo that.
+ */
+function checkConditionRefs(
+	conditions: readonly string[],
+	pathPrefix: string,
+	known: {
+		sceneIds: ReadonlySet<string>;
+		clueIds: ReadonlySet<string>;
+		secretIds: ReadonlySet<string>;
+		outcomeIds: ReadonlySet<string>;
+	},
+	errors: PackageValidationError[]
+): void {
+	conditions.forEach((rawRef, index) => {
+		const ref = unwrapNegation(rawRef);
+		const colonIndex = ref.indexOf(':');
+		if (colonIndex === -1) return;
+		const prefix = ref.slice(0, colonIndex);
+		const rest = ref.slice(colonIndex + 1);
+
+		let missing: string | undefined;
+		switch (prefix) {
+			case 'scene-unlocked':
+			case 'scene-completed':
+				if (!known.sceneIds.has(rest)) missing = `scene "${rest}"`;
+				break;
+			case 'clue-known':
+			case 'clue-resolved':
+				if (!known.clueIds.has(rest)) missing = `clue "${rest}"`;
+				break;
+			case 'clue-confirmed': {
+				// "clue-confirmed:<clueId>:<count>" — the count is the last segment.
+				const lastColon = rest.lastIndexOf(':');
+				const clueId = lastColon === -1 ? rest : rest.slice(0, lastColon);
+				if (!known.clueIds.has(clueId)) missing = `clue "${clueId}"`;
+				break;
+			}
+			case 'secret-revealed':
+				if (!known.secretIds.has(rest)) missing = `secret "${rest}"`;
+				break;
+			case 'outcome-reached':
+				if (!known.outcomeIds.has(rest)) missing = `outcome "${rest}"`;
+				break;
+		}
+		if (missing !== undefined) {
+			errors.push({
+				code: 'DANGLING_REFERENCE',
+				path: `${pathPrefix}/${index}`,
+				message: `condition "${rawRef}" references ${missing}, which this package does not declare`
+			});
+		}
+	});
 }
 
 /**
@@ -352,6 +424,78 @@ export function validatePackage(
 		parsedCharacterIds,
 		errors
 	);
+
+	// Step 8: achievement + seed-chat integrity (docs/arc42 §8.1.6, §8.1.8).
+	const knownRefs = {
+		sceneIds: new Set(graph?.nodes.map((node) => node.id) ?? []),
+		clueIds: new Set(parsedClueFiles.flatMap((file) => file.data.map((clue) => clue.id))),
+		secretIds: new Set(parsedSecretFiles.flatMap((file) => file.data.map((secret) => secret.id))),
+		outcomeIds: new Set(
+			(graph?.nodes ?? []).flatMap((node) =>
+				node.type === 'group-chat-scene' ? node.outcomes.map((outcome) => outcome.id) : []
+			)
+		)
+	};
+
+	if (story) {
+		const achievementIds = new Set<string>();
+		story.achievements.forEach((achievement, index) => {
+			if (achievementIds.has(achievement.id)) {
+				errors.push({
+					code: 'DUPLICATE_ID',
+					path: `${manifest.entryStory}#/achievements/${index}/id`,
+					message: `achievement id "${achievement.id}" is declared more than once`
+				});
+			}
+			achievementIds.add(achievement.id);
+			checkConditionRefs(
+				achievement.conditions,
+				`${manifest.entryStory}#/achievements/${index}/conditions`,
+				knownRefs,
+				errors
+			);
+		});
+
+		const seededSceneIds = new Set<string>();
+		story.seedChats.forEach((seedChat, index) => {
+			const path = `${manifest.entryStory}#/seedChats/${index}`;
+			const node = graph?.nodes.find((candidate) => candidate.id === seedChat.sceneRef);
+			if (graph && !node) {
+				errors.push({
+					code: 'DANGLING_REFERENCE',
+					path: `${path}/sceneRef`,
+					message: `sceneRef "${seedChat.sceneRef}" does not match any scene id in this graph`
+				});
+			}
+			if (seededSceneIds.has(seedChat.sceneRef)) {
+				// Two histories for one thread would silently concatenate in authoring order —
+				// almost certainly a copy-paste slip rather than an intent.
+				errors.push({
+					code: 'DUPLICATE_ID',
+					path: `${path}/sceneRef`,
+					message: `scene "${seedChat.sceneRef}" already has a seed chat`
+				});
+			}
+			seededSceneIds.add(seedChat.sceneRef);
+
+			seedChat.messages.forEach((message, messageIndex) => {
+				if (message.from === SEED_CHAT_PLAYER_SPEAKER) return;
+				if (node && !node.participants.includes(message.from)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${path}/messages/${messageIndex}/from`,
+						message: `seed message is from character "${message.from}", who does not take part in scene "${seedChat.sceneRef}"`
+					});
+				} else if (!parsedCharacterIds.has(message.from)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${path}/messages/${messageIndex}/from`,
+						message: `seed message is from character "${message.from}" with no shipped character file`
+					});
+				}
+			});
+		});
+	}
 
 	return {
 		valid: errors.length === 0,

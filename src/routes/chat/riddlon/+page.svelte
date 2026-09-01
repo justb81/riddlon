@@ -153,6 +153,7 @@
 				title: pkg.title,
 				status: solved ? 'solved' : progress ? 'running' : 'unknown',
 				contactCount: pkg.characterIds.length,
+				tags: pkg.tags,
 				...(progress && total > 0
 					? { chapter: { current: Math.min(done + 1, total), total } }
 					: {}),
@@ -253,6 +254,16 @@
 									{/if}
 									{t('story.contactCount', { count: story.contactCount })}
 								</span>
+								{#if story.tags.length > 0}
+									<span class="mt-1.5 flex flex-wrap gap-1.5">
+										{#each story.tags as tag (tag)}
+											<span
+												class="rounded-full border border-line px-2 py-0.5 font-mono text-[9.5px] tracking-[0.06em] text-slate-400"
+												>{tag}</span
+											>
+										{/each}
+									</span>
+								{/if}
 								{#if story.progressPercent}
 									<span class="mt-2 block h-[3px] overflow-hidden rounded-full bg-slate-100/13">
 										<span class="block h-full bg-accent" style="width:{story.progressPercent}%"

@@ -159,3 +159,44 @@ describe('parseDirectorVerdict', () => {
 		});
 	});
 });
+
+/**
+ * A group scene ships no `exitConditions` on purpose (`engine/graph.ts` would otherwise complete
+ * it the moment it unlocks), so its outcome conditions are the only settable flags it has — and
+ * without them no authored ending in the reference story was reachable in play at all.
+ */
+describe('settableFlags — group-scene outcomes', () => {
+	it('lets the director set the flags a group scene’s outcomes are conditioned on', () => {
+		expect(
+			settableFlags({
+				goals: ['resolve-case'],
+				exitConditions: [],
+				revealables: [],
+				outcomeConditions: ['flag:evidence-presented', 'flag:false-accusation']
+			})
+		).toEqual(['flag:evidence-presented', 'flag:false-accusation']);
+	});
+
+	it('never makes a negated condition settable', () => {
+		expect(
+			settableFlags({
+				goals: [],
+				exitConditions: [],
+				revealables: [],
+				// "…and the player never wrongly accused anyone" must not be assertable by the model.
+				outcomeConditions: ['not:flag:false-accusation', 'clue-known:clue:time-window']
+			})
+		).toEqual([]);
+	});
+
+	it('merges exit conditions with outcome conditions without duplicating', () => {
+		expect(
+			settableFlags({
+				goals: [],
+				exitConditions: ['flag:done', 'scene-completed:x'],
+				revealables: [],
+				outcomeConditions: ['flag:done', 'flag:extra']
+			})
+		).toEqual(['flag:done', 'flag:extra']);
+	});
+});

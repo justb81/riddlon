@@ -8,6 +8,9 @@ import { buildEvaluationContext, type EngineEffect, type EngineState } from './s
  * §8.1.7). Loops because one scene's completion can unlock another whose `entryConditions`
  * reference `scene-unlocked:`/`scene-completed:`, so a single pass isn't always enough.
  *
+ * Earned achievements are part of the same fixed point: an achievement conditioned on
+ * `outcome-reached:` can only be judged after the outcome in the pass before it (#32).
+ *
  * A scene with zero `exitConditions` deliberately never auto-completes — `evaluateAll([])`
  * is vacuously true, which would otherwise instantly "complete" e.g. the group-confrontation
  * scene the moment it unlocks. Zero `entryConditions`, by contrast, correctly means "open
@@ -64,6 +67,17 @@ export function recompute(state: EngineState, bundle: StoryBundle): EngineEffect
 					}
 				}
 			}
+		}
+
+		for (const achievement of bundle.story.achievements) {
+			if (state.earnedAchievementIds.has(achievement.id)) continue;
+			// A package may declare an achievement without conditions; `evaluateAll([])` is
+			// vacuously true, so without this it would be awarded the moment the story starts.
+			if (achievement.conditions.length === 0) continue;
+			if (!evaluateAll(achievement.conditions, ctx).value) continue;
+			state.earnedAchievementIds.add(achievement.id);
+			effects.push({ type: 'achievement-earned', achievementId: achievement.id });
+			changed = true;
 		}
 	}
 
