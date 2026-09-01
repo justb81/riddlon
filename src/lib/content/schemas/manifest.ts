@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { semverSchema, uuidV4Schema } from './common.js';
 
-/** docs/concept.md §5.2 */
+/** docs/arc42 §8.1.2 */
 export const manifestSchema = z.object({
 	format: z.literal('chatstory-package'),
 	formatVersion: semverSchema,

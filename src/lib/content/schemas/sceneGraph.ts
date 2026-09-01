@@ -22,7 +22,7 @@ const baseSceneFields = {
 	relevantSecretIds: z.array(symbolicRefSchema).optional()
 };
 
-/** docs/concept.md §5.4 */
+/** docs/arc42 §8.1.4 */
 export const chatSceneSchema = z.object({
 	...baseSceneFields,
 	type: z.literal('chat-scene'),
@@ -31,7 +31,7 @@ export const chatSceneSchema = z.object({
 		.default([])
 });
 
-/** docs/concept.md §5.7 — same base shape, but `playerRole` + `outcomes` replace `next`. */
+/** docs/arc42 §8.1.7 — same base shape, but `playerRole` + `outcomes` replace `next`. */
 export const groupChatSceneSchema = z.object({
 	...baseSceneFields,
 	type: z.literal('group-chat-scene'),
@@ -45,6 +45,6 @@ export const sceneNodeSchema = z.discriminatedUnion('type', [
 ]);
 export type SceneNode = z.infer<typeof sceneNodeSchema>;
 
-/** story/graph.json's wrapper shape isn't given in docs/concept.md — designed as a flat node list. */
+/** story/graph.json's wrapper shape isn't given in docs/arc42 — designed as a flat node list. */
 export const storyGraphSchema = z.object({ nodes: z.array(sceneNodeSchema) });
 export type StoryGraph = z.infer<typeof storyGraphSchema>;

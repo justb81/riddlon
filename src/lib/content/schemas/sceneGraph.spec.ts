@@ -6,7 +6,7 @@ const TARGET_ID = 'd3e4f5a6-1c3d-4e5f-9a7b-0c1d2e3f4a5d';
 const MAX_ID = '8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e';
 
 describe('sceneNodeSchema', () => {
-	it('parses the docs/concept.md §5.4 chat-scene example', () => {
+	it('parses the docs/arc42 §8.1.4 chat-scene example', () => {
 		const result = sceneNodeSchema.safeParse({
 			id: SCENE_ID,
 			type: 'chat-scene',
@@ -20,7 +20,7 @@ describe('sceneNodeSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('parses the docs/concept.md §5.7 group-chat-scene example', () => {
+	it('parses the docs/arc42 §8.1.7 group-chat-scene example', () => {
 		const result = sceneNodeSchema.safeParse({
 			id: SCENE_ID,
 			type: 'group-chat-scene',

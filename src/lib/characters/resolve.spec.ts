@@ -25,7 +25,7 @@ function bindingFor(characterId: string): CastBinding {
 	return story.castBindings.find((binding) => binding.characterRef === characterId)!;
 }
 
-describe('resolveEffectiveCharacterState — docs/concept.md §7 validation story', () => {
+describe('resolveEffectiveCharacterState — docs/arc42 §1.3 validation story', () => {
 	it('resolves Lucy as visible quest-giver, knowing the club-theft fact', () => {
 		const state = resolveEffectiveCharacterState(identityFor(LUCY_ID, 'Lucy'), bindingFor(LUCY_ID));
 		expect(state.roleInStory).toBe('quest-giver');

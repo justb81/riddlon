@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { uuidV4Schema } from './common.js';
 
-/** docs/concept.md §5.3 — story-independent character identity. */
+/** docs/arc42 §8.1.3 — story-independent character identity. */
 export const characterIdentitySchema = z.object({
 	id: uuidV4Schema,
 	slug: z.string().min(1).optional(),

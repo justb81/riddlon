@@ -5,7 +5,7 @@ import { armDueEvents, fireDueEvents } from './delayed-events.js';
 
 const PACKAGE_ID = '11111111-1111-4111-8111-111111111111';
 
-/** The docs/concept.md §5.6 example: Lucy's ~2h delayed follow-up after the player reports. */
+/** The docs/arc42 §8.1.6 example: Lucy's ~2h delayed follow-up after the player reports. */
 function makeTestBundle(): StoryBundle {
 	return {
 		manifest: {

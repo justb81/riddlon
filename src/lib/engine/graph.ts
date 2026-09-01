@@ -4,8 +4,8 @@ import { evaluateAll, evaluateCondition } from './conditions.js';
 import { buildEvaluationContext, type EngineEffect, type EngineState } from './state.js';
 
 /**
- * Recomputes scene unlocks/completions/outcomes to a fixed point (docs/concept.md §5.4,
- * §5.7). Loops because one scene's completion can unlock another whose `entryConditions`
+ * Recomputes scene unlocks/completions/outcomes to a fixed point (docs/arc42 §8.1.4,
+ * §8.1.7). Loops because one scene's completion can unlock another whose `entryConditions`
  * reference `scene-unlocked:`/`scene-completed:`, so a single pass isn't always enough.
  *
  * A scene with zero `exitConditions` deliberately never auto-completes — `evaluateAll([])`

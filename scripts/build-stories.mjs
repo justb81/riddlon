@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Validates and packs every story package under `stories/` into an installable `.zip`
- * (docs/concept.md §5, issue #19). One directory under `stories/` = one package = one
+ * (docs/arc42 §8.1, issue #19). One directory under `stories/` = one package = one
  * independently versioned GitHub release; nothing here is specific to "Lucys Portmonnaie".
  *
  *   node scripts/build-stories.mjs           # validate + write dist/stories/*.zip
@@ -129,7 +129,7 @@ function checkAssetReferences(manifest, parsed, contents) {
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-/** docs/concept.md §5's `signatures/checksums.json`, generated over the packed content. */
+/** docs/arc42 §8.1's `signatures/checksums.json`, generated over the packed content. */
 function checksums(contents) {
 	const files = {};
 	for (const relative of [...contents.keys()].sort())

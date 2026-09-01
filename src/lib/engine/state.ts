@@ -2,7 +2,7 @@ import type { StoryBundle } from '$lib/content/index.js';
 import type { EvaluationContext } from './conditions.js';
 import type { EngineAction } from './actions.js';
 
-/** One source's claim about a clue — see docs/concept.md §5.5 and #8's acceptance criteria. */
+/** One source's claim about a clue — see docs/arc42 §8.1.5 and #8's acceptance criteria. */
 export interface ClueClaim {
 	characterId: string;
 	value: string;

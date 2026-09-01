@@ -1,5 +1,5 @@
 /**
- * Minimal hand-built fixture package reusing docs/concept.md's actual example UUIDs for
+ * Minimal hand-built fixture package reusing docs/arc42's actual example UUIDs for
  * Lucy/Max/Sabine and the package id. Shared by content/, storage/, and characters/ test suites.
  */
 
@@ -136,7 +136,7 @@ function clues() {
 	];
 }
 
-/** A well-formed package matching docs/concept.md §5.2's example shape. */
+/** A well-formed package matching docs/arc42 §8.1.2's example shape. */
 export function buildValidPackageFiles(): Record<string, unknown> {
 	return {
 		'manifest.json': manifest(),

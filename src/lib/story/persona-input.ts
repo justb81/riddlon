@@ -88,7 +88,7 @@ export function buildScenePersonaPrompt(
 		})),
 		knowledge: {
 			facts: facts.map((fact) => fact.statement),
-			// docs/concept.md §5.5: the two lists must stay apart, or a withheld secret reads as
+			// docs/arc42 §8.1.5: the two lists must stay apart, or a withheld secret reads as
 			// something the character may say.
 			revealableSecrets: secrets
 				.filter((secret) => ctx.isConditionMet(secret.revealCondition))

@@ -1,140 +1,78 @@
 # Riddlon
 
-An open-source platform for interactive chat stories: players chat with characters and the
-plot unfolds through the conversation, while the app looks and feels like an ordinary messenger.
-Riddlon is **offline-first** — after a story package is installed, it's fully playable without a
-network connection, including local LLM inference in the browser.
+An open-source platform for **interactive chat stories**: players chat with characters and the plot
+unfolds through the conversation, while the app looks and feels like an ordinary messenger. Riddlon
+is **offline-first** — once a story package is installed it is fully playable without a network
+connection, including local LLM inference in the browser.
 
-This repository is the **Player PWA**, built on a client-only Progressive Web App base
-(SvelteKit + Svelte 5 + Tailwind 4). It ships with the toolchain, PWA plumbing, and CI already
-wired together, so the app starts from a green build instead of a blank folder. See
-[`CLAUDE.md`](./CLAUDE.md) for the concept and architecture, and the repo's issues for the
-build roadmap.
+This repository is the **Player PWA**: a client-only SvelteKit + Svelte 5 + Tailwind 4 app with no
+backend. Story content is authored separately as interchangeable packages; the app itself ships no
+story of its own.
+
+## Documentation
+
+All architecture documentation lives in **[`docs/arc42/`](./docs/arc42/)** and follows the
+[arc42](https://arc42.org) template. Start with the
+[chapter index](./docs/arc42/README.md).
+
+| Looking for                             | Read                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| What the product is and why             | [§1 Introduction and Goals](./docs/arc42/01-introduction-and-goals.md)                            |
+| How the modules fit together            | [§5 Building Block View](./docs/arc42/05-building-block-view.md)                                  |
+| What happens during a conversation turn | [§6 Runtime View](./docs/arc42/06-runtime-view.md)                                                |
+| The story-package format                | [§8.1 Content Package Format](./docs/arc42/08-crosscutting-concepts.md#81-content-package-format) |
+| Why something is built the way it is    | [§9 Architecture Decisions](./docs/arc42/09-architecture-decisions.md)                            |
+| Known gaps and accepted debt            | [§11 Risks and Technical Debt](./docs/arc42/11-risks-and-technical-debt.md)                       |
+
+Contributors working with [Claude Code](https://claude.com/claude-code) should also read
+[`CLAUDE.md`](./CLAUDE.md).
 
 ## Stack
 
 - **[SvelteKit](https://svelte.dev/docs/kit)** + **[Svelte 5](https://svelte.dev/docs/svelte)** (forced runes mode)
 - **[Tailwind CSS 4](https://tailwindcss.com)** with `@tailwindcss/forms` and semantic design tokens
-- **[adapter-static](https://svelte.dev/docs/kit/adapter-static)** — a fully client-only, prerendered site (no server)
-- **[Vitest](https://vitest.dev)** for unit tests, **ESLint** + **Prettier** for lint/format
-- **TypeScript** throughout
-
-## What's included
-
-- **Installable PWA** — web manifest, standalone display, maskable icons, `theme-color`.
-- **Offline support** — a cache-first service worker (`src/service-worker.ts`) that precaches
-  the app shell, with an **opt-in update banner** (`$lib/state/update.svelte.ts`) instead of a
-  silent mid-session takeover.
-- **App-wide toasts** — `$lib/state/toast.svelte.ts` + `Toast.svelte`.
-- **Window Controls Overlay** support for installed desktop apps (`$lib/state/windowChrome.svelte.ts`).
-- **Semantic design tokens** — color / type / radius aliases onto Tailwind's palette in `layout.css`.
-- **CI/CD** (already present under `.github/`) — lint/check/test/build on every PR, Dependabot,
-  release-please, and deploy-to-GitHub-Pages on release.
-- **Editor + agent config** — `.vscode/` recommended extensions and a `.claude/` + `CLAUDE.md` for
-  working in the repo with [Claude Code](https://claude.com/claude-code).
+- **[adapter-static](https://svelte.dev/docs/kit/adapter-static)** — a fully client-only, prerendered site
+- **[@mlc-ai/web-llm](https://github.com/mlc-ai/web-llm)** for in-browser inference over WebGPU
+- **[Zod](https://zod.dev)** for package validation, **[idb](https://github.com/jakearchibald/idb)** for storage, **[fflate](https://github.com/101arrowz/fflate)** for ZIP handling
+- **[Vitest](https://vitest.dev)**, **ESLint**, **Prettier**, **TypeScript**
 
 ## Quick start
 
 ```bash
-npm install      # install dependencies
-npm run dev      # start the dev server (http://localhost:5173)
-npm run build    # produce the static site in build/
+npm install      # requires Node 22+ (CI runs on Node 26)
+npm run dev      # dev server on http://localhost:5173
+npm run build    # static site in build/
 npm run preview  # serve the production build locally
 ```
 
-Requires Node 22+ (CI runs on Node 26).
+| Task               | Command                                         |
+| ------------------ | ----------------------------------------------- |
+| Type-check         | `npm run check`                                 |
+| Unit tests         | `npm test` (once) / `npm run test:unit` (watch) |
+| Lint / format      | `npm run lint` / `npm run format`               |
+| Validate stories   | `npm run stories:validate`                      |
+| Pack stories       | `npm run stories:build` → `dist/stories/*.zip`  |
+| Bundle for the app | `npm run stories:bundle` → `static/stories/`    |
+| Playtest a story   | `npm run story:playtest -- stories/<slug>`      |
 
-## Project structure
+## Repository layout
 
 ```
-src/
-  app.html                  # HTML shell: manifest link, theme-color, viewport, Google Fonts
-  app.d.ts                  # ambient types (incl. Window Controls Overlay)
-  service-worker.ts         # cache-first offline precache + update handshake
-  routes/
-    +layout.svelte          # SW registration, update banner, global toast/achievement/celebration overlays
-    +layout.ts              # ssr = false, prerender = true (client-only static)
-    +page.svelte            # splash screen + first-run/warm boot sequence → /chats
-    layout.css              # Tailwind import + semantic design tokens + shared keyframes
-    chats/+page.svelte      # chat overview / thread list
-    chat/[thread]/+page.svelte  # solo ("lucy") + group ("group") conversation, shared shell
-    chat/riddlon/+page.svelte   # "Riddlon" system chat: installed-story library + import
-    story/+page.svelte      # Storyübersicht: milestone timeline + achievements
-    settings/+page.svelte   # profile & settings
-  lib/
-    components/
-      chat/                 # AppHeader, InfoBand, MessageBubble, Composer, Avatar, ThreadRow, …
-      icons/RiddlonMark.svelte
-      ui/Toast.svelte
-    state/                  # Svelte 5 runes singletons (browser-guarded)
-      game.svelte.ts        #   active story session: messages, milestones, achievements
-      profile.svelte.ts     #   player profile & settings (pronouns, disguise mode, model, …)
-      toast.svelte.ts       #   transient notifications
-      update.svelte.ts      #   service-worker update detection
-      windowChrome.svelte.ts#   Window Controls Overlay state
-      onboarding.ts         #   first-run vs. warm-boot detection (localStorage)
-    story/                  # mock installed-story-package content ("Lucys Portmonnaie")
-    i18n/                   # de.json dictionary + t() lookup — see CLAUDE.md "i18n"
-static/                     # manifest.webmanifest, icons, robots.txt
-stories/                    # authored story packages — built & released separately, see stories/README.md
-scripts/build-stories.mjs   # validates + packs stories/ into dist/stories/*.zip
-.github/                    # CI, Dependabot, release-please, GitHub Pages deploy, story releases
+src/                  # the Player PWA — see docs/arc42 §5
+stories/              # authored story packages, released independently — see docs/arc42 §7.3
+scripts/              # story validation, packing and playtest tooling
+docs/arc42/           # the architecture documentation
+docs/design/          # the Claude Design pixel reference — see docs/arc42 §8.7
+static/               # manifest, icons, generated story bundles
+.github/              # CI, Dependabot, release-please, Pages deploy, story releases
 ```
 
-## Commands
+## Releases
 
-| Task             | Command                                         |
-| ---------------- | ----------------------------------------------- |
-| Dev server       | `npm run dev`                                   |
-| Production build | `npm run build` → static site in `build/`       |
-| Preview build    | `npm run preview`                               |
-| Type-check       | `npm run check`                                 |
-| Unit tests       | `npm test` (once) / `npm run test:unit` (watch) |
-| Lint             | `npm run lint`                                  |
-| Format           | `npm run format`                                |
-| Validate stories | `npm run stories:validate`                      |
-| Pack stories     | `npm run stories:build` → `dist/stories/*.zip`  |
-
-Tests run under Vitest's `server` (Node) project, which matches `src/**/*.{test,spec}.{js,ts}`
-(not `*.svelte.{test,spec}.*`). `requireAssertions` is on — every test must assert at least once.
-
-## Status
-
-The chat UI (splash/boot, chat overview, solo + group chat, the Riddlon system/library chat, story
-overview, profile/settings) is implemented end-to-end against scripted mock data for the reference
-story "Lucys Portmonnaie". The real story engine, story-package import, character library, and
-local-LLM module described in `CLAUDE.md` are not implemented yet — all game/session state above is
-in-memory only and resets on reload. See `CLAUDE.md`'s "Project" table for what's mocked vs. real,
-and the repo's issues for the build roadmap.
-
-### GitHub Pages / release flow
-
-The deploy workflow builds with `BASE_PATH` set to the repo's Pages subpath and publishes on
-each GitHub Release. release-please raises the version/changelog PR from
-[Conventional Commits](https://www.conventionalcommits.org); merging it tags a release, which
-triggers the deploy. The release-please workflow expects a `RELEASE_TOKEN` repository secret (a PAT)
-so the created release can trigger the deploy workflow — see the comment in
-`.github/workflows/release-please.yml`. Enable **Settings → Pages → Source: GitHub Actions** in the
-new repo before the first release.
-
-### Story releases
-
-Story packages under [`stories/`](./stories/) version and ship independently of the app.
-`.github/workflows/stories.yml` validates them on every PR and, on `main`, publishes a GitHub
-release per package version — tagged `story-<slug>-v<version>` with the `.zip` and its `.sha256`
-attached. Bumping `version` in a story's `manifest.json` and merging is the whole procedure; the
-deploy workflow ignores `story-*` tags so a content release doesn't redeploy the site.
-
-## Conventions & gotchas
-
-- **There is no `svelte.config.js`.** SvelteKit config (the static adapter and the forced-runes
-  `compilerOptions`) lives inside the `sveltekit()` call in `vite.config.ts`.
-- **Runes are forced on** for all app code. Use `$state` / `$derived` / `$props`; stores are plain
-  classes in `.svelte.ts` files exported as singletons.
-- **Relative imports use explicit `.js` extensions** (tsconfig `rewriteRelativeImportExtensions`).
-  Use the `$lib` alias for `src/lib`.
-- **Nothing touching the DOM may run at module top-level during SSR/prerender.** Guard with
-  `browser` from `$app/environment` and feature-detect optional browser APIs.
+The app versions via [Conventional Commits](https://www.conventionalcommits.org) and release-please,
+and deploys to GitHub Pages on each release. Story packages version and ship on their own
+`story-<slug>-v<version>` tags. Both flows are documented in
+[§7 Deployment View](./docs/arc42/07-deployment-view.md).
 
 ## License
 

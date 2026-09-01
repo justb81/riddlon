@@ -10,7 +10,7 @@
  * Node-only (`node:fs`): this is a test fixture, imported exclusively from `*.spec.ts` files
  * running in Vitest's `server` project — never from app code, which must stay browser-safe.
  *
- * Hans (docs/concept.md §7 step 9) stays a mentioned-but-offscreen source, per issue #19 —
+ * Hans (docs/arc42 §1.3 step 9) stays a mentioned-but-offscreen source, per issue #19 —
  * no character file, so his accusation is only a clue that Lucy relays.
  */
 
@@ -73,7 +73,7 @@ export function readStoryPackageFiles(packageDir: string): Record<string, unknow
 	return files;
 }
 
-/** The shipped "Lucys Portmonnaie" package, covering all 15 steps of docs/concept.md §7. */
+/** The shipped "Lucys Portmonnaie" package, covering all 15 steps of docs/arc42 §1.3. */
 export function buildWalkthroughPackageFiles(): Record<string, unknown> {
 	return readStoryPackageFiles(WALKTHROUGH_PACKAGE_DIR);
 }

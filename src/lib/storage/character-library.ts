@@ -9,7 +9,7 @@ export type { LibraryCharacterRecord };
  * yet, create it. If it is, keep the first-installed identity fields untouched and only
  * link the new package — never overwrite an existing identity with a later package's copy.
  * (Version-conflict handling when two packages disagree on identity fields for the same
- * UUID is an explicit open point in docs/concept.md §9; "first write wins, link don't
+ * UUID is an explicit open point in docs/arc42 §11; "first write wins, link don't
  * overwrite" is this module's minimal, documented resolution, not a full conflict strategy.)
  */
 export function mergeCharacterLink(

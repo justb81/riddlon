@@ -1,6 +1,6 @@
 /**
  * Evaluates the single symbolicRef condition vocabulary shared by every conditional field
- * in the package format (docs/concept.md §5.4-§5.6): `entryConditions`, `exitConditions`,
+ * in the package format (docs/arc42 §8.1.4-§8.1.6): `entryConditions`, `exitConditions`,
  * `next[].when`, `outcomes[].condition`, `delayedEvents[].condition`, and
  * `castBindings[].availability.unlockCondition`. All are plain `symbolicRefSchema` strings
  * (`content/schemas/common.ts`) — colon-segmented predicates, no boolean operators beyond

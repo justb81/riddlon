@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { symbolicRefSchema } from './common.js';
 
 /**
- * docs/concept.md §5.5. Facts are immutable canon truths the LLM must never contradict —
+ * docs/arc42 §8.1.5. Facts are immutable canon truths the LLM must never contradict —
  * unlike clues (schemas/clue.ts) they have no sources and can never conflict, so there's
  * nothing to track beyond the statement itself.
  */

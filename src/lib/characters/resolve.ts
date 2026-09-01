@@ -11,7 +11,7 @@ export interface EffectiveCharacterState {
 	availability: { state: 'hidden' | 'visible'; unlockCondition?: string };
 	/** Scoped strictly to the ONE story this binding came from. */
 	relationships: Record<string, string>;
-	/** docs/concept.md §7's "Unbekannt" opening beat (issue #31) — a story-scoped override of
+	/** docs/arc42 §1.3's "Unbekannt" opening beat (issue #31) — a story-scoped override of
 	 *  `displayName` until `revealCondition` holds. Always from `binding`, never `identity`. */
 	identityMask?: { maskedDisplayName: string; revealCondition: string };
 }

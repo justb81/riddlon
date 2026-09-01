@@ -130,7 +130,7 @@ export interface ReachedOutcome {
 export function reachedOutcomes(bundle: StoryBundle, state: EngineState): ReachedOutcome[] {
 	const reached: ReachedOutcome[] = [];
 	for (const node of bundle.graph.nodes) {
-		// Only group scenes carry outcomes (docs/concept.md §5.7).
+		// Only group scenes carry outcomes (docs/arc42 §8.1.7).
 		if (node.type !== 'group-chat-scene') continue;
 		for (const outcome of node.outcomes) {
 			if (state.reachedOutcomeIds.has(outcome.id)) {
