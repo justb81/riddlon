@@ -6,11 +6,11 @@ description: Turn a piece of free-form story text (plot, characters, twist) into
 # Create a story package from text
 
 Converts prose into a package under `stories/<slug>/` matching the layout
-`stories/README.md` and `docs/concept.md` §5 define, validated by the app's own
+`docs/arc42` §8.1 and `stories/README.md` define, validated by the app's own
 `src/lib/content/validate-package.ts`. This skill exists to do that **cheaply**: one
 extraction pass, one write pass per file, one validation run, one playtest run. Do not re-read
-`docs/concept.md`, the zod schemas, or `stories/lucys-portmonnaie/` to re-derive the format —
-the reference below is already the complete, current contract. Do not spawn subagents for
+`docs/arc42`, `stories/README.md`, the zod schemas, or `stories/lucys-portmonnaie/` to re-derive
+the format — the reference below is already the complete, current contract. Do not spawn subagents for
 this — a single pass in the main thread is strictly cheaper than delegating.
 
 ## Input
@@ -88,7 +88,7 @@ genuinely ambiguous about who the player's contact is or how it ends.
    own intended path.
 
 7. **Report back**: slug, cast (names), scene count, and remind the user that shipping it is
-   `npm run stories:bundle` for local preview and — per `stories/README.md` — bumping
+   `npm run stories:bundle` for local preview and — per `docs/arc42` §7.3 — bumping
    `version` in `manifest.json` and merging to `main` for a real release. Don't run `bundle`
    or `build` yourself unless asked; they're not required to validate content.
 
@@ -132,7 +132,7 @@ force a longer or differently-shaped plot into the Lucy story's specific arrange
 
 ## Token-efficiency rules
 
-- Don't re-read `docs/concept.md`, the `src/lib/content/schemas/*.ts` zod files, or an
+- Don't re-read `docs/arc42`, `stories/README.md`, the `src/lib/content/schemas/*.ts` zod files, or an
   existing package to relearn the format — the reference below is complete and current.
 - Generate all UUIDs in one bulk shell call (step 2), never one-by-one, never by hand.
 - One `Write` per file. No draft-then-revise; extract fully in your head first, then write.

@@ -1,5 +1,5 @@
 /**
- * Public surface of the local-inference module (docs/concept.md §3.2).
+ * Public surface of the local-inference module (docs/arc42 §5.1).
  *
  * Everything the story engine and UI need is here. Nothing outside this directory may import
  * `@mlc-ai/web-llm` — `no-backend-leakage.spec.ts` enforces that, and it's what keeps "swap the

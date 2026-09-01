@@ -2,12 +2,12 @@ import { browser } from '$app/environment';
 import { getDb, type SaveChatMessage, type SaveRecord } from './db.js';
 
 /**
- * Savegame shape isn't specified in docs/concept.md — designed from scratch to cover what
+ * Savegame shape isn't specified in docs/arc42 — designed from scratch to cover what
  * a future engine needs: `flags` (entry/exit-condition state), `unlockedSceneIds` +
  * `completedSceneIds` + `reachedOutcomeIds` (progress, #7), `unlockedCharacterIds` (explicit
  * unlocks, #7), `clueStates` (multi-source claims, #8), `chatHistory`, and
  * `pendingDelayedEvents` (persisted due-dates, checked opportunistically on next app
- * open/resume per §5.6 — no setTimeout/service-worker-alarm reliance; `$lib/engine`
+ * open/resume per §8.1.6 — no setTimeout/service-worker-alarm reliance; `$lib/engine`
  * implements the actual reconciliation loop, this module only persists the state it needs).
  */
 export const saveStore = {

@@ -1,134 +1,137 @@
-# Story packages
+# Story packages — authoring guide
 
-Source form of the installable story packages this repo publishes. One directory here =
-one package = one independently versioned GitHub release. The player app itself ships **no**
-story content (`docs/concept.md` §2: "Kein Story-Inhalt ist hartkodiert") — a story arrives
-through ZIP or URL import like any third-party package would.
+Source form of the installable story packages this repository publishes. One directory here = one
+package = one independently versioned GitHub release.
 
-| Package                                      | Story             | Status                                                                   |
-| -------------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
-| [`lucys-portmonnaie/`](./lucys-portmonnaie/) | Lucys Portmonnaie | Reference story from `docs/concept.md` §7 — the MVP's end-to-end fixture |
+The player app itself ships **no** story content: a story arrives through ZIP or URL import like any
+third-party package would. This directory is where a story is written; nothing under `src/lib/` may
+contain authored content.
 
-## Layout
+| Package                                      | Story             | Role                                                               |
+| -------------------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| [`lucys-portmonnaie/`](./lucys-portmonnaie/) | Lucys Portmonnaie | The reference story and the engine's end-to-end acceptance fixture |
 
-A package directory is the unzipped archive, byte for byte, minus the generated
-`signatures/checksums.json`:
+**This file is a task guide.** The format is specified in
+[`docs/arc42` §8.1](../docs/arc42/08-crosscutting-concepts.md#81-content-package-format), and the
+build and release mechanics in
+[§7.3](../docs/arc42/07-deployment-view.md#73-story-package-build-and-release). Read those for field
+semantics and rationale; read this for the steps.
+
+## What a package directory contains
+
+The unzipped archive, byte for byte, minus the generated `signatures/checksums.json`:
 
 ```
 stories/<slug>/
-├── manifest.json                       # docs/concept.md §5.2 — declares every other file
+├── manifest.json                       # the index: declares every other file
 ├── story/
-│   ├── story.json                      # castBindings, achievements, delayedEvents (§5.3, §5.6)
-│   └── graph.json                      # the scene state graph (§5.4, §5.7)
-├── characters/<uuid>.character.json    # one per character identity (§5.3)
+│   ├── story.json                      # castBindings, achievements, delayedEvents
+│   └── graph.json                      # the scene state graph
+├── characters/<uuid>.character.json    # one per character identity
 ├── world/
-│   ├── clues.json                      # (§5.5)
+│   ├── clues.json
 │   ├── facts.json
 │   └── secrets.json
 ├── assets/{covers,avatars}/            # cover + avatar images
-├── README.md                            # authoring notes — NOT packed into the zip
-└── walkthrough.json                     # optional playtest script — NOT packed into the zip
+├── README.md                           # authoring notes — NOT packed into the zip
+└── walkthrough.json                    # optional playtest script — NOT packed into the zip
 ```
 
-The manifest is the index: **a file the manifest doesn't declare is a file the player never
-loads.** The build fails on undeclared `.json` content rather than shipping something inert.
+Two traps worth knowing before you start:
 
-`world/*.json` filenames are load-bearing — `validate-package.ts` picks the schema by suffix
-(`clues.json` / `facts.json` / `secrets.json`). A world file with any other name validates
-vacuously.
+- **A file the manifest doesn't declare is a file the player never loads.** The build fails on
+  undeclared `.json` content rather than shipping something inert.
+- **`world/*.json` filenames are load-bearing.** The validator picks the schema by filename suffix
+  (`clues.json` / `facts.json` / `secrets.json`). A world file with any other name validates
+  vacuously.
 
-## Building
+## Adding a story
+
+1. **Create the directory and mint ids.** `mkdir stories/<slug>`. `manifest.id` must be a fresh
+   UUIDv4 — generate one, never copy another package's. Scene nodes, characters and achievements are
+   UUIDs too; flags, clue/fact/secret ids and delayed-event ids are readable `prefix:kebab-name`
+   tags. The split is explained in
+   [§8.1.1](../docs/arc42/08-crosscutting-concepts.md#811-identifier-conventions).
+2. **Decide on character reuse.** Character UUIDs are stable and global: reuse an existing
+   character's UUID to have the player's library recognise them across stories, and mint a new one
+   otherwise.
+3. **Write the files** listed above. Things that are easy to get wrong:
+   - Facts and secrets carry a **full sentence** in `statement`, not just a label — a bare label lets
+     a small model invent who did what to whom.
+   - A character only knows what their cast binding's `knowledge.publicFacts` lists. A fact nobody
+     knows never reaches the model, and a goal that depends on it becomes unreachable.
+   - **Goal order is prompt order**: a scene's first goal is what the opening message is built
+     around. Put the beat that actually opens the scene first.
+   - An empty `entryConditions` list unlocks the scene at story start. If a scene must only be
+     reachable through a delayed event, give it a sentinel condition nothing else sets.
+4. **Validate**: `npm run stories:validate`, until clean.
+5. **Playtest** (see below) to confirm the graph is actually reachable.
+6. **Open a pull request.** CI validates it; merging to `main` releases it.
+
+If you would rather start from prose than from JSON, the `create-story` skill
+(`.claude/skills/create-story/`) turns a plot description into a complete package in one pass.
+
+## Commands
 
 ```bash
-npm run stories:validate   # validate every package, write nothing
-npm run stories:build      # validate + write dist/stories/<slug>-v<version>.zip
+npm run stories:validate                 # validate every package, write nothing
+npm run stories:build                    # + write dist/stories/<slug>-v<version>.zip
+npm run stories:bundle                   # + write static/stories/ for local app preview
+npm run story:playtest -- stories/<slug> # replay a walkthrough through the real engine
 ```
 
-`scripts/build-stories.mjs` validates through the app's own
-`src/lib/content/validate-package.ts` — the exact code path the player runs on import (#10),
-so the build step and the runtime can't disagree about what a valid package is. On top of the
-schema it checks what the schema can't: undeclared content files and character `avatar` paths
-that don't resolve.
-
-Archives are reproducible — fixed timestamps and sorted entries, so an unchanged story rebuilds
-to a byte-identical zip with the same `sha256`. `signatures/checksums.json` (concept §5) is
-generated per build over the packed files, so a stale copy can never ship.
-
-`npm test` validates every package here too (`src/lib/content/story-packages.spec.ts`), so
-broken content fails ordinary CI, not just the release workflow.
+`npm test` validates every package here too, so broken content fails ordinary CI rather than only
+the release workflow.
 
 ## Playtesting
 
-`stories:validate` checks schema shape, required files, duplicate ids, and dangling
-references — it never simulates the flag graph, so a scene nothing ever unlocks, or a
-condition flag with a typo that's never set, validates cleanly and then silently never
-appears in play.
+Validation checks schema shape, required files, duplicate ids and dangling references. It **never
+simulates the flag graph**, so a scene nothing ever unlocks, or a condition flag with a typo that is
+never set, validates cleanly and then silently never appears in play.
 
 ```bash
 npm run story:playtest -- stories/<slug> [path/to/walkthrough.json]
 ```
 
-`scripts/playtest-story.mjs` replays a scripted walkthrough through the real engine
-(`src/lib/engine/`) — no LLM, no browser. Each step in `walkthrough.json` (defaulting to
-`stories/<slug>/walkthrough.json`) stands in for what a real conversation turn would have
-produced (a director verdict setting flags/clues) or for time passing (a delayed event
-becoming due): `setFlag`, `claimClue`, `resolveClue`, `action` (`unlock-scene:`/`set-flag:`/
-`unlock-character:`), `advance` (an ISO-8601 duration, fires any due delayed events), and
-`resume` (re-checks without advancing time). It prints every effect as it replays, then a
-coverage summary — scenes unlocked/completed, characters made visible, outcomes reached,
-delayed events armed/fired — so an orphaned scene or a dead flag shows up as "never
-unlocked"/"never reached" instead of shipping invisibly. An incomplete walkthrough doesn't
-fail the run: it only covers the branches it scripts, not necessarily every branch a
-player could take. See `stories/lucys-portmonnaie/walkthrough.json` for a worked example
-covering all 15 steps of `docs/concept.md` §7.
+`scripts/playtest-story.mjs` replays a scripted walkthrough through the real engine — no LLM, no
+browser. Each step in `walkthrough.json` (defaulting to `stories/<slug>/walkthrough.json`) stands in
+for what a real conversation turn would have produced, or for time passing:
+
+| Step          | Stands in for                                                        |
+| ------------- | -------------------------------------------------------------------- |
+| `setFlag`     | A director verdict setting a flag                                    |
+| `claimClue`   | A character making a claim about a clue                              |
+| `resolveClue` | The player resolving a contradiction                                 |
+| `action`      | An `unlock-scene:` / `set-flag:` / `unlock-character:` action firing |
+| `advance`     | Time passing (an ISO-8601 duration; fires any due delayed events)    |
+| `resume`      | Re-checking without advancing time                                   |
+
+It prints every effect as it replays, then a coverage summary — scenes unlocked and completed,
+characters made visible, outcomes reached, delayed events armed and fired — so an orphaned scene or a
+dead flag shows up as "never unlocked" instead of shipping invisibly. An incomplete walkthrough does
+not fail the run: it only covers the branches it scripts.
+See [`lucys-portmonnaie/walkthrough.json`](./lucys-portmonnaie/walkthrough.json) for a worked example
+covering all fifteen steps of the reference story.
 
 ## Releasing
 
-`.github/workflows/stories.yml` runs on every PR and every push to `main` that touches
-`stories/**`. On `main` it publishes a GitHub release for each package whose version isn't
-released yet:
+**Bump `version` in the package's `manifest.json` and merge to `main`** — that is the whole
+procedure. Each package releases on its own tag (`story-<slug>-v<version>`), independently of the app
+and of every other story.
 
-- tag: `story-<slug>-v<version>` (e.g. `story-lucys-portmonnaie-v1.0.0`)
-- assets: the `.zip` and its `.sha256`
+**A published version is immutable.** Its zip is already installed on players' devices, so CI
+compares each freshly built checksum against the released one and fails with "bump the version" on
+any difference. Editing a package's `README.md` never trips this — it is not packed.
 
-So **bump `version` in `manifest.json` and merge to `main`** — that is the whole release
-procedure. Each package releases on its own: editing one story publishes only that story's
-new version, and every other package is skipped because its tag already exists. This is
-deliberately independent of release-please, which versions the app (`v<x.y.z>`); `deploy.yml`
-skips `story-*` tags so a content release never redeploys the site.
-
-**A published version is immutable.** Its zip is already installed on players' devices, so
-the workflow refuses to let a released version's content change underneath it: it compares
-each freshly built checksum against the one attached to the existing release and fails with
-"bump the version" on any difference. That's what turns "I forgot to bump" from a silent
-no-publish into a red build. It can only fire on real content changes — an unchanged story
-rebuilds byte-identically — so editing a story's `README.md` (never packed) doesn't trip it.
-
-Story versions follow semver against the _story_, not the app: patch for typo/tuning fixes,
-minor for added scenes or clues, major for a change that would invalidate an existing savegame.
-
-## Adding a story
-
-1. `mkdir stories/<slug>` and write the files above. `manifest.id` must be a fresh UUIDv4 —
-   generate one, never copy another package's.
-2. Character UUIDs are **stable and global** (concept §5.1/§5.3): reuse an existing character's
-   UUID to have the player's library recognise them across stories, and mint a new one otherwise.
-3. `npm run stories:validate` until clean. Optionally add a `walkthrough.json` and run
-   `npm run story:playtest -- stories/<slug>` to confirm the graph is actually reachable —
-   the validator alone won't tell you that (see "Playtesting" above).
-4. Open a PR. CI validates it; merging to `main` releases it.
+Story versions follow semver against the _story_, not the app: patch for typo and tuning fixes, minor
+for added scenes or clues, major for a change that would invalidate an existing savegame. The
+mechanics behind all of this are in
+[§7.3](../docs/arc42/07-deployment-view.md#73-story-package-build-and-release).
 
 ## Known format gaps
 
-Things the reference story needs but the package format (issue #4) has no field for yet. These
-are content the LLM/UI currently has to improvise, not bugs in the packages. Each has an issue;
-closing one includes filling the gap in `lucys-portmonnaie/` and deleting its bullet here:
-
-- **Seed chats** (#30) — §7 step 6 has new contacts arrive with pre-generated history. No schema
-  home; the scene's `goals` are the only hint the model gets, so an unlocked thread opens empty.
-- **Achievement conditions** (#32) — `achievementSchema` is id/label/description only (an explicit
-  open point in concept §9), so the three endings are declared but nothing evaluates when they
-  are earned. Blocks #17.
-- **Delayed events don't re-check their condition** (#33) — `fireDueEvents` fires on elapsed time
-  alone, so "nudge the player _if_ they haven't replied" can't be expressed. `event:lucy-nudge`
-  therefore only means "the nudge window has elapsed"; whether to send one is left to the UI.
+Things a story may need that the package format has no field for yet — content the LLM or the UI
+currently has to improvise, not bugs in the packages. They are tracked in
+[`docs/arc42` §11.1](../docs/arc42/11-risks-and-technical-debt.md#111-open-gaps-in-the-content-format):
+seed chats, achievement conditions, delayed events re-checking their condition, prompt/safety rule
+files, and package update strategy.

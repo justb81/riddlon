@@ -1,8 +1,8 @@
 /**
  * Converts an ISO-8601 duration (`content/schemas/common.ts`'s `isoDurationSchema`, e.g.
- * `"PT2H"`) into milliseconds, for `delayedEvents[].approxDelay` (docs/concept.md §5.6).
+ * `"PT2H"`) into milliseconds, for `delayedEvents[].approxDelay` (docs/arc42 §8.1.6).
  * Year/month are calendar-ambiguous by nature, so they're resolved with the same
- * "approximate, not exact" tolerance §5.6 already grants the whole delayed-event mechanism
+ * "approximate, not exact" tolerance §8.1.6 already grants the whole delayed-event mechanism
  * (365-day years, 30-day months) — nothing in this codebase needs sub-day precision there.
  */
 const DURATION_RE = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;

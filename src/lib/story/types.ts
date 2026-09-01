@@ -1,4 +1,4 @@
-/** Shared UI-facing shapes for whatever story package is installed (docs/concept.md §5). */
+/** Shared UI-facing shapes for whatever story package is installed (docs/arc42 §8.1). */
 
 /**
  * Who a chat message is from: two reserved values plus character UUIDs from the active

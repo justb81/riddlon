@@ -1,5 +1,5 @@
 /**
- * Minimal i18n store. Riddlon ships German-only for now (see docs/concept.md §"Vision"),
+ * Minimal i18n store. Riddlon ships German-only for now (see docs/arc42 §8.8),
  * but every UI-chrome string is looked up through here so a second `<locale>.json` plus
  * one line in `dictionaries` is the entire cost of adding a language later.
  *

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseIsoDurationMs } from './duration.js';
 
 describe('parseIsoDurationMs', () => {
-	it('parses the docs/concept.md §5.6 example, "PT2H", as exactly 2 hours', () => {
+	it('parses the docs/arc42 §8.1.6 example, "PT2H", as exactly 2 hours', () => {
 		expect(parseIsoDurationMs('PT2H')).toBe(2 * 60 * 60 * 1000);
 	});
 

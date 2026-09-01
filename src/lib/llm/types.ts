@@ -88,7 +88,7 @@ export interface LlmTurn {
 export interface LlmSessionConfig {
 	/**
 	 * Opaque to this module — persona, canon facts and safety rules are the caller's business.
-	 * The prompt-template schema is an open point in docs/concept.md §9, so nothing here
+	 * The prompt-template schema is an open point in docs/arc42 §11, so nothing here
 	 * interprets this string.
 	 */
 	systemPrompt: string;

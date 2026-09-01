@@ -1,6 +1,6 @@
 /**
- * The action vocabulary fired by `delayedEvents[].action` (docs/concept.md §5.6) and
- * reused anywhere else the engine needs to name a mutation as data rather than code. §5.6's
+ * The action vocabulary fired by `delayedEvents[].action` (docs/arc42 §8.1.6) and
+ * reused anywhere else the engine needs to name a mutation as data rather than code. §8.1.6's
  * own worked example only shows `unlock-scene:`; `set-flag:` and `unlock-character:` exist
  * so this is a small open registry rather than a single hardcoded case.
  */

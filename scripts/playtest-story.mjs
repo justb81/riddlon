@@ -4,7 +4,7 @@
  * (`src/lib/engine/`) — no LLM, no browser. A walkthrough step stands in for whatever a real
  * conversation turn would have produced (a director verdict setting flags/clues) or for time
  * passing (a delayed event becoming due), so this exercises the exact production condition/
- * transition/delayed-event code `stories:validate` never touches (see stories/README.md) —
+ * transition/delayed-event code `stories:validate` never touches (see stories/README.md "Playtesting") —
  * it catches an orphaned scene, a typo'd flag, or a delayed event that never fires, by
  * actually trying to walk the graph instead of guessing at it.
  *

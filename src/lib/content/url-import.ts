@@ -1,7 +1,7 @@
 import { installPackageFromZipBytes, type ImportResult } from './install-package.js';
 
 /**
- * The URL Importer (#url-import, docs/concept.md §4.1.2): downloads a package ZIP exactly
+ * The URL Importer (#url-import, docs/arc42 §6.2): downloads a package ZIP exactly
  * once and hands it to the same Installer the ZIP Importer uses — nothing about the
  * installed story ever depends on re-fetching from `url` again. Network-level failures
  * (unreachable host, CORS) and a non-2xx response get their own error codes, distinguishable

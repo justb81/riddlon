@@ -33,7 +33,7 @@ function withFactsAndSecrets(files: Record<string, unknown>): Record<string, unk
 }
 
 describe('validatePackage', () => {
-	it('accepts a well-formed package matching the §5.2 example shape with no errors', () => {
+	it('accepts a well-formed package matching the §8.1.2 example shape with no errors', () => {
 		const result = validatePackage(buildValidPackageFiles());
 		expect(result.valid).toBe(true);
 		expect(result.errors).toEqual([]);

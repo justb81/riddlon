@@ -117,7 +117,7 @@
 		try {
 			// Reads the local library and resumes the active package. On a genuinely first run this
 			// finds nothing — the library stays empty until the player imports a story, which is
-			// the only way content ever enters the app (docs/concept.md §4.1).
+			// the only way content ever enters the app (docs/arc42 §6.2).
 			await storySession.init();
 		} catch {
 			// A failed library read shouldn't strand the player on the splash screen — `/chats`
