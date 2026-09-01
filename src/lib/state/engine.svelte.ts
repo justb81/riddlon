@@ -32,6 +32,7 @@ import {
 	storyRegistry,
 	type InstalledPackageSummary
 } from '$lib/storage/index.js';
+import { buildSeedChatMessages } from '$lib/story/seed-chats.js';
 import {
 	achievementDisplays,
 	reachedOutcomes,
@@ -115,10 +116,19 @@ class StoryRuntime {
 		return this.#active?.engine ?? null;
 	}
 
-	/** An outcome has been reached — the only end-of-story signal that comes from real engine
-	 *  state. Achievements can't say when they're earned yet (#32). */
+	/** An outcome has been reached — the end-of-story signal, whether the ending is a win or a
+	 *  setback (`tone`); `solvedWell` is the narrower "reached a success ending". */
 	get solved(): boolean {
 		return this.outcomes.length > 0;
+	}
+
+	get solvedWell(): boolean {
+		return this.outcomes.some((outcome) => outcome.tone === 'success');
+	}
+
+	/** Authored classification from the manifest, shown on the library card and the case file. */
+	get tags(): string[] {
+		return this.bundle?.manifest.tags ?? [];
 	}
 
 	displayNameFor(characterId: string): string {
@@ -220,8 +230,11 @@ class StoryRuntime {
 		const bundle = await storyRegistry.getBundle(packageId);
 		if (!bundle) return null;
 
+		// A brand-new playthrough gets the package's authored thread history written into its save
+		// right away (#30); an existing save already carries it.
 		const save =
-			(await saveStore.getForPackage(packageId)) ?? (await saveStore.createForPackage(packageId));
+			(await saveStore.getForPackage(packageId)) ??
+			(await saveStore.createForPackage(packageId, buildSeedChatMessages(bundle)));
 		if (!save) return null;
 
 		const hasSavedProgress = save.unlockedSceneIds.length > 0 || Object.keys(save.flags).length > 0;
@@ -292,7 +305,7 @@ class StoryRuntime {
 		}
 		this.sceneTimes = { ...session.sceneTimes };
 		this.threads = storyThreads(bundle, state, this.visibleCharacterIds);
-		this.achievements = achievementDisplays(bundle);
+		this.achievements = achievementDisplays(bundle, state);
 		this.outcomes = reachedOutcomes(bundle, state);
 		this.clueDisplays = resolveClueDisplays(state, bundle, (id) => this.displayNameFor(id));
 

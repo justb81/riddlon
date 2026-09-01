@@ -158,7 +158,9 @@ class StorySession {
 		// Claimed before anything else awaits, so a second call can't load the same save twice.
 		this.#loadedSaveId = saveId;
 		this.history = existing.chatHistory;
-		this.#openedScenes = new Set(existing.chatHistory.map((m) => m.sceneId));
+		// Seed messages are authored history, not a scene the player has already been greeted in —
+		// counting them would make `openThread` skip the character's actual first message (#30).
+		this.#openedScenes = new Set(existing.chatHistory.filter((m) => !m.seed).map((m) => m.sceneId));
 		this.#busyScenes.clear();
 		this.typingSceneIds = [];
 		this.errorCode = null;
@@ -284,7 +286,8 @@ class StorySession {
 		const declaredScene = {
 			goals: scene.goals,
 			exitConditions: this.#exitConditionsFor(sceneId),
-			revealables: this.#revealablesFor(sceneId)
+			revealables: this.#revealablesFor(sceneId),
+			outcomeConditions: this.#outcomeConditionsFor(sceneId)
 		};
 		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
 
@@ -411,6 +414,13 @@ class StorySession {
 
 	#exitConditionsFor(sceneId: string): string[] {
 		return [...(this.#sceneNode(sceneId)?.exitConditions ?? [])];
+	}
+
+	/** A group scene's own outcome conditions — see `settableFlags` on why they are settable. */
+	#outcomeConditionsFor(sceneId: string): string[] {
+		const node = this.#sceneNode(sceneId);
+		if (node?.type !== 'group-chat-scene') return [];
+		return node.outcomes.map((outcome) => outcome.condition);
 	}
 
 	#revealablesFor(sceneId: string): string[] {

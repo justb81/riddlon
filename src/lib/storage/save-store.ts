@@ -11,7 +11,16 @@ import { getDb, type SaveChatMessage, type SaveRecord } from './db.js';
  * implements the actual reconciliation loop, this module only persists the state it needs).
  */
 export const saveStore = {
-	async createForPackage(packageId: string): Promise<SaveRecord | undefined> {
+	/**
+	 * `seedMessages` is the package's authored thread history (#30), materialized into the save
+	 * once, at creation: it is installed content that can never be re-derived, so it belongs in
+	 * the same place as the rest of the chat log rather than in `EngineState`. Built by
+	 * `story/seed-chats.ts` — this store stays free of any knowledge of the package format.
+	 */
+	async createForPackage(
+		packageId: string,
+		seedMessages: readonly SaveChatMessage[] = []
+	): Promise<SaveRecord | undefined> {
 		if (!browser) return undefined;
 		const db = await getDb();
 		const now = new Date().toISOString();
@@ -25,9 +34,10 @@ export const saveStore = {
 			completedSceneIds: [],
 			reachedOutcomeIds: [],
 			unlockedCharacterIds: [],
-			chatHistory: [],
+			chatHistory: [...seedMessages],
 			pendingDelayedEvents: [],
-			clueStates: []
+			clueStates: [],
+			earnedAchievementIds: []
 		};
 		await db.put('saves', record);
 		return record;
@@ -58,6 +68,7 @@ export const saveStore = {
 				| 'chatHistory'
 				| 'pendingDelayedEvents'
 				| 'clueStates'
+				| 'earnedAchievementIds'
 			>
 		>
 	): Promise<SaveRecord | undefined> {

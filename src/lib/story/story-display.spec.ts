@@ -19,6 +19,7 @@ const SCENE_LUCY_B = '66666666-6666-4666-8666-666666666666';
 const SCENE_GROUP = '77777777-7777-4777-8777-777777777777';
 const CLUE_TIME = 'clue:time-window';
 const ACHIEVEMENT = '88888888-8888-4888-8888-888888888888';
+const ACHIEVEMENT_DECORATIVE = '99999999-9999-4999-8999-999999999999';
 
 /** Two Lucy scenes on purpose: a messenger must fold them into one Lucy chat. */
 function bundle(): StoryBundle {
@@ -37,12 +38,22 @@ function bundle(): StoryBundle {
 			world: [],
 			assetsBase: 'assets/',
 			minPlayerVersion: '0.1.0',
-			capabilities: []
+			capabilities: [],
+			tags: []
 		},
 		story: {
 			castBindings: [],
-			achievements: [{ id: ACHIEVEMENT, label: 'Fall gelöst', description: 'Max hat gestanden.' }],
-			delayedEvents: []
+			achievements: [
+				{
+					id: ACHIEVEMENT,
+					label: 'Fall gelöst',
+					description: 'Max hat gestanden.',
+					conditions: ['outcome-reached:max-confesses']
+				},
+				{ id: ACHIEVEMENT_DECORATIVE, label: 'Nur Deko', conditions: [] }
+			],
+			delayedEvents: [],
+			seedChats: []
 		},
 		graph: {
 			nodes: [
@@ -93,7 +104,15 @@ function bundle(): StoryBundle {
 					exitConditions: [],
 					revealables: [],
 					playerRole: 'confront',
-					outcomes: [{ id: 'max-confesses', condition: 'flag:evidence-presented' }]
+					outcomes: [
+						{
+							id: 'max-confesses',
+							condition: 'flag:evidence-presented',
+							label: 'Fall gelöst',
+							closingText: 'Max gibt es zu.',
+							tone: 'success'
+						}
+					]
 				}
 			]
 		},
@@ -202,18 +221,55 @@ describe('resolveClueDisplays', () => {
 });
 
 describe('achievementDisplays / reachedOutcomes', () => {
-	it('lists declared achievements as unearned, because packages cannot say when they are earned', () => {
+	it('reports an achievement as earned exactly when the engine awarded it', () => {
 		const b = bundle();
-		expect(achievementDisplays(b)).toEqual([
-			{ id: ACHIEVEMENT, label: 'Fall gelöst', description: 'Max hat gestanden.', earned: false }
+		const state = createInitialState(b);
+		expect(achievementDisplays(b, state)).toEqual([
+			{
+				id: ACHIEVEMENT,
+				label: 'Fall gelöst',
+				description: 'Max hat gestanden.',
+				earned: false,
+				awardable: true
+			},
+			{
+				id: ACHIEVEMENT_DECORATIVE,
+				label: 'Nur Deko',
+				description: undefined,
+				earned: false,
+				awardable: false
+			}
 		]);
+
+		state.earnedAchievementIds.add(ACHIEVEMENT);
+		expect(achievementDisplays(b, state)[0].earned).toBe(true);
 	});
 
-	it('reports only outcomes the engine actually reached', () => {
+	it('reports only outcomes the engine actually reached, with their authored ending text', () => {
 		const b = bundle();
 		const state = createInitialState(b);
 		expect(reachedOutcomes(b, state)).toEqual([]);
 		state.reachedOutcomeIds.add('max-confesses');
-		expect(reachedOutcomes(b, state)).toEqual([{ id: 'max-confesses', sceneId: SCENE_GROUP }]);
+		expect(reachedOutcomes(b, state)).toEqual([
+			{
+				id: 'max-confesses',
+				sceneId: SCENE_GROUP,
+				label: 'Fall gelöst',
+				closingText: 'Max gibt es zu.',
+				tone: 'success'
+			}
+		]);
+	});
+
+	it('falls back to the outcome id when the package ships no label', () => {
+		const b = bundle();
+		const group = b.graph.nodes.find((node) => node.id === SCENE_GROUP);
+		if (group?.type !== 'group-chat-scene') throw new Error('fixture changed');
+		group.outcomes = [
+			{ id: 'max-confesses', condition: 'flag:evidence-presented', tone: 'success' }
+		];
+		const state = createInitialState(b);
+		state.reachedOutcomeIds.add('max-confesses');
+		expect(reachedOutcomes(b, state)[0].label).toBe('max-confesses');
 	});
 });

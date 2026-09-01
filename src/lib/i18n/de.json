@@ -111,7 +111,8 @@
 		"clueConflict": "WIDERSPRUCH",
 		"achievementsLabel": "AUSZEICHNUNGEN",
 		"noAchievementsInPackage": "Diese Geschichte bringt keine Auszeichnungen mit.",
-		"achievementsNoConditionsNote": "Das Paketformat kennt noch keine Bedingungen für Auszeichnungen — sie werden hier nur aufgeführt, nicht vergeben.",
+		"achievementEarned": "ERHALTEN",
+		"achievementDecorative": "Diese Auszeichnung vergibt die Geschichte nicht automatisch.",
 		"continue": "Weiterspielen · Kapitel {chapter}",
 		"emptyTitle": "Keine Geschichte aktiv",
 		"emptyDesc": "Sobald eine Geschichte installiert ist, findest du hier ihre Kapitel, Hinweise und Auszeichnungen.",
@@ -194,8 +195,11 @@
 	},
 	"celebration": {
 		"kicker": "FALL ABGESCHLOSSEN",
+		"kickerSetback": "FALL BEENDET",
 		"title": "Fall gelöst",
+		"titleSetback": "Kein guter Ausgang",
 		"desc": "„{story}“ ist zu einem Ende gekommen. In der Fallakte siehst du, was du unterwegs herausgefunden hast.",
+		"achievementsLabel": "ERHALTENE AUSZEICHNUNGEN",
 		"viewStory": "Fallakte ansehen",
 		"later": "Später"
 	}

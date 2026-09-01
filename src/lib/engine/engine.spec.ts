@@ -19,6 +19,7 @@ import {
 } from '$lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
 import { isClueConflicting } from './clues.js';
 import { StoryEngine } from './engine.js';
+import { saveRecordPatchFromState, stateFromSaveRecord } from './persistence.js';
 
 const PACKAGE_ID = '11111111-1111-4111-8111-111111111111';
 const MAX_ID = '33333333-3333-4333-8333-333333333333';
@@ -40,7 +41,8 @@ function makeTestBundle(): StoryBundle {
 			world: [],
 			assetsBase: 'assets/',
 			minPlayerVersion: '0.1.0',
-			capabilities: []
+			capabilities: [],
+			tags: []
 		},
 		story: {
 			castBindings: [
@@ -59,9 +61,11 @@ function makeTestBundle(): StoryBundle {
 					trigger: 'time-based',
 					approxDelay: 'PT1H',
 					condition: 'flag:max-unlocked',
-					action: 'unlock-scene:scene-followup'
+					action: 'unlock-scene:scene-followup',
+					onDueConditionFalse: 'drop'
 				}
-			]
+			],
+			seedChats: []
 		},
 		graph: {
 			nodes: [
@@ -290,5 +294,54 @@ describe('walkthrough: docs/arc42 §1.3 "Lucys Portmonnaie" end-to-end (#7, #8, 
 			outcomeId: 'max-confesses'
 		});
 		expect(engine.progress().reachedOutcomeIds).toEqual(['max-confesses']);
+	});
+});
+
+/** #32's fire-once-across-reloads requirement, through the real save round-trip. */
+describe('StoryEngine — earned achievements survive a reload', () => {
+	const ACHIEVEMENT = '88888888-8888-4888-8888-888888888888';
+
+	function withAchievement(): StoryBundle {
+		const bundle = makeTestBundle();
+		return {
+			...bundle,
+			story: {
+				...bundle.story,
+				achievements: [
+					{ id: ACHIEVEMENT, label: 'Kontakt gefunden', conditions: ['flag:max-unlocked'] }
+				]
+			}
+		};
+	}
+
+	it('awards once, then resumes from the save without re-emitting the effect', () => {
+		const bundle = withAchievement();
+		const engine = new StoryEngine(bundle, { clock: () => 0 });
+
+		expect(engine.setFlag('flag:max-unlocked')).toContainEqual({
+			type: 'achievement-earned',
+			achievementId: ACHIEVEMENT
+		});
+
+		const patch = saveRecordPatchFromState(engine.state);
+		expect(patch.earnedAchievementIds).toEqual([ACHIEVEMENT]);
+
+		const resumed = new StoryEngine(bundle, {
+			clock: () => 0,
+			state: stateFromSaveRecord({
+				id: 'save-1',
+				packageId: bundle.manifest.id,
+				createdAt: '2026-01-01T00:00:00.000Z',
+				updatedAt: '2026-01-01T00:00:00.000Z',
+				chatHistory: [],
+				...patch
+			})
+		});
+
+		expect(resumed.state.earnedAchievementIds.has(ACHIEVEMENT)).toBe(true);
+		expect(resumed.resume()).not.toContainEqual({
+			type: 'achievement-earned',
+			achievementId: ACHIEVEMENT
+		});
 	});
 });

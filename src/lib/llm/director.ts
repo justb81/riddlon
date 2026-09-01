@@ -32,6 +32,13 @@ export interface DirectorScene {
 	exitConditions: readonly string[];
 	/** `clue:…` / `fact:…` refs the scene may reveal. Only the clue refs can be claimed. */
 	revealables: readonly string[];
+	/**
+	 * A group scene's `outcomes[].condition`s (docs/arc42 §8.1.7). A group scene deliberately
+	 * ships **no** `exitConditions` — `recompute()` would otherwise complete it the moment it
+	 * unlocks (`engine/graph.ts`) — so without this the director has nothing settable in the one
+	 * scene that ends the story, and every authored ending is unreachable in play.
+	 */
+	outcomeConditions?: readonly string[];
 }
 
 export interface DirectorTurn {
@@ -57,9 +64,14 @@ export interface DirectorVerdict {
 
 const EMPTY_VERDICT: DirectorVerdict = { flags: [], clues: [] };
 
-/** Only `flag:` refs are settable; a scene may also list `scene-completed:`-style conditions. */
+/**
+ * Only `flag:` refs are settable; a scene may also list `scene-completed:`-style conditions, and
+ * an outcome may be conditioned on `not:flag:…` — which must stay unsettable, or the director
+ * could "reach" an ending by asserting the very thing that rules it out.
+ */
 export function settableFlags(scene: DirectorScene): string[] {
-	return scene.exitConditions.filter((ref) => ref.startsWith('flag:'));
+	const refs = [...scene.exitConditions, ...(scene.outcomeConditions ?? [])];
+	return [...new Set(refs.filter((ref) => ref.startsWith('flag:')))];
 }
 
 export function claimableClueIds(scene: DirectorScene): string[] {

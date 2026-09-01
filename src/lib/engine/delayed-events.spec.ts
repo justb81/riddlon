@@ -22,7 +22,8 @@ function makeTestBundle(): StoryBundle {
 			world: [],
 			assetsBase: 'assets/',
 			minPlayerVersion: '0.1.0',
-			capabilities: []
+			capabilities: [],
+			tags: []
 		},
 		story: {
 			castBindings: [],
@@ -33,9 +34,11 @@ function makeTestBundle(): StoryBundle {
 					trigger: 'time-based',
 					approxDelay: 'PT2H',
 					condition: 'flag:report-to-lucy-done',
-					action: 'unlock-scene:scene-lucy-suspicion'
+					action: 'unlock-scene:scene-lucy-suspicion',
+					onDueConditionFalse: 'drop'
 				}
-			]
+			],
+			seedChats: []
 		},
 		graph: { nodes: [] },
 		clues: [],
@@ -108,5 +111,100 @@ describe('fireDueEvents', () => {
 
 		expect(fireDueEvents(state, bundle, t0 + 3 * HOUR)).toEqual([]);
 		expect(fireDueEvents(state, bundle, t0 + 100 * HOUR)).toEqual([]);
+	});
+});
+
+/**
+ * #33: the condition is re-checked at fire time, which is what makes "nudge the player *unless*
+ * they have replied since" expressible at all. The two `onDueConditionFalse` behaviours differ
+ * observably and silently, so both are pinned here.
+ */
+describe('fireDueEvents — condition re-check', () => {
+	/** A nudge that only makes sense while the player has not replied yet. */
+	function withNudge(onDueConditionFalse: 'drop' | 'rearm'): ReturnType<typeof makeTestBundle> {
+		const bundle = makeTestBundle();
+		return {
+			...bundle,
+			story: {
+				...bundle.story,
+				delayedEvents: [
+					{
+						id: 'event:nudge',
+						trigger: 'time-based',
+						approxDelay: 'PT20M',
+						condition: 'not:flag:player-replied',
+						action: 'set-flag:flag:nudge-due',
+						onDueConditionFalse
+					}
+				]
+			}
+		};
+	}
+
+	const t0 = 1_700_000_000_000;
+
+	it('does not apply the action when the condition no longer holds at due time', () => {
+		const bundle = withNudge('drop');
+		const state = createInitialState(bundle);
+		armDueEvents(state, bundle, t0);
+		expect(state.pendingDelayedEvents).toHaveLength(1);
+
+		state.flags['flag:player-replied'] = true;
+		const effects = fireDueEvents(state, bundle, t0 + HOUR);
+
+		expect(effects).toEqual([
+			{ type: 'delayed-event-cancelled', eventId: 'event:nudge', rearmed: false }
+		]);
+		expect(state.flags['flag:nudge-due']).toBeUndefined();
+	});
+
+	it('drops a cancelled event for good — it cannot fire on a later resume', () => {
+		const bundle = withNudge('drop');
+		const state = createInitialState(bundle);
+		armDueEvents(state, bundle, t0);
+		state.flags['flag:player-replied'] = true;
+		fireDueEvents(state, bundle, t0 + HOUR);
+
+		// Even if the condition becomes true again, and even after re-arming is attempted.
+		delete state.flags['flag:player-replied'];
+		armDueEvents(state, bundle, t0 + 2 * HOUR);
+		expect(fireDueEvents(state, bundle, t0 + 10 * HOUR)).toEqual([]);
+		expect(state.flags['flag:nudge-due']).toBeUndefined();
+	});
+
+	it('re-arms a cancelled event with a fresh delay when the package asks for it', () => {
+		const bundle = withNudge('rearm');
+		const state = createInitialState(bundle);
+		armDueEvents(state, bundle, t0);
+		state.flags['flag:player-replied'] = true;
+
+		expect(fireDueEvents(state, bundle, t0 + HOUR)).toEqual([
+			{ type: 'delayed-event-cancelled', eventId: 'event:nudge', rearmed: true }
+		]);
+		// Forgotten, not fired: that is what lets `armDueEvents` arm it again.
+		expect(state.pendingDelayedEvents).toEqual([]);
+
+		delete state.flags['flag:player-replied'];
+		const armed = armDueEvents(state, bundle, t0 + 2 * HOUR);
+		expect(armed).toEqual([
+			{
+				type: 'delayed-event-armed',
+				eventId: 'event:nudge',
+				// The delay runs from the re-arm, not from the original arming.
+				dueAt: new Date(t0 + 2 * HOUR + 20 * 60 * 1000).toISOString()
+			}
+		]);
+		fireDueEvents(state, bundle, t0 + 3 * HOUR);
+		expect(state.flags['flag:nudge-due']).toBe(true);
+	});
+
+	it('still fires an event whose condition is a latch, unchanged from #9', () => {
+		const bundle = makeTestBundle();
+		const state = createInitialState(bundle);
+		state.flags['flag:report-to-lucy-done'] = true;
+		armDueEvents(state, bundle, t0);
+
+		const effects = fireDueEvents(state, bundle, t0 + 2 * HOUR);
+		expect(effects.some((effect) => effect.type === 'delayed-event-fired')).toBe(true);
 	});
 });

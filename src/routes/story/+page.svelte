@@ -13,8 +13,9 @@
 	/**
 	 * The case file for the active package. Everything here is engine state: the timeline is the
 	 * authored scene graph, the clue list is `EngineState.clues`, and the achievements are the
-	 * package's own declarations — shown as open, because `achievementSchema` still has no unlock
-	 * conditions (#32) and inventing them on the story's behalf is what this screen used to do.
+	 * package's own declarations plus what the engine awarded from their `conditions` (#32) —
+	 * this screen never decides on a story's behalf what counts as earned, which is exactly what
+	 * the deleted demo module used to do.
 	 */
 
 	const ready = $derived(storyRuntime.initialized);
@@ -30,6 +31,7 @@
 
 	const title = $derived(storyRuntime.title ?? '');
 	const contactCount = $derived(storyRuntime.cast.length);
+	const tags = $derived(storyRuntime.tags);
 
 	/** Scene → timeline row. The format has no scene titles, so the position is the title and the
 	 *  participants are the description — reported structure, not invented structure. */
@@ -109,6 +111,18 @@
 								{t('story.chapterOf', { chapter: currentScene, total: totalScenes })} ·
 								{t('story.contactCount', { count: contactCount })}
 							</span>
+							{#if tags.length > 0}
+								<!-- Authored classification from the manifest (#53) — the app has no genre of
+								     its own to assert about a package any more. -->
+								<span class="mt-2 flex flex-wrap gap-1.5">
+									{#each tags as tag (tag)}
+										<span
+											class="rounded-full border border-line px-2 py-0.5 font-mono text-[9.5px] tracking-[0.06em] text-slate-400"
+											>{tag}</span
+										>
+									{/each}
+								</span>
+							{/if}
 						</span>
 					</div>
 					{#if ready}
@@ -189,18 +203,32 @@
 										? 'border-accent/40 bg-accent/10'
 										: 'border-line bg-surface-raised'}"
 								>
-									<div class="text-label font-medium text-slate-100">{achievement.label}</div>
+									<div class="flex items-baseline gap-2">
+										<span class="flex-1 text-label font-medium text-slate-100"
+											>{achievement.label}</span
+										>
+										{#if achievement.earned}
+											<span class="font-mono text-[9.5px] text-accent"
+												>{t('story.achievementEarned')}</span
+											>
+										{/if}
+									</div>
 									{#if achievement.description}
 										<div class="mt-1 text-label leading-relaxed text-slate-400">
 											{achievement.description}
 										</div>
 									{/if}
+									{#if !achievement.awardable}
+										<!-- The package names this ending but never says when it is earned, so
+										     nothing can award it — say so instead of showing an open checkbox
+										     the player can never tick (#32). -->
+										<div class="mt-1 text-label leading-relaxed text-slate-500">
+											{t('story.achievementDecorative')}
+										</div>
+									{/if}
 								</div>
 							{/each}
 						</div>
-						<p class="mt-2.5 text-label leading-relaxed text-slate-500">
-							{t('story.achievementsNoConditionsNote')}
-						</p>
 					{/if}
 				{/if}
 			</div>

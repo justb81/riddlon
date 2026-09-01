@@ -14,6 +14,9 @@ export interface CatalogEntry {
 	title: string;
 	status: StoryStatus;
 	contactCount: number;
+	/** The package's own `manifest.tags` (#53). The card used to print a hardcoded "Krimi" for
+	 *  every installed story, which was the demo story's genre asserted about everything. */
+	tags: string[];
 	/** Only set for the active session — the only package whose progress is loaded. */
 	chapter?: { current: number; total: number };
 	progressPercent?: number;

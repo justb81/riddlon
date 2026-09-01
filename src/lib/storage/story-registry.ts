@@ -3,7 +3,11 @@ import type { Manifest, StoryBundle } from '$lib/content/index.js';
 import { getDb, type InstalledPackageContent, type InstalledPackageRecord } from './db.js';
 import { characterLibrary } from './character-library.js';
 
-export type InstalledPackageSummary = Omit<InstalledPackageRecord, 'manifest' | 'content'>;
+export type InstalledPackageSummary = Omit<InstalledPackageRecord, 'manifest' | 'content'> & {
+	/** Lifted out of the manifest, which a summary otherwise drops, so the library card can show
+	 *  the package's own classification (#53). Empty for records installed before the field. */
+	tags: string[];
+};
 
 function toSummary(record: InstalledPackageRecord): InstalledPackageSummary {
 	return {
@@ -16,7 +20,8 @@ function toSummary(record: InstalledPackageRecord): InstalledPackageSummary {
 		coverAssetKey: record.coverAssetKey,
 		sizeBytes: record.sizeBytes,
 		characterIds: record.characterIds,
-		assetKeys: record.assetKeys
+		assetKeys: record.assetKeys,
+		tags: record.manifest.tags ?? []
 	};
 }
 

@@ -146,3 +146,130 @@ describe('validatePackage', () => {
 		expect(result.errors).toContainEqual(expect.objectContaining({ code: 'DUPLICATE_ID' }));
 	});
 });
+
+/**
+ * Format 1.1.0 additions (#30, #32, #53, #55). Everything here is optional and defaulted, so the
+ * first assertion is the one that matters most: the 1.0.0 fixture above must still validate
+ * untouched.
+ */
+describe('validatePackage — format 1.1.0 fields', () => {
+	function sceneIds(files: Record<string, unknown>): string[] {
+		return (files['story/graph.json'] as StoryGraph).nodes.map((node) => node.id);
+	}
+
+	it('defaults the new optional fields, so a 1.0.0 package keeps validating', () => {
+		const result = validatePackage(buildValidPackageFiles());
+		expect(result.valid).toBe(true);
+		expect(result.manifest?.tags).toEqual([]);
+		expect(result.story?.seedChats).toEqual([]);
+	});
+
+	it('accepts manifest tags, achievement conditions, seed chats and authored outcomes', () => {
+		const files = structuredClone(buildValidPackageFiles());
+		const [maxScene] = sceneIds(files);
+		(files['manifest.json'] as Manifest).tags = ['krimi', 'freundschaft'];
+		const story = files['story/story.json'] as Story;
+		story.achievements = [
+			{
+				id: '5f83e807-42fc-41c0-b2e7-1d70a550f568',
+				label: 'Fall gelöst',
+				conditions: ['outcome-reached:max-confesses', 'clue-known:clue:time-window']
+			}
+		];
+		story.seedChats = [
+			{
+				sceneRef: maxScene,
+				messages: [
+					{ from: MAX_ID, text: 'Alles gut bei dir?', offset: 'P2D' },
+					{ from: 'me', text: 'Ja, alles gut.', offset: 'P2D' }
+				]
+			}
+		];
+
+		const result = validatePackage(files);
+		expect(result.errors).toEqual([]);
+		expect(result.manifest?.tags).toEqual(['krimi', 'freundschaft']);
+		expect(result.story?.achievements[0].conditions).toHaveLength(2);
+		expect(result.story?.seedChats[0].messages).toHaveLength(2);
+	});
+
+	it('rejects an achievement condition naming an entity the package never declares', () => {
+		const files = structuredClone(buildValidPackageFiles());
+		const story = files['story/story.json'] as Story;
+		story.achievements = [
+			{
+				id: '5f83e807-42fc-41c0-b2e7-1d70a550f568',
+				label: 'Alle Hinweise gefunden',
+				// The clue exists; the outcome does not.
+				conditions: ['clue-known:clue:time-window', 'not:outcome-reached:sabine-confesses']
+			}
+		];
+
+		const result = validatePackage(files);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual([
+			expect.objectContaining({
+				code: 'DANGLING_REFERENCE',
+				path: 'story/story.json#/achievements/0/conditions/1'
+			})
+		]);
+	});
+
+	it('reports a duplicate achievement id', () => {
+		const files = structuredClone(buildValidPackageFiles());
+		const story = files['story/story.json'] as Story;
+		const id = '5f83e807-42fc-41c0-b2e7-1d70a550f568';
+		story.achievements = [
+			{ id, label: 'Fall gelöst', conditions: [] },
+			{ id, label: 'Nochmal gelöst', conditions: [] }
+		];
+
+		const result = validatePackage(files);
+		expect(result.errors).toEqual([
+			expect.objectContaining({ code: 'DUPLICATE_ID', path: 'story/story.json#/achievements/1/id' })
+		]);
+	});
+
+	it('rejects a seed chat on an unknown scene, and one whose speaker is not in the scene', () => {
+		const files = structuredClone(buildValidPackageFiles());
+		const [maxScene] = sceneIds(files);
+		const story = files['story/story.json'] as Story;
+		story.seedChats = [
+			{
+				sceneRef: '00000000-0000-4000-8000-000000000000',
+				messages: [{ from: MAX_ID, text: 'Hallo?', offset: 'PT10M' }]
+			},
+			{
+				// SABINE is not a participant of Max's scene — the history would show up in a thread
+				// she has nothing to do with.
+				sceneRef: maxScene,
+				messages: [{ from: SABINE_ID, text: 'Hallo?', offset: 'PT10M' }]
+			}
+		];
+
+		const result = validatePackage(files);
+		expect(result.valid).toBe(false);
+		expect(result.errors.map((error) => error.path)).toEqual([
+			'story/story.json#/seedChats/0/sceneRef',
+			'story/story.json#/seedChats/1/messages/0/from'
+		]);
+	});
+
+	it('reports two seed chats for one scene, which would silently concatenate', () => {
+		const files = structuredClone(buildValidPackageFiles());
+		const [maxScene] = sceneIds(files);
+		const story = files['story/story.json'] as Story;
+		story.seedChats = [
+			{ sceneRef: maxScene, messages: [{ from: MAX_ID, text: 'Eins', offset: 'PT10M' }] },
+			{ sceneRef: maxScene, messages: [{ from: MAX_ID, text: 'Zwei', offset: 'PT5M' }] }
+		];
+
+		const result = validatePackage(files);
+		expect(result.errors).toEqual([
+			expect.objectContaining({
+				code: 'DUPLICATE_ID',
+				path: 'story/story.json#/seedChats/1/sceneRef'
+			})
+		]);
+	});
+});

@@ -15,7 +15,8 @@ function emptyState(): EngineState {
 		reachedOutcomeIds: new Set(),
 		unlockedCharacterIds: new Set(),
 		clues: {},
-		pendingDelayedEvents: []
+		pendingDelayedEvents: [],
+		earnedAchievementIds: new Set()
 	};
 }
 
