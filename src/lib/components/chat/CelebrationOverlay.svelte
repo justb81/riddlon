@@ -26,6 +26,10 @@
 		) ?? outcomes[0]
 	);
 	const closingText = $derived(headline?.closingText);
+	/** The headline already names one ending; listing it again under itself just reads as a stutter,
+	 *  so the row below is for the *other* endings a playthrough reached — a wrong accusation on the
+	 *  way to a confession, say. */
+	const otherOutcomes = $derived(outcomes.filter((outcome) => outcome.id !== headline?.id));
 	const earnedAchievements = $derived(storyRuntime.achievements.filter((a) => a.earned));
 </script>
 
@@ -34,14 +38,20 @@
 		class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface px-7.5 py-10 text-center"
 		style="animation:rd-fade .35s ease both"
 	>
+		<!-- The accent glow is the celebratory half of this screen; a setback ending keeps the
+		     composition and loses the fanfare. -->
 		<div
 			class="pointer-events-none absolute inset-0"
-			style="background:radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--color-accent) 22%, transparent) 0%, transparent 62%)"
+			style="background:radial-gradient(circle at 50% 38%, color-mix(in srgb, {setback
+				? 'var(--color-line-strong) 45%'
+				: 'var(--color-accent) 22%'}, transparent) 0%, transparent 62%)"
 		></div>
 
 		<div class="relative mb-8 flex items-center justify-center">
 			<div
-				class="absolute size-[216px] rounded-full border border-dashed border-accent/45"
+				class="absolute size-[216px] rounded-full border border-dashed {setback
+					? 'border-line-strong'
+					: 'border-accent/45'}"
 				style="animation:rd-ring 26s linear infinite"
 			></div>
 			<div class="absolute size-[166px] rounded-full border border-line-strong"></div>
@@ -73,7 +83,7 @@
 			</p>
 
 			<div class="mt-6 flex flex-col gap-2">
-				{#each outcomes as outcome (outcome.id)}
+				{#each otherOutcomes as outcome (outcome.id)}
 					<div
 						class="flex items-center gap-2.5 rounded-tile border border-line bg-slate-100/5 px-3.5 py-3"
 						style="animation:rd-in .4s ease both"

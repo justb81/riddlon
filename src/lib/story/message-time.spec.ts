@@ -11,8 +11,9 @@ const yesterdayLabel = 'Gestern';
 
 describe('formatMessageTimestamp', () => {
 	it('shows only the clock for a message from today', () => {
-		expect(formatMessageTimestamp(local(2026, 3, 1, 9, 5).toISOString(), { now: NOW, yesterdayLabel }))
-			.toBe('09:05');
+		expect(
+			formatMessageTimestamp(local(2026, 3, 1, 9, 5).toISOString(), { now: NOW, yesterdayLabel })
+		).toBe('09:05');
 	});
 
 	it('names yesterday, so a seed message a whole day old is not mistaken for a new one', () => {
