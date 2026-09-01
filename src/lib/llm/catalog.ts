@@ -73,10 +73,6 @@ export function findModel(id: LocalModelId): LlmModelDescriptor {
 	return LLM_MODELS[id];
 }
 
-export function isLocalModelId(value: unknown): value is LocalModelId {
-	return typeof value === 'string' && value in LLM_MODELS;
-}
-
 /** German size label, e.g. `1,9 GB` — the UI is German-only (see $lib/i18n). */
 export function formatSizeLabel(bytes: number): string {
 	const gb = bytes / GB;

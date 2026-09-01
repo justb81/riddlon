@@ -9,7 +9,7 @@
  * imported directly, matching how `$lib/state/*.svelte.ts` stores are consumed elsewhere.
  */
 
-export { createLlmAdapter, modelVramRequiredMB } from './adapter.js';
+export { createLlmAdapter } from './adapter.js';
 export {
 	bestSupportedModelId,
 	canRunModel,
@@ -19,9 +19,7 @@ export {
 } from './capabilities.js';
 export {
 	isMeteredConnection,
-	resolveBackend,
 	shouldAutoStartDownload,
-	type BackendChoice,
 	type DeviceFacts
 } from './capabilities-rules.js';
 export {
@@ -30,7 +28,6 @@ export {
 	MODEL_ORDER,
 	findModel,
 	formatSizeLabel,
-	isLocalModelId,
 	llmModelOptions,
 	type LlmModelDescriptor,
 	type LocalModelId
@@ -43,12 +40,18 @@ export {
 	type LlmErrorCode
 } from './errors.js';
 export {
-	clearGeminiApiKey,
-	getGeminiApiKey,
-	hasGeminiApiKey,
-	setGeminiApiKey
-} from './gemini-key.js';
-export { deleteModel, isModelCached, markModelCached } from './model-cache.js';
+	ENDPOINT_STORAGE_KEY,
+	clearEndpointConfig,
+	endpointHostLabel,
+	getEndpointConfig,
+	hasEndpointConfig,
+	isLocalEndpoint,
+	normalizeBaseUrl,
+	setEndpointConfig,
+	type InferenceEndpointConfig
+} from './endpoint-config.js';
+export { createOpenAiCompatibleLanguageModel, testEndpoint } from './openai-compatible.js';
+export { isModelCached, markModelCached } from './model-cache.js';
 export { modelRowStatus, type ModelRowInput, type ModelRowStatus } from './model-status.js';
 export {
 	PHASE_BUDGET,

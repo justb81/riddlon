@@ -81,7 +81,8 @@ export function canRunModel(capabilities: LlmCapabilities, modelId: LocalModelId
  * Why a WebLLM catalog entry can't run on this device, for the settings picker to say something
  * more specific than "nicht unterstützt" — `undefined` when the model is fine. Never fires while a
  * native Prompt API is present: that backend wins regardless of which catalog model is selected, so
- * every WebLLM entry is moot rather than unsupported (see `usingBuiltIn` in the settings screen).
+ * every WebLLM entry is moot rather than unsupported (see `modelRowStatus` in `model-status.ts`,
+ * which renders that distinction).
  */
 export function unsupportedModelReason(
 	capabilities: LlmCapabilities,

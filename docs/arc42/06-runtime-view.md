@@ -14,7 +14,9 @@ sequenceDiagram
 
     P->>Boot: opens the app
     Boot->>Llm: probe capabilities (WebGPU, buffer limits, connection)
-    alt native Prompt API present
+    alt inference endpoint configured
+        Llm-->>Boot: ready, no download
+    else native Prompt API present
         Llm-->>Boot: ready, no download
     else WebLLM usable
         opt metered connection
@@ -22,8 +24,6 @@ sequenceDiagram
         end
         Llm->>Llm: download + compile weights (one 0..1 fraction)
         Llm-->>Boot: progress updates
-    else no local model and a Gemini key is stored
-        Llm-->>Boot: ready via Gemini
     else
         Llm-->>Boot: unsupported — the app still runs, threads explain why they are empty
     end
@@ -188,5 +188,6 @@ Both end in a full page load, because the state singletons memoise their `init()
 Model weights survive on purpose: `appKeysToClear()` keeps the `riddlon:llm:*` cache markers, so no
 multi-gigabyte re-download is triggered by a factory reset. Two keys are carved out of that rule in
 opposite directions — `riddlon:active-package` goes, so no pointer outlives the package the wipe
-deleted, and the **Gemini API key goes too** despite sitting under the `riddlon:llm:` prefix: it is a
-credential, not a cache, so "alles zurücksetzen" clears it like any other app key.
+deleted, and the **inference-endpoint record goes too** despite sitting under the `riddlon:llm:`
+prefix: it is configuration and may carry an API key, not a cache, so "alles zurücksetzen" clears it
+like any other app key.

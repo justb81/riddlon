@@ -398,25 +398,36 @@ are reported separately, so the UI can show a placeholder name until the reveal 
 `LanguageModel.availability()` / `create()` / `promptStreaming()`. Three providers implement it, and
 `provider.ts` is the only file that knows any of them exists.
 
-| Order | Provider   | When it wins                                                                                                                           |
-| ----- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | **Native** | The browser has its own built-in Prompt API. Costs no download, so it wins whenever present.                                           |
-| 2     | **WebLLM** | `@mlc-ai/web-llm` over WebGPU, for browsers with no native model. One ~1.9 GB download.                                                |
-| 3     | **Gemini** | Only when the catalog model cannot run on this device (no WebGPU, or not enough VRAM) **and** the player has stored their own API key. |
+| Order | Provider     | When it wins                                                                                                               |
+| ----- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1     | **Endpoint** | The player has configured an OpenAI-compatible `/chat/completions` address and a model name. Outranks both local backends. |
+| 2     | **Native**   | The browser has its own built-in Prompt API. Costs no download, so it wins whenever no endpoint is configured.             |
+| 3     | **WebLLM**   | `@mlc-ai/web-llm` over WebGPU, for browsers with no native model. One ~1.9 GB download.                                    |
 
-Gemini is a rescue path for devices that can play no other way, never an alternative players opt
-into for quality. `create()` and `availability()` never touch the network — only `prompt()` and
-`promptStreaming()` do — so resolving the provider and holding the adapter's warm-up handle cost
-nothing. Response codes map onto the shared `LlmErrorCode` vocabulary: 401 and 403 become
-`invalid-api-key`, 429 becomes `quota-exceeded`. `resolveProvider(modelId, capabilities?)` takes the device capabilities as an
-optional argument purely so this module never has to probe WebGPU itself; callers that omit it get
-the behaviour of an unsupported WebLLM model failing outright.
+The endpoint being **first** rather than last is deliberate, and the opposite of the Gemini BYOK
+tier it replaced. Such an address is most often a server on the player's own machine or LAN — Ollama,
+LM Studio, llama.cpp — so it is usually a stronger model than the 3B catalog entry rather than a
+compromise, and a player who went to the trouble of entering one meant to use it. It is opt-in and
+empty by default, so an untouched install is entirely local.
 
-`llm.svelte.ts` counts a device as usable once a Gemini key is stored, even with no WebGPU —
-otherwise the loader would fail before ever reaching the Gemini branch. `localUnusable` deliberately
-ignores any stored key (native and WebLLM both fail there) and is what gates whether the settings
-screen shows the Gemini key field at all, so the field does not vanish the moment a key makes the
-device supported again.
+`create()` and `availability()` never touch the network — only `prompt()` and `promptStreaming()`
+do — so resolving the provider and holding the adapter's warm-up handle cost nothing. Response codes
+map onto the shared `LlmErrorCode` vocabulary: 401 and 403 become `invalid-api-key`, 429 becomes
+`quota-exceeded`, and a `fetch` throw (which is also the CORS case) becomes `download-failed`.
+`resolveProvider(modelId)` takes no capabilities argument: the endpoint's turn does not depend on
+what the device can do.
+
+Because an endpoint pre-empts a working local model, a typo would otherwise surface only as a
+silently dead chat on the first message — nothing contacts the address before then. `testEndpoint()`
+backs a "Verbindung testen" button with one `GET /models`, where **a 404 counts as reachable**: not
+every gateway serves that route, and any HTTP response already proves the host resolves and CORS
+allows this origin.
+
+`llm.svelte.ts` counts a device as usable once an endpoint is configured, even with no WebGPU —
+otherwise the loader would fail with `no-webgpu` before ever reaching `provider.ts`. `localUnusable`
+deliberately ignores any configured endpoint (native and WebLLM both fail there) and now only picks
+the wording of the settings hint, not whether the endpoint form appears: it is always shown, being a
+preference rather than a rescue path.
 
 ### 8.4.2 Model Catalog
 
@@ -426,7 +437,7 @@ device supported again.
 - **The player never picks a model.** The settings screen's model list is a read-only status view.
 - **No smaller tier.** A 1B fallback existed; live-browser testing found that it, and every other
   tested sub-1 GB-VRAM model, broke character or produced incoherent output. A device that cannot
-  hold 3B falls to the `unsupported` state (or the Gemini fallback) rather than to a smaller,
+  hold 3B falls to the `unsupported` state (or the configured endpoint) rather than to a smaller,
   unusable local tier.
 - **No larger tier.** Llama 3.2 tops out at 3B, and the older Llama 3.1 8B is not worth doubling the
   download for the rare device that could hold it but has no native Prompt API.
@@ -510,15 +521,15 @@ provider so the real logic is exercised in Node with no GPU.
 
 ## 8.5 Persistence
 
-| Store               | Technology                       | Contents                                                                             |
-| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
-| `packages`          | IndexedDB `riddlon` v1           | Installed package manifest, parsed content, cover reference, size, install time      |
-| `characters`        | IndexedDB                        | The local, story-independent character library, keyed by character UUID              |
-| `saves`             | IndexedDB                        | Flags, unlocked / completed scenes, clue state, pending delayed events, chat history |
-| `playerProfile`     | IndexedDB                        | The player profile (singleton record)                                                |
-| `riddlon-assets-v1` | Cache Storage                    | Package binary assets, content-addressed                                             |
-| model weights       | Cache Storage (owned by web-llm) | Multi-gigabyte model files                                                           |
-| `riddlon:*`         | `localStorage`                   | Active package, app settings, onboarding state, LLM cache markers, Gemini key        |
+| Store               | Technology                       | Contents                                                                              |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
+| `packages`          | IndexedDB `riddlon` v1           | Installed package manifest, parsed content, cover reference, size, install time       |
+| `characters`        | IndexedDB                        | The local, story-independent character library, keyed by character UUID               |
+| `saves`             | IndexedDB                        | Flags, unlocked / completed scenes, clue state, pending delayed events, chat history  |
+| `playerProfile`     | IndexedDB                        | The player profile (singleton record)                                                 |
+| `riddlon-assets-v1` | Cache Storage                    | Package binary assets, content-addressed                                              |
+| model weights       | Cache Storage (owned by web-llm) | Multi-gigabyte model files                                                            |
+| `riddlon:*`         | `localStorage`                   | Active package, app settings, onboarding state, LLM cache markers, inference endpoint |
 
 Design notes:
 
@@ -663,13 +674,17 @@ It comes from the installed package and carries the package's own `language`.
   no server.
 - **A playthrough never leaves the device** on the native and WebLLM paths. The only outbound traffic
   during play is nothing at all.
-- **The Gemini path is opt-in and explicit.** The player's own key is stored under
-  `riddlon:llm:gemini-key` in `localStorage` — separate from the profile store precisely because it
-  must survive a reload — and is sent only inside the Gemini request itself. Prompt content does
+- **The endpoint path is opt-in and explicit.** The player's own configuration is stored under
+  `riddlon:llm:endpoint` in `localStorage` — separate from the profile store precisely because it
+  must survive a reload — and any API key in it is sent only inside that endpoint's own request. The
+  settings screen distinguishes a loopback or private-network address, where nothing leaves the
+  device, from a public host, where it warns that chat content does. Prompt content does
   leave the device on this path; that is the trade the player makes to play at all on a device with
   no local model.
 - **No cloud SDK is a dependency.** `package.json` carries no Firebase, OpenAI, Gemini or
-  Transformers.js package; the Gemini path above is plain `fetch` against a documented REST endpoint.
+  Transformers.js package; the endpoint path above is plain `fetch` against a documented REST API.
+  This is about bundle weight for a feature most players never enable, not a rule against reaching
+  an external model.
   Nothing in the build currently _enforces_ this, though — the only automated boundary check is
   `no-backend-leakage.spec.ts`, and it guards `@mlc-ai/web-llm`, not cloud SDKs. See
   [§11.2](./11-risks-and-technical-debt.md#112-technical-risks).

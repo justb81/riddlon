@@ -18,6 +18,12 @@
 	import { i18nKeyForLlmError } from '$lib/llm/errors.js';
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import { isForcingWebLlm, setForceWebLlm } from '$lib/llm/provider.js';
+	import {
+		clearEndpointConfig,
+		endpointHostLabel,
+		getEndpointConfig
+	} from '$lib/llm/endpoint-config.js';
+	import { testEndpoint } from '$lib/llm/openai-compatible.js';
 	import { t } from '$lib/i18n/i18n.svelte.js';
 
 	const SYSTEM_PROMPT =
@@ -28,15 +34,36 @@
 	// to force a particular catalog model regardless of what the device would auto-select.
 	let selectedModel = $state<LocalModelId>(DEFAULT_MODEL_ID);
 
-	// Bypasses the native Prompt API (Gemini Nano) so the WebLLM path can be exercised on
-	// a device where native would otherwise always win — see issue #69's step 1 (measuring
-	// `resetChat()` timing needs a real WebLLM session, not native's already-cheap per-session
-	// handle). Forces a fresh provider resolution and reloads the currently selected model.
+	// Bypasses everything above WebLLM — a configured endpoint and the native Prompt API (Gemini
+	// Nano) both — so the WebLLM path can be exercised on a device where one of them would
+	// otherwise always win. See issue #69's step 1 (measuring `resetChat()` timing needs a real
+	// WebLLM session, not native's already-cheap per-session handle). Forces a fresh provider
+	// resolution and reloads the currently selected model.
 	let forceWebLlm = $state(isForcingWebLlm());
 
 	async function toggleForceWebLlm() {
 		forceWebLlm = !forceWebLlm;
 		setForceWebLlm(forceWebLlm);
+		await llm.selectModel(selectedModel, { force: true });
+	}
+
+	// The endpoint the player configured in /settings — shown here because it silently outranks
+	// both local backends, so "why is backend openai?" needs an answer on the harness itself.
+	let endpoint = $state(getEndpointConfig());
+	let endpointProbe = $state<string | null>(null);
+
+	async function probeEndpoint() {
+		const config = endpoint;
+		if (!config) return;
+		endpointProbe = 'läuft …';
+		const result = await testEndpoint(config);
+		endpointProbe = result.ok ? 'erreichbar' : `Fehler: ${result.code}`;
+	}
+
+	async function dropEndpoint() {
+		clearEndpointConfig();
+		endpoint = undefined;
+		endpointProbe = null;
 		await llm.selectModel(selectedModel, { force: true });
 	}
 
@@ -133,9 +160,42 @@
 	</section>
 
 	<section class="flex flex-col gap-2 rounded-tile border border-line bg-slate-100/3 p-4">
+		<h2 class="font-mono text-[9.5px] tracking-[0.12em] text-slate-500">ENDPUNKT</h2>
+		{#if endpoint}
+			<p class="font-mono text-caption text-slate-300">
+				{endpoint.model} · {endpointHostLabel(endpoint.baseUrl)}
+				{endpoint.apiKey ? ' · mit Key' : ' · ohne Key'}
+			</p>
+			<div class="flex flex-wrap gap-2">
+				<button
+					type="button"
+					onclick={() => void probeEndpoint()}
+					class="rounded-control border border-line-strong px-3 py-1.5 text-label text-slate-300"
+				>
+					Verbindung testen
+				</button>
+				<button
+					type="button"
+					onclick={() => void dropEndpoint()}
+					class="rounded-control border border-line-strong px-3 py-1.5 text-label text-slate-300"
+				>
+					Endpunkt entfernen
+				</button>
+			</div>
+			{#if endpointProbe}
+				<p class="font-mono text-caption text-slate-400">{endpointProbe}</p>
+			{/if}
+		{:else}
+			<p class="text-caption text-slate-500">
+				Keiner eingerichtet — die lokalen Backends entscheiden. Einrichten in /settings.
+			</p>
+		{/if}
+	</section>
+
+	<section class="flex flex-col gap-2 rounded-tile border border-line bg-slate-100/3 p-4">
 		<label class="flex items-center gap-2.5 text-label">
 			<input type="checkbox" checked={forceWebLlm} onchange={() => void toggleForceWebLlm()} />
-			WebLLM erzwingen (native Prompt API / Gemini Nano umgehen)
+			WebLLM erzwingen (Endpunkt und native Prompt API / Gemini Nano umgehen)
 		</label>
 		<p class="text-caption text-slate-500">
 			Für #69: misst reale WebLLM-Session-Kosten statt der ohnehin billigen nativen Session. Setzt

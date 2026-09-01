@@ -8,7 +8,7 @@
  */
 
 import { browser } from '$app/environment';
-import { GEMINI_KEY_STORAGE_KEY } from '$lib/llm/gemini-key.js';
+import { ENDPOINT_STORAGE_KEY } from '$lib/llm/endpoint-config.js';
 import { clearAllStoredData, clearSaves } from '$lib/storage/index.js';
 
 /** Everything this app writes to `localStorage` is namespaced with this. */
@@ -22,15 +22,15 @@ export const MODEL_MARKER_PREFIX = 'riddlon:llm:';
  * Which `localStorage` keys a factory reset removes. Dropping a model marker would only cost
  * the player a first-run progress bar for a model that is in fact already on the device, so
  * those are kept while every other app key goes — including the active-package pointer, which
- * would otherwise point at a package the wipe just deleted. The Gemini API key (issue #84) is
- * the one exception carved back out of that `riddlon:llm:*` marker prefix: it is a credential,
- * not a cache, so "alles zurücksetzen" clears it same as any other app key.
+ * would otherwise point at a package the wipe just deleted. The inference-endpoint record is the
+ * one exception carved back out of that `riddlon:llm:*` marker prefix: it is configuration, and
+ * can carry an API key, so "alles zurücksetzen" clears it same as any other app key.
  */
 export function appKeysToClear(keys: readonly string[]): string[] {
 	return keys.filter(
 		(key) =>
 			key.startsWith(APP_STORAGE_PREFIX) &&
-			(!key.startsWith(MODEL_MARKER_PREFIX) || key === GEMINI_KEY_STORAGE_KEY)
+			(!key.startsWith(MODEL_MARKER_PREFIX) || key === ENDPOINT_STORAGE_KEY)
 	);
 }
 

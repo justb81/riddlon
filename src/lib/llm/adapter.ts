@@ -2,7 +2,7 @@
  * The adapter `engine/` and `ui/` talk to. Everything model- and backend-specific stops here.
  *
  * Every logical session — one per character, plus the director — gets its own real backend handle,
- * on both providers. That used to be true only for the native Prompt API: the WebLLM path went
+ * on all three providers. That used to be true only for the native Prompt API: the WebLLM path went
  * through `prompt-api-polyfill`, whose backend rebuilt a whole `MLCEngine` on every `create()`, so
  * this file kept one shared handle and baked persona + history into prompt text instead
  * (`personaMode: 'inline'`) to avoid paying that reload per character. Issue #69 replaced that path
@@ -17,7 +17,7 @@
  * change.
  */
 
-import { findModel, type LocalModelId } from './catalog.js';
+import { type LocalModelId } from './catalog.js';
 import { LlmError, classifyLoadError } from './errors.js';
 import { clampFraction, normalizeProgressEvent, phaseForFraction } from './progress.js';
 import { readableToAsyncIterable, throwIfAborted, toDeltas } from './stream.js';
@@ -317,9 +317,4 @@ export function createLlmAdapter(config: LlmAdapterConfig, deps: AdapterDeps): L
 			warmedUp = false;
 		}
 	};
-}
-
-/** Convenience for callers that only need the capability figure, not the whole descriptor. */
-export function modelVramRequiredMB(modelId: LocalModelId): number {
-	return findModel(modelId).vramRequiredMB;
 }

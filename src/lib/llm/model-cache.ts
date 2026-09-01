@@ -45,26 +45,6 @@ export function markModelCached(modelId: LocalModelId): void {
 	}
 }
 
-/** Frees the weights of a model the player no longer wants. Not yet surfaced in the UI. */
-export async function deleteModel(modelId: LocalModelId): Promise<void> {
-	if (!browser) return;
-	const model = findModel(modelId);
-
-	try {
-		const { deleteModelInCache, prebuiltAppConfig } = await import('@mlc-ai/web-llm');
-		await deleteModelInCache(model.mlcModelId, {
-			...prebuiltAppConfig,
-			cacheBackend: 'cross-origin'
-		});
-	} finally {
-		try {
-			localStorage.removeItem(`${MARKER_PREFIX}${model.mlcModelId}`);
-		} catch {
-			// Nothing to do — the marker is only ever a hint.
-		}
-	}
-}
-
 function hasMarker(mlcModelId: string): boolean {
 	try {
 		return localStorage.getItem(`${MARKER_PREFIX}${mlcModelId}`) === '1';

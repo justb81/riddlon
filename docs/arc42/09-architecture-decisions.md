@@ -98,6 +98,10 @@ list is a read-only status view.
 
 ## ADR 8: Gemini BYOK as a last-resort provider
 
+> **Superseded by [ADR 15](#adr-15-a-player-configured-openai-compatible-endpoint-preferred-over-the-local-backends).**
+> The Gemini-specific provider is gone; the tier below is now a player-configured OpenAI-compatible
+> endpoint, and it is preferred over the local backends rather than used as a last resort.
+
 **Context.** After ADR 7, devices with no WebGPU and no built-in model can play nothing.
 
 **Decision.** Allow a player-supplied Gemini API key, used only when the catalog model cannot run on
@@ -186,3 +190,38 @@ bundle small and the request shape visible. But nothing fails if someone adds su
 `no-backend-leakage.spec.ts` guards `@mlc-ai/web-llm` only. That gap is recorded in
 [§11.2](./11-risks-and-technical-debt.md#112-technical-risks); reinstating a build-level guard would
 supersede this ADR.
+
+## ADR 15: A player-configured OpenAI-compatible endpoint, preferred over the local backends
+
+**Context.** [ADR 8](#adr-8-gemini-byok-as-a-last-resort-provider) added Gemini BYOK as a rescue
+route for devices that can run nothing locally. Two things have since changed. First, the
+OpenAI-compatible `/chat/completions` shape is what almost every inference server speaks — Ollama,
+LM Studio, llama.cpp, vLLM, hosted gateways, and Google's own compatibility layer — so a
+Gemini-specific client covers a strict subset of what one generic client would. Second, the premise
+behind treating any such backend as a last resort no longer holds: the finding recorded in
+[ADR 7](#adr-7-one-local-model-tier) means many current devices cannot run a usable local model at
+all, and an OpenAI-compatible address is most often a server on the player's own machine or LAN,
+which makes it a _stronger_ model than the 3B catalog entry rather than a compromise.
+
+**Decision.** Replace the Gemini provider with a generic OpenAI-compatible one, configured by the
+player as a base URL, a model name and an optional API key, and resolve it **first** — ahead of the
+native Prompt API and WebLLM. Keep it opt-in and empty by default. Implement it over plain `fetch`,
+not an SDK. Both a base URL and a model name are required before it counts as configured, so a
+half-filled settings form cannot displace a working local model.
+
+Also retire the test that forbade referencing any cloud provider SDK anywhere in `src`. It encoded
+the original hypothesis that on-device inference alone would suffice, which ADR 7's testing
+disproved; the _rule_ in [ADR 14](#adr-14-no-cloud-sdk-dependency) survives on its own merits, as a
+bundle-weight argument rather than a prohibition on reaching an external model. The three
+containment tests in `no-backend-leakage.spec.ts` — which keep `@mlc-ai/web-llm` and MLC model ids
+inside `llm/` — stay, and ADR 14's description of that file is now accurate.
+
+**Consequences.** Prompt content leaves the device whenever the configured endpoint is remote — an
+explicit, opt-in trade the settings screen names, distinguishing a loopback or private-network
+address (nothing leaves) from a public host (it does). Because the endpoint pre-empts a working
+local model, a typo would otherwise surface only as a dead chat on the first message, so a
+`testEndpoint()` connection check backs a button in settings. `resolveProvider` no longer needs the
+device capabilities it took solely to gate the Gemini tier. Quality goals
+[§1.2](./01-introduction-and-goals.md#12-quality-goals) 1 and 2 are reworded: offline capability now
+holds for the local backends, and local inference is "preferred where the device allows" rather than
+the default mode everywhere.

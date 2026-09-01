@@ -99,19 +99,19 @@ Two functions, deliberately small — the library itself is a storage concern.
 
 ## 5.4 Level 2 — `llm/`
 
-| Building block                                                                           | Responsibility                                                                                                                                      |
-| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `provider.ts`                                                                            | The **only** file that touches `globalThis.LanguageModel` and the only one that knows all three providers exist. Resolves native → WebLLM → Gemini. |
-| `webllm-direct.ts`                                                                       | A hand-written Prompt-API-shaped engine over `@mlc-ai/web-llm`, with one persistent `MLCEngine` reused across sessions.                             |
-| `gemini-direct.ts`                                                                       | A Prompt-API-shaped client over the Gemini REST API using plain `fetch`. No SDK, no network on `create()`.                                          |
-| `gemini-key.ts`                                                                          | The BYOK key's own `localStorage` module. The key never leaves the device except inside the Gemini request.                                         |
-| `adapter.ts`                                                                             | `LlmAdapter` / `LlmSession` — what `state/` codes against. Injects its provider so the real logic is testable in Node with no GPU.                  |
-| `catalog.ts`                                                                             | The only place a Riddlon model id maps to a concrete MLC model, its download size, VRAM requirement and context window.                             |
-| `capabilities.ts` + `capabilities-rules.ts`                                              | Device probing (WebGPU, buffer limits, metered connection) separated from the pure decisions made from it.                                          |
-| `persona.ts`                                                                             | Pure prompt building for one character in one scene, plus `pickResponder()` for group chats.                                                        |
-| `director.ts`                                                                            | Pure prompt building and answer parsing for the director pass.                                                                                      |
-| `stream.ts`, `turns.ts`, `progress.ts`, `errors.ts`, `model-status.ts`, `model-cache.ts` | Streaming, history windowing, progress mapping, typed error codes, settings-screen status rows, cache markers.                                      |
-| `llm.svelte.ts`                                                                          | The `llm` runes singleton the UI reads: status, download progress, which backend won, which models are cached.                                      |
+| Building block                                                                           | Responsibility                                                                                                                                          |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `provider.ts`                                                                            | The **only** file that touches `globalThis.LanguageModel` and the only one that knows all three providers exist. Resolves endpoint → native → WebLLM.   |
+| `webllm-direct.ts`                                                                       | A hand-written Prompt-API-shaped engine over `@mlc-ai/web-llm`, with one persistent `MLCEngine` reused across sessions.                                 |
+| `openai-compatible.ts`                                                                   | A Prompt-API-shaped client over any OpenAI-compatible `/chat/completions` using plain `fetch`. No SDK, no network on `create()`. Also `testEndpoint()`. |
+| `endpoint-config.ts`                                                                     | The endpoint's own `localStorage` module, plus pure URL/parse helpers. Requires both a base URL and a model name to count as configured.                |
+| `adapter.ts`                                                                             | `LlmAdapter` / `LlmSession` — what `state/` codes against. Injects its provider so the real logic is testable in Node with no GPU.                      |
+| `catalog.ts`                                                                             | The only place a Riddlon model id maps to a concrete MLC model, its download size, VRAM requirement and context window.                                 |
+| `capabilities.ts` + `capabilities-rules.ts`                                              | Device probing (WebGPU, buffer limits, metered connection) separated from the pure decisions made from it.                                              |
+| `persona.ts`                                                                             | Pure prompt building for one character in one scene, plus `pickResponder()` for group chats.                                                            |
+| `director.ts`                                                                            | Pure prompt building and answer parsing for the director pass.                                                                                          |
+| `stream.ts`, `turns.ts`, `progress.ts`, `errors.ts`, `model-status.ts`, `model-cache.ts` | Streaming, history windowing, progress mapping, typed error codes, settings-screen status rows, cache markers.                                          |
+| `llm.svelte.ts`                                                                          | The `llm` runes singleton the UI reads: status, download progress, which backend won, which models are cached.                                          |
 
 ## 5.5 Level 2 — `storage/`
 

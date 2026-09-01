@@ -5,7 +5,6 @@ import {
 	MODEL_ORDER,
 	findModel,
 	formatSizeLabel,
-	isLocalModelId,
 	llmModelOptions,
 	type LocalModelId
 } from './catalog.js';
@@ -41,12 +40,6 @@ describe('catalog', () => {
 			expect(model.vramRequiredMB).toBeGreaterThan(0);
 			expect(model.contextWindow).toBeGreaterThan(0);
 		}
-	});
-
-	it('narrows unknown values with isLocalModelId', () => {
-		expect(isLocalModelId(DEFAULT_MODEL_ID)).toBe(true);
-		expect(isLocalModelId('phi-3-mini')).toBe(false);
-		expect(isLocalModelId(undefined)).toBe(false);
 	});
 
 	it('formats sizes with a German decimal comma', () => {

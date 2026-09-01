@@ -11,6 +11,13 @@ import { LLM_MODELS } from './catalog.js';
  * behind `$lib/llm`. The moment a route imports `@mlc-ai/web-llm` directly, or a component
  * hardcodes an MLC model id, the abstraction is decorative. This test fails at that moment instead
  * of six months later.
+ *
+ * This file used to carry a fourth test forbidding any reference to a cloud provider SDK, on the
+ * hypothesis that on-device inference alone would be enough. Issue #85 disproved it — every model
+ * small enough for a weak device broke character, and the one that doesn't needs ~2.3 GB of VRAM
+ * many devices lack — so players can now point the app at their own OpenAI-compatible endpoint and
+ * that test was removed with the rule it encoded. The three below are containment, not doctrine:
+ * they say where backend knowledge may live, not which backends are allowed.
  */
 
 // `fileURLToPath` rather than `.pathname` — on Windows a `file://` URL's pathname keeps the
@@ -73,30 +80,6 @@ describe('backend containment', () => {
 				if (contents.includes(mlcId)) offenders.push(`${relative(SRC, file)} → ${mlcId}`);
 			}
 		}
-		expect(offenders).toEqual([]);
-	});
-
-	it('no cloud provider SDK is referenced anywhere in src', () => {
-		// docs/arc42 §1.2/§3.3: local inference only. Nothing of ours may configure or import a
-		// cloud-hosted model provider.
-		const forbidden = ['firebase', '@google/genai', '@huggingface/transformers', 'openai'];
-		const configGlobals = ['FIREBASE_CONFIG', 'GEMINI_CONFIG', 'OPENAI_CONFIG'];
-		const offenders: string[] = [];
-
-		for (const file of sourceFiles()) {
-			// This spec names the forbidden identifiers in order to look for them.
-			if (/\.spec\.ts$/.test(file)) continue;
-			const contents = readFileSync(file, 'utf8');
-			for (const pkg of forbidden) {
-				if (new RegExp(`from ['"]${pkg}`).test(contents) || contents.includes(`import('${pkg}`)) {
-					offenders.push(`${relative(SRC, file)} → ${pkg}`);
-				}
-			}
-			for (const globalName of configGlobals) {
-				if (contents.includes(globalName)) offenders.push(`${relative(SRC, file)} → ${globalName}`);
-			}
-		}
-
 		expect(offenders).toEqual([]);
 	});
 });
