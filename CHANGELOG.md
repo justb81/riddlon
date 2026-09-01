@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.11.0](https://github.com/justb81/riddlon/compare/riddlon-v0.10.0...riddlon-v0.11.0) (2026-09-01)
+
+
+### Features
+
+* **content:** format 1.1.0 — achievement conditions, seed chats, authored endings, tags ([eb49dfe](https://github.com/justb81/riddlon/commit/eb49dfe3628cbcd3307d6b26994d6d627398383b))
+* **llm:** add OpenAI-compatible inference endpoint, replacing Gemini BYOK ([c942d0e](https://github.com/justb81/riddlon/commit/c942d0ed5ecbd9eb89d89bc864a695d93d189e95))
+* **llm:** add OpenAI-compatible inference endpoint, replacing Gemini BYOK ([50feb5f](https://github.com/justb81/riddlon/commit/50feb5f6e54c5c0ef01517a33fb197af5c59a91d))
+* **stories:** fill format 1.1.0 in the reference story, plus its wrong-accusation branch ([fe5bbd5](https://github.com/justb81/riddlon/commit/fe5bbd50a0f3cc7b5c747cc73cfe52c1a485a4f6))
+
+
+### Bug Fixes
+
+* drop accidentally committed .claude/settings.local.json ([7eee098](https://github.com/justb81/riddlon/commit/7eee09841753aa2e75a65b08812e2577dd5821c0))
+* **ui:** prettier the new spec, and stop the ending screen repeating itself ([067b4b0](https://github.com/justb81/riddlon/commit/067b4b06752c98dd848d68acc81af59ba9410530))
+
 ## [0.10.0](https://github.com/justb81/riddlon/compare/riddlon-v0.9.2...riddlon-v0.10.0) (2026-08-02)
 
 
