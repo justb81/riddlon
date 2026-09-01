@@ -13,6 +13,9 @@ node_modules
 # predev/prebuild from stories/, so the sources stay the single place a story is edited.
 /static/stories
 
+# Per-developer Claude Code permissions. `.claude/settings.json` is the shared one and is committed.
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db
