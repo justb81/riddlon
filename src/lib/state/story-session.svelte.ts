@@ -23,6 +23,8 @@ import {
 import { isLlmError } from '$lib/llm/errors.js';
 import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
 import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
+import { formatMessageTimestamp } from '$lib/story/message-time.js';
+import { t } from '$lib/i18n/i18n.svelte.js';
 import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
 import {
 	isCharacterSpeaker,
@@ -38,17 +40,14 @@ import { profile } from './profile.svelte.js';
  *  a 3B model still answers with JSON. */
 const DIRECTOR_WINDOW = 6;
 
-function nowTime(sentAt: string): string {
-	const d = new Date(sentAt);
-	return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-}
-
 function toChatMessage(message: SaveChatMessage): ChatMessage {
 	return {
 		id: message.id,
 		from: message.from,
 		text: message.text,
-		time: nowTime(message.sentAt),
+		// Date-aware, because a thread can carry authored history days older than this session
+		// (#30) — see `story/message-time.ts`.
+		time: formatMessageTimestamp(message.sentAt, { yesterdayLabel: t('convo.yesterday') }),
 		sentAt: message.sentAt,
 		clueId: message.clueId
 	};

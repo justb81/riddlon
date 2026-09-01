@@ -35,6 +35,7 @@ stories/<slug>/
 ├── assets/{covers,avatars}/            # cover + avatar images
 ├── README.md                           # authoring notes — NOT packed into the zip
 └── walkthrough.json                    # optional playtest script — NOT packed into the zip
+    walkthrough-<branch>.json            # one more per branch worth replaying, also not packed
 ```
 
 Two traps worth knowing before you start:
@@ -107,11 +108,19 @@ for what a real conversation turn would have produced, or for time passing:
 | `resume`      | Re-checking without advancing time                                   |
 
 It prints every effect as it replays, then a coverage summary — scenes unlocked and completed,
-characters made visible, outcomes reached, delayed events armed and fired — so an orphaned scene or a
-dead flag shows up as "never unlocked" instead of shipping invisibly. An incomplete walkthrough does
-not fail the run: it only covers the branches it scripts.
+characters made visible, outcomes reached, achievements earned, delayed events armed and fired — so
+an orphaned scene, a dead flag or an achievement whose conditions can never all hold shows up as
+"never …" instead of shipping invisibly. An incomplete walkthrough does not fail the run: it only
+covers the branches it scripts.
+
+A branching story therefore wants one walkthrough per branch. Any file named `walkthrough*.json` is
+authoring-only and never packed, so a second one costs nothing.
+
 See [`lucys-portmonnaie/walkthrough.json`](./lucys-portmonnaie/walkthrough.json) for a worked example
-covering all fifteen steps of the reference story.
+covering all fifteen steps of the reference story, and
+[`walkthrough-false-accusation.json`](./lucys-portmonnaie/walkthrough-false-accusation.json) for the
+branch where the player accuses the wrong person — the run that proves the "Ohne Falschbeschuldigung
+gelöst" achievement can actually be missed.
 
 ## Releasing
 
@@ -133,5 +142,5 @@ mechanics behind all of this are in
 Things a story may need that the package format has no field for yet — content the LLM or the UI
 currently has to improvise, not bugs in the packages. They are tracked in
 [`docs/arc42` §11.1](../docs/arc42/11-risks-and-technical-debt.md#111-open-gaps-in-the-content-format):
-seed chats, achievement conditions, delayed events re-checking their condition, prompt/safety rule
-files, and package update strategy.
+world files beyond clues/facts/secrets, prompt and safety rule files, package update strategy, and
+the fact that only a group scene can set a flag mid-scene without ending it.

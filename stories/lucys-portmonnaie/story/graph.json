@@ -218,10 +218,11 @@
 				"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
 				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
 			],
-			"goals": ["resolve-case"],
+			"goals": ["resolve-case", "defend-whoever-is-wrongly-accused"],
 			"suggestedReplies": [
 				"Max, du hattest die Handtasche.",
 				"Wer war wirklich an der Garderobe?",
+				"Sabine, ich glaube, du warst es.",
 				"Ich präsentiere die Beweise."
 			],
 			"entryConditions": ["flag:hans-info-confirmed"],
@@ -231,8 +232,20 @@
 			"relevantSecretIds": ["secret:max-took-wallet", "secret:sabine-saw-max", "secret:hans-tip"],
 			"playerRole": "confront-max-with-evidence",
 			"outcomes": [
-				{ "id": "max-confesses", "condition": "flag:evidence-presented" },
-				{ "id": "false-accusation-made", "condition": "flag:false-accusation" }
+				{
+					"id": "max-confesses",
+					"condition": "flag:evidence-presented",
+					"label": "Fall gelöst",
+					"closingText": "Max gibt es zu: Er hat Lucys Portmonnaie an der Garderobe an sich genommen und verspricht, es zurückzugeben. Zwei Aussagen, die nicht zusammenpassten, und ein Hinweis von Hans haben gereicht.",
+					"tone": "success"
+				},
+				{
+					"id": "false-accusation-made",
+					"condition": "flag:false-accusation",
+					"label": "Falsche Beschuldigung",
+					"closingText": "Sabine hat nichts genommen — und sie weiß jetzt, dass du es ihr zugetraut hast. Die Beschuldigung bleibt stehen, egal wie der Abend noch ausgeht.",
+					"tone": "setback"
+				}
 			]
 		}
 	]

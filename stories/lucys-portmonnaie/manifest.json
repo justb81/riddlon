@@ -1,9 +1,9 @@
 {
 	"format": "chatstory-package",
-	"formatVersion": "1.0.0",
+	"formatVersion": "1.1.0",
 	"id": "7e9c1a2b-3d4e-4f5a-8b6c-9d0e1f2a3b4c",
 	"title": "Lucys Portmonnaie",
-	"version": "1.2.2",
+	"version": "1.3.0",
 	"author": "Riddlon Team",
 	"language": "de",
 	"entryStory": "story/story.json",
@@ -15,6 +15,7 @@
 	],
 	"world": ["world/clues.json", "world/facts.json", "world/secrets.json"],
 	"assetsBase": "assets/",
-	"minPlayerVersion": "0.1.0",
-	"capabilities": ["local-llm", "delayed-events", "multi-character-chat", "group-chat"]
+	"minPlayerVersion": "0.2.0",
+	"capabilities": ["local-llm", "delayed-events", "multi-character-chat", "group-chat"],
+	"tags": ["krimi", "freundschaft", "ein abend"]
 }

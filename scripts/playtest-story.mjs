@@ -73,6 +73,10 @@ function describeEffect(effect) {
 			return `delayed event armed: ${effect.eventId} (due ${effect.dueAt})`;
 		case 'delayed-event-fired':
 			return `delayed event FIRED: ${effect.eventId}${effect.action ? ` -> ${effect.action.type}` : ' (no action)'}`;
+		case 'delayed-event-cancelled':
+			return `delayed event cancelled (condition no longer held): ${effect.eventId}${effect.rearmed ? ' — re-armed' : ' — dropped'}`;
+		case 'achievement-earned':
+			return `achievement EARNED: ${effect.achievementId}`;
 		default:
 			return JSON.stringify(effect);
 	}
@@ -184,6 +188,12 @@ async function main() {
 			(node.outcomes ?? []).map((o) => o.id)
 		);
 		const neverReached = allOutcomeIds.filter((id) => !summary.reachedOutcomeIds.includes(id));
+		const awardableAchievements = bundle.story.achievements.filter(
+			(achievement) => achievement.conditions.length > 0
+		);
+		const neverEarned = awardableAchievements
+			.filter((achievement) => !engine.state.earnedAchievementIds.has(achievement.id))
+			.map((achievement) => `${achievement.label} (${achievement.id})`);
 		const neverFired = engine.state.pendingDelayedEvents
 			.filter((pending) => !pending.fired)
 			.map((pending) => pending.eventId);
@@ -197,6 +207,9 @@ async function main() {
 		);
 		console.log(`characters:  ${visibleCharacterIds.size}/${allCharacterIds.length} visible`);
 		console.log(`outcomes:    ${summary.reachedOutcomeIds.length}/${allOutcomeIds.length} reached`);
+		console.log(
+			`achievements: ${engine.state.earnedAchievementIds.size}/${awardableAchievements.length} earned (${bundle.story.achievements.length - awardableAchievements.length} declared without conditions)`
+		);
 		if (neverUnlocked.length > 0) console.log(`⚠ never unlocked:  ${neverUnlocked.join(', ')}`);
 		if (neverCompleted.length > 0)
 			console.log(`⚠ unlocked but never completed: ${neverCompleted.join(', ')}`);
@@ -204,6 +217,8 @@ async function main() {
 			console.log(`⚠ characters never visible: ${neverVisible.join(', ')}`);
 		if (neverReached.length > 0)
 			console.log(`⚠ outcomes never reached: ${neverReached.join(', ')}`);
+		if (neverEarned.length > 0)
+			console.log(`⚠ achievements never earned: ${neverEarned.join(', ')}`);
 		if (neverArmed.length > 0)
 			console.log(`⚠ delayed events never armed (condition never held): ${neverArmed.join(', ')}`);
 		if (neverFired.length > 0)
@@ -215,10 +230,13 @@ async function main() {
 			neverCompleted.length === 0 &&
 			neverVisible.length === 0 &&
 			neverReached.length === 0 &&
+			neverEarned.length === 0 &&
 			neverArmed.length === 0 &&
 			neverFired.length === 0
 		) {
-			console.log('✔ this walkthrough reaches every scene, character, outcome, and delayed event.');
+			console.log(
+				'✔ this walkthrough reaches every scene, character, outcome, achievement, and delayed event.'
+			);
 		}
 	} finally {
 		await vite.close();

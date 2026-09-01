@@ -76,17 +76,27 @@
 		{
 			"id": "5f83e807-42fc-41c0-b2e7-1d70a550f568",
 			"label": "Fall gelöst",
-			"description": "Max hat gestanden und die Rückgabe des Portmonnaies zugesagt."
+			"description": "Max hat gestanden und die Rückgabe des Portmonnaies zugesagt.",
+			"conditions": ["outcome-reached:max-confesses"]
 		},
 		{
 			"id": "4a5c9e46-d40c-4b1f-87b3-de8fe40bf1f4",
 			"label": "Alle Hinweise gefunden",
-			"description": "Jeder Hinweis in world/clues.json wurde mindestens einmal von einer Quelle bestätigt."
+			"description": "Jeder Hinweis in world/clues.json wurde mindestens einmal von einer Quelle bestätigt.",
+			"conditions": [
+				"clue-known:clue:time-window",
+				"clue-known:clue:location",
+				"clue-known:clue:stolen-item",
+				"clue-known:clue:suspect-description",
+				"clue-known:clue:hans-accusation",
+				"clue-known:clue:max-whereabouts"
+			]
 		},
 		{
 			"id": "6c335a47-350d-4227-b629-0fe0a613d39c",
 			"label": "Ohne Falschbeschuldigung gelöst",
-			"description": "Der Fall wurde aufgeklärt, ohne unterwegs jemanden zu Unrecht zu beschuldigen."
+			"description": "Der Fall wurde aufgeklärt, ohne unterwegs jemanden zu Unrecht zu beschuldigen.",
+			"conditions": ["outcome-reached:max-confesses", "not:flag:false-accusation"]
 		}
 	],
 	"delayedEvents": [
@@ -94,8 +104,9 @@
 			"id": "event:lucy-nudge",
 			"trigger": "time-based",
 			"approxDelay": "PT20M",
-			"condition": "scene-unlocked:ce658bbf-33df-48d6-a2f6-e1568566fb8e",
-			"action": "set-flag:flag:lucy-nudge-due"
+			"condition": "not:flag:lucy-identified",
+			"action": "set-flag:flag:lucy-nudge-due",
+			"onDueConditionFalse": "drop"
 		},
 		{
 			"id": "event:lucy-followup",
@@ -103,6 +114,48 @@
 			"approxDelay": "PT2H",
 			"condition": "flag:report-to-lucy-done",
 			"action": "unlock-scene:b35e409f-d012-41ae-a655-8693901c086d"
+		}
+	],
+	"seedChats": [
+		{
+			"sceneRef": "0974a346-476c-4222-976e-ee43854fc709",
+			"messages": [
+				{
+					"from": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+					"text": "Samstag Kellerlicht? Sabine kommt auch mit.",
+					"offset": "P5D"
+				},
+				{
+					"from": "me",
+					"text": "Klar, bin dabei.",
+					"offset": "P5D"
+				},
+				{
+					"from": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+					"text": "Wir stehen hinten bei der Bar, komm einfach durch.",
+					"offset": "P2D"
+				}
+			]
+		},
+		{
+			"sceneRef": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"messages": [
+				{
+					"from": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+					"text": "Gehst du Samstag auch ins Kellerlicht?",
+					"offset": "P4D"
+				},
+				{
+					"from": "me",
+					"text": "Ja, Max hat mich schon gefragt.",
+					"offset": "P4D"
+				},
+				{
+					"from": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+					"text": "Ich komme später, ich muss vorher noch arbeiten.",
+					"offset": "P2D"
+				}
+			]
 		}
 	]
 }

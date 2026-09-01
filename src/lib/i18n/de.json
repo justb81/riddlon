@@ -61,6 +61,7 @@
 		"contradictionPrefix": "WIDERSPRUCH · {label}",
 		"contradictionExplainer": "Beide Aussagen sind in deiner Akte gespeichert. Eine davon ist falsch.",
 		"messagePlaceholder": "Nachricht",
+		"yesterday": "Gestern",
 		"noModelNote": "Kein lokales Modell geladen — in dieser Geschichte schreibt jede Figur über das Modell auf deinem Gerät. Lade es in den Einstellungen.",
 		"idleThreadNote": "Diese Geschichte hat hier gerade nichts Neues – ihr könnt euch aber trotzdem weiter unterhalten.",
 		"unknownThreadTitle": "Chat nicht verfügbar",

@@ -79,10 +79,10 @@ file name matches the identity inside.
 ```json
 {
 	"format": "chatstory-package",
-	"formatVersion": "1.0.0",
+	"formatVersion": "1.1.0",
 	"id": "7e9c1a2b-3d4e-4f5a-8b6c-9d0e1f2a3b4c",
 	"title": "Lucys Portmonnaie",
-	"version": "1.2.2",
+	"version": "1.3.0",
 	"author": "Riddlon Team",
 	"language": "de",
 	"entryStory": "story/story.json",
@@ -90,14 +90,25 @@ file name matches the identity inside.
 	"characters": ["characters/3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f.character.json"],
 	"world": ["world/clues.json", "world/facts.json", "world/secrets.json"],
 	"assetsBase": "assets/",
-	"minPlayerVersion": "0.1.0",
-	"capabilities": ["local-llm", "delayed-events", "multi-character-chat", "group-chat"]
+	"minPlayerVersion": "0.2.0",
+	"capabilities": ["local-llm", "delayed-events", "multi-character-chat", "group-chat"],
+	"tags": ["krimi", "freundschaft", "ein abend"]
 }
 ```
 
 `format` is a literal; `formatVersion`, `version` and `minPlayerVersion` are semver. Import fails
 with `UNSUPPORTED_FORMAT_VERSION` when the format major is not supported, and with `PLAYER_TOO_OLD`
 when the installed player is older than `minPlayerVersion`.
+
+`tags` is the package's own classification, shown on the library card and the case file. Optional and
+free-form, in the package's own `language` — the app never translates it and has no genre of its own
+to assert about a package.
+
+**Compatibility is carried by `minPlayerVersion`, not by `formatVersion`.** The format gate compares
+only the major version, so a package using a field added in a format minor still installs on an older
+player, which would then ignore it silently — an achievement that never awards, a seed chat that
+never appears. A package that depends on a minor's fields therefore raises `minPlayerVersion`
+(`content/player-version.ts` holds the current player version; `0.2.0` is format 1.1.0 support).
 
 ### 8.1.3 Characters — Identity and Cast Binding
 
@@ -230,7 +241,30 @@ invent who did what to whom, which is exactly where a small model inverts the re
 ("Max incriminates Hans" instead of the reverse). The `label` survives on a secret as a short
 summary for dev tooling and the UI.
 
-### 8.1.6 Delayed Events
+### 8.1.6 Achievements and Delayed Events
+
+`story/story.json` carries the cast bindings plus three lists: `achievements`, `delayedEvents` and
+`seedChats` ([§8.1.8](#818-seed-chats)).
+
+**An achievement is a named accomplishment with the conditions under which it is earned:**
+
+```json
+{
+	"id": "6c335a47-350d-4227-b629-0fe0a613d39c",
+	"label": "Ohne Falschbeschuldigung gelöst",
+	"description": "Der Fall wurde aufgeklärt, ohne jemanden zu Unrecht zu beschuldigen.",
+	"conditions": ["outcome-reached:max-confesses", "not:flag:false-accusation"]
+}
+```
+
+`conditions` is an **array** with the same AND semantics as `entryConditions`, because the
+interesting achievements are conjunctions — "every clue found" is one `clue-known:` per clue, which
+a single condition string cannot express. It is optional: an achievement without conditions is
+declared but never awarded (a decorative or walkthrough-only ending), and the case file says so
+rather than showing a checkbox the player can never tick. An achievement is earned exactly once and
+never revoked, even if a flag its condition reads is later cleared.
+
+#### Delayed Events
 
 ```json
 {
@@ -238,7 +272,8 @@ summary for dev tooling and the UI.
 	"trigger": "time-based",
 	"approxDelay": "PT2H",
 	"condition": "flag:report-to-lucy-done",
-	"action": "unlock-scene:<scene-uuid>"
+	"action": "unlock-scene:<scene-uuid>",
+	"onDueConditionFalse": "drop"
 }
 ```
 
@@ -248,8 +283,19 @@ dependable cross-platform way to run exactly-timed background work in a purely l
 Optional system notifications may supplement this but must never be a precondition of the
 dramaturgy. See [ADR 12](./09-architecture-decisions.md#adr-12-delayed-events-are-opportunistic-due-dates).
 
-An event **arms** when its condition holds and **fires** once `approxDelay` has elapsed since arming.
-Firing is sticky — a fired event never fires twice.
+An event **arms** when its condition holds and **fires** once `approxDelay` has elapsed since arming
+**and its condition still holds**. Firing is sticky — a fired event never fires twice.
+
+The condition is checked twice, at arm time and again at due time, which is what makes a beat of the
+form "follow up _unless_ the player has done X since" expressible at all. `onDueConditionFalse` says
+what happens to an event that comes due with a false condition:
+
+| Value            | Behaviour                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `drop` (default) | Abandoned for good — "nudge the player unless they have replied since"                                                    |
+| `rearm`          | Forgotten rather than fired, so it arms again when the condition next holds, with a fresh delay — "remind them when idle" |
+
+See [ADR 16](./09-architecture-decisions.md#adr-16-a-delayed-event-is-dropped-not-re-armed-by-default).
 
 ### 8.1.7 Group Chat Scenes
 
@@ -264,18 +310,81 @@ and `outcomes` replace `next`:
 	"autoOpen": true,
 	"entryConditions": ["flag:hans-info-confirmed"],
 	"playerRole": "confront-max-with-evidence",
-	"outcomes": [{ "id": "max-confesses", "condition": "flag:evidence-presented" }]
+	"outcomes": [
+		{
+			"id": "max-confesses",
+			"condition": "flag:evidence-presented",
+			"label": "Fall gelöst",
+			"closingText": "Max gibt es zu …",
+			"tone": "success"
+		},
+		{
+			"id": "false-accusation-made",
+			"condition": "flag:false-accusation",
+			"label": "Falsche Beschuldigung",
+			"tone": "setback"
+		}
+	]
 }
 ```
+
+An outcome is a story's ending. `condition` is what the engine evaluates; `label` and `closingText`
+are what the celebration screen says instead of the authoring slug, and `tone` (`success` |
+`setback`, default `success`) decides whether that screen reads as a win — reaching an ending is not
+the same as reaching a good one. Several outcomes can be reached in one playthrough; the screen
+speaks with the success one when there is any.
+
+A group scene deliberately ships **no `exitConditions`**: an empty list is vacuously true, which
+would complete the scene the moment it unlocks (see [§8.3](#83-story-engine)). Its outcome
+conditions are therefore also its settable-flag surface — the director may set any `flag:` an
+outcome names, but never a negated one, or it could assert away the very condition that rules an
+ending out.
 
 The format defines **no turn-taking rules**. Who answers in a group chat is an app-side decision,
 implemented as `pickResponder()` in `llm/persona.ts` and documented there.
 
-### 8.1.8 Condition and Action Vocabulary
+### 8.1.8 Seed Chats
+
+Pre-generated thread history, installed with the package:
+
+```json
+{
+	"sceneRef": "0974a346-476c-4222-976e-ee43854fc709",
+	"messages": [
+		{
+			"from": "8b6d2f10-…",
+			"text": "Samstag Kellerlicht? Sabine kommt auch mit.",
+			"offset": "P5D"
+		},
+		{ "from": "me", "text": "Klar, bin dabei.", "offset": "P5D" }
+	]
+}
+```
+
+A story unlocks contacts as the plot needs them, and an empty thread is a strong tell that a contact
+was just spawned — which the disguise premise of [§1.2](./01-introduction-and-goals.md) cannot
+afford. A seed chat is the authored history that hides the seam.
+
+- **Anchored on a scene, not on a character.** Threads are derived, not authored: `storyThreads()`
+  folds solo scenes per character and gives every group scene its own thread, so a scene id is the
+  only handle that names both kinds. Attaching the history to the scene whose unlock introduces the
+  contact is also what makes it appear exactly then.
+- **`from` is `me` or a participant of that scene.** Anything else is a `DANGLING_REFERENCE`.
+- **`offset` is a duration before the playthrough started**, never a date: an authored date goes
+  stale between authoring and playing.
+- **Materialized once, into the savegame** (`story/seed-chats.ts` → `saveStore.createForPackage`),
+  not held in engine state — it is installed content that can never be re-derived, and it survives
+  a reload for exactly the same reason the rest of the chat log does. See
+  [ADR 17](./09-architecture-decisions.md#adr-17-seed-chats-live-in-the-savegame).
+- Seed messages carry a `seed` marker, so they never count as "this scene has already been opened" —
+  otherwise a seeded contact would never send their first real message.
+
+### 8.1.9 Condition and Action Vocabulary
 
 One vocabulary is shared by every conditional field in the format: `entryConditions`,
 `exitConditions`, `next[].when`, `outcomes[].condition`, `delayedEvents[].condition`,
-`castBindings[].availability.unlockCondition` and `secrets[].revealCondition`.
+`castBindings[].availability.unlockCondition`, `secrets[].revealCondition` and
+`achievements[].conditions`.
 
 | Condition                      | True when                                                                   |
 | ------------------------------ | --------------------------------------------------------------------------- |
@@ -303,7 +412,7 @@ linter can surface it.
 
 An unrecognised action prefix is ignored, for the same forward-compatibility reason.
 
-### 8.1.9 Validation
+### 8.1.10 Validation
 
 `validate-package.ts` is the single validator, used identically by the app's importer, the story
 build script and CI. Its error codes:
@@ -368,16 +477,24 @@ LLM backend**. It decides what is allowed to happen; it never decides what a cha
 
 **State** (`EngineState`) is plain, JSON-serialisable data — no class instances, no runes — so it
 round-trips through the save store with no framework in between: flags, unlocked / completed scene
-ids, reached outcome ids, force-unlocked character ids, per-clue claim lists, and pending delayed
-events.
+ids, reached outcome ids, force-unlocked character ids, per-clue claim lists, earned achievement ids,
+and pending delayed events.
 
 **Effects** are the sole outward contract. Every mutating method returns the `EngineEffect[]` it
 produced, and callers observe the engine through those effects plus the read-only queries — never by
 diffing state themselves:
 
 `flag-set` · `scene-unlocked` · `scene-completed` · `outcome-reached` · `character-unlocked` ·
-`clue-recorded` · `clue-conflict-detected` · `clue-resolved` · `delayed-event-armed` ·
-`delayed-event-fired`
+`clue-recorded` · `clue-conflict-detected` · `clue-resolved` · `achievement-earned` ·
+`delayed-event-armed` · `delayed-event-fired` · `delayed-event-cancelled`
+
+**`recompute()` runs to a fixed point.** One scene's completion can unlock another whose entry
+conditions name it, and an achievement conditioned on an outcome can only be judged in the pass
+after that outcome — so the loop repeats until nothing changes. A scene with zero `exitConditions`
+never auto-completes (an empty list is vacuously true, which would complete a group scene the moment
+it unlocks); zero `entryConditions`, by contrast, correctly means "open from story start". Earned
+achievements are sticky and persisted, so the effect fires once per playthrough and not again on
+resume.
 
 **Clues** record every claim in order, keyed by source character; a later claim never overwrites an
 earlier one. That is what makes `clue-confirmed:<id>:<n>` an evidence gate and what surfaces
@@ -647,9 +764,11 @@ overridden from a browser session, `env()` cannot.
   them.
 - **Without a loaded model a thread is empty and says so.** Every message, including a scene's
   opening line, is generated.
-- **The story overview lists achievements but never awards them.** The achievement schema is
-  id/label/description only, so a package can name an achievement but not say when it is earned.
-  Only reached `outcomes` are real engine state. See [§11](./11-risks-and-technical-debt.md).
+- **An achievement can sit there permanently unearnable.** A package may declare one without
+  `conditions`; nothing can then award it, and the case file says as much instead of pretending it
+  is still open.
+- **The case-solved screen is not always a celebration.** It fires on any reached `outcome`, and an
+  outcome with `tone: setback` — a wrongly accused friend, say — is reported as the setback it is.
 - **Chapter numbers are scene positions.** The format has no scene titles or chapter numbering, so
   the timeline reports authored order and the participants' names rather than inventing structure.
 - **The "Fallakte ansehen" button** on the case-solved celebration literally says that, not
