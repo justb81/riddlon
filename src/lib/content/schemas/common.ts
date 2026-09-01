@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { parseSemver } from '../semver.js';
 
 /**
- * Story-package entities split into two id namespaces (docs/concept.md §5.1 says every
- * referenceable entity gets a UUIDv4, but §5.4-§5.6's own worked examples give
+ * Story-package entities split into two id namespaces (docs/arc42 §8.1.1 says every
+ * referenceable entity gets a UUIDv4, but §8.1.4-§8.1.6's own worked examples give
  * clues/facts/secrets/flags/delayed-events readable "prefix:name" strings instead). This
  * schema module resolves that contradiction: `uuidV4Schema` for structural/linkable entities
  * (characters, packages, scene nodes, and references to them), `symbolicRefSchema` for

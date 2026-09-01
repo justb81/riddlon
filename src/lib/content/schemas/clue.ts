@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { symbolicRefSchema, uuidV4Schema } from './common.js';
 
 /**
- * docs/concept.md §5.5. `id` is deliberately the symbolic-tag schema, not a UUID — the
+ * docs/arc42 §8.1.5. `id` is deliberately the symbolic-tag schema, not a UUID — the
  * doc's own example uses "clue:time-window", and clue ids are never cross-package
  * referenced entities the way character/scene ids are (see schemas/common.ts).
  */

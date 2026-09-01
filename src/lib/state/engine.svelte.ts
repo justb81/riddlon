@@ -139,7 +139,7 @@ class StoryRuntime {
 	}
 
 	/** Evaluates a package's own symbolic ref against live state — used to decide whether a
-	 *  character's secret may come out yet (docs/concept.md §5.5). */
+	 *  character's secret may come out yet (docs/arc42 §8.1.5). */
 	isConditionMet(ref: string): boolean {
 		if (!this.#active) return false;
 		const { engine, bundle } = this.#active;

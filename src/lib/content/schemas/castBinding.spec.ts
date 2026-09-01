@@ -5,7 +5,7 @@ const LUCY_ID = '3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f';
 const MAX_ID = '8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e';
 
 describe('castBindingSchema', () => {
-	it('parses the docs/concept.md §5.3 example', () => {
+	it('parses the docs/arc42 §8.1.3 example', () => {
 		const result = castBindingSchema.safeParse({
 			characterRef: LUCY_ID,
 			roleInStory: 'quest-giver',

@@ -6,7 +6,7 @@ function distinctValueCount(claims: { value: string }[]): number {
 	return new Set(claims.map((claim) => claim.value)).size;
 }
 
-/** docs/concept.md §5.5 / #8: ≥2 distinct claimed values for the same clue. */
+/** docs/arc42 §8.1.5 / #8: ≥2 distinct claimed values for the same clue. */
 export function isClueConflicting(state: EngineState, clueId: string): boolean {
 	const clue = state.clues[clueId];
 	if (!clue) return false;

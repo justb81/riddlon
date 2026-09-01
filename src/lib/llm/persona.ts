@@ -5,7 +5,7 @@
  *
  * The material is entirely the package's: identity and voice from the character file, role and
  * knowledge from this story's cast binding, goals from the current scene, and the canon rule
- * from docs/concept.md §5.5 — facts are truths the model must not contradict, secrets are
+ * from docs/arc42 §8.1.5 — facts are truths the model must not contradict, secrets are
  * withheld until their `revealCondition` holds.
  */
 
@@ -23,7 +23,7 @@ export interface PersonaScene {
 	 *  knows they were accomplished, so e.g. thanking the player for past help stays possible
 	 *  instead of the resolution being forgotten the moment the scene completes. */
 	resolvedGoals?: readonly string[];
-	/** Group scenes only (docs/concept.md §5.7). */
+	/** Group scenes only (docs/arc42 §8.1.7). */
 	playerRole?: string;
 	isGroup: boolean;
 	/** Other characters present, for a group scene. */
@@ -123,7 +123,7 @@ export function buildOpeningInstruction(playerName: string, goals: readonly stri
 /**
  * Who answers in a group chat. Name mentions decide; otherwise the first participant does.
  *
- * The package format has no turn-taking rules (docs/concept.md §5.7 defines membership and
+ * The package format has no turn-taking rules (docs/arc42 §8.1.7 defines membership and
  * outcomes, not speaking order), so this is the app's documented choice rather than something
  * read out of the story — deterministic and cheap, and it makes "Max, sag die Wahrheit" reach Max.
  */

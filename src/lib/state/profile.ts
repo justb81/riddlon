@@ -2,7 +2,7 @@
 
 export type DisguiseMode = 'pure' | 'subtle' | 'game';
 /**
- * A free-form string, not a closed union: docs/concept.md §6 explicitly rejects a rigid
+ * A free-form string, not a closed union: docs/arc42 §8.2 explicitly rejects a rigid
  * pronoun selection ("starre Auswahl"). `PRONOUN_OPTIONS` below are quick-select presets,
  * not the full set of valid values — the settings screen also offers free-text entry.
  */

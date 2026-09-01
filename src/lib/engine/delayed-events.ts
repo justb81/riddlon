@@ -10,7 +10,7 @@ import {
 } from './state.js';
 
 /**
- * Approximate delayed events (docs/concept.md §5.6, #9). Deliberately NOT a timer/alarm —
+ * Approximate delayed events (docs/arc42 §8.1.6, #9). Deliberately NOT a timer/alarm —
  * an event is "armed" (a due-date is persisted) the moment its `condition` first holds, and
  * only ever checked opportunistically via `fireDueEvents` on app open/resume. No
  * setTimeout, no service-worker background sync.

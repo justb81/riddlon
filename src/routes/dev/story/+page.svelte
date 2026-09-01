@@ -13,7 +13,7 @@
 	 * pick, as often as you like — no chat turns, no waiting for a character reply, and the exact
 	 * prompt visible next to the raw answer. Isolating the two layers is the whole point: the
 	 * story's flag chain and the engine's unlocks are already covered in Node (`engine.spec.ts`'s
-	 * §7 walkthrough sets `flag:lucy-identified` / `flag:witnesses-named` by hand and asserts the
+	 * §1.3 walkthrough sets `flag:lucy-identified` / `flag:witnesses-named` by hand and asserts the
 	 * contacts appear), so anything that still doesn't advance is between the model and the parser.
 	 *
 	 * Not linked from anywhere in the app. Delete it once the director pass has real coverage

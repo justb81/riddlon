@@ -1,9 +1,9 @@
 /**
  * Wires `StoryEngine.resume()` (#9) to the two browser signals that approximate "app
- * open/resume/foreground" in an offline PWA (docs/concept.md §5.6): the page regaining
+ * open/resume/foreground" in an offline PWA (docs/arc42 §8.1.6): the page regaining
  * visibility (tab/app switch back) and `pageshow`'s bfcache-restore case. Deliberately
  * NOT a service-worker background sync or a `setTimeout` — those aren't load-bearing per
- * §5.6/§8, this is the opportunistic on-resume check the doc actually specifies.
+ * §8.1.6/§3.3, this is the opportunistic on-resume check the doc actually specifies.
  *
  * Callers own the `StoryEngine` instance — there is no engine singleton yet; wiring one up
  * for the live UI is #14-#17's job once a package can actually be installed and played.

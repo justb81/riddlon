@@ -88,7 +88,7 @@ export interface SaveRecord {
 	unlockedSceneIds: string[];
 	/** Added alongside unlockedSceneIds for #7's progress tracking; absent on older records. */
 	completedSceneIds: string[];
-	/** Fired group-chat-scene outcome ids (#7 §5.7); absent on older records. */
+	/** Fired group-chat-scene outcome ids (#7 §8.1.7); absent on older records. */
 	reachedOutcomeIds: string[];
 	/** Characters force-unlocked via an `unlock-character:` action; absent on older records. */
 	unlockedCharacterIds: string[];

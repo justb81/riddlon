@@ -25,7 +25,7 @@ export interface StoryEngineOptions {
 }
 
 /**
- * The story-engine facade (docs/concept.md §5.4-§5.6, issues #7/#8/#9): a deterministic
+ * The story-engine facade (docs/arc42 §8.1.4-§8.1.6, issues #7/#8/#9): a deterministic
  * state machine over one `StoryBundle`, with zero dependency on any LLM backend — it only
  * decides *what's allowed to happen*, never what a character says. Every mutating method
  * returns the `EngineEffect[]` it produced; `ui/` and the future `llm/` module observe the

@@ -5,7 +5,7 @@
  *
  * Why this exists: a story package contains no dialogue and no keyword triggers — a scene only
  * declares `goals`, `exitConditions` (`flag:…`) and `revealables` (`clue:…`/`fact:…`). Something
- * has to translate free conversation into those symbols, and docs/concept.md §9 explicitly
+ * has to translate free conversation into those symbols, and docs/arc42 §11 explicitly
  * leaves the `engine/` ↔ `llm/` interface open. This is that interface.
  *
  * Both halves here are pure so they can be tested in Node without a GPU; the model call itself

@@ -159,7 +159,7 @@ function makeWalkthroughEngine(clock: () => number): StoryEngine {
 	return new StoryEngine(result.bundle, { clock });
 }
 
-describe('walkthrough: docs/concept.md §7 "Lucys Portmonnaie" end-to-end (#7, #8, #9)', () => {
+describe('walkthrough: docs/arc42 §1.3 "Lucys Portmonnaie" end-to-end (#7, #8, #9)', () => {
 	it('the shipped package validates against the package format with zero errors', () => {
 		const result = validatePackage(buildWalkthroughPackageFiles());
 		expect(result.valid).toBe(true);

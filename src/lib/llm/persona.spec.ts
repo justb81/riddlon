@@ -48,7 +48,7 @@ describe('buildPersonaPrompt', () => {
 
 	it('keeps withheld secrets separate from revealable ones', () => {
 		const prompt = buildPersonaPrompt(base);
-		// docs/concept.md §5.5: a secret stays back until its revealCondition holds, so the two
+		// docs/arc42 §8.1.5: a secret stays back until its revealCondition holds, so the two
 		// lists must never be merged into one "here is what you know".
 		expect(prompt).toContain('behältst es aber noch für dich');
 		expect(prompt).not.toContain('Das darfst du jetzt preisgeben');

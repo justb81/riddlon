@@ -1,6 +1,6 @@
 /**
  * Minimal x.y.z semver parsing/comparison for story-package version fields
- * (docs/concept.md §5.2). No pre-release or build-metadata support — the doc
+ * (docs/arc42 §8.1.2). No pre-release or build-metadata support — the doc
  * never shows either, so this stays intentionally narrow until a real need appears.
  */
 export interface Semver {

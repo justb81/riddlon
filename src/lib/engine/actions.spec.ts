@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseAction } from './actions.js';
 
 describe('parseAction', () => {
-	it('parses the docs/concept.md §5.6 example, "unlock-scene:scene-lucy-suspicion"', () => {
+	it('parses the docs/arc42 §8.1.6 example, "unlock-scene:scene-lucy-suspicion"', () => {
 		expect(parseAction('unlock-scene:scene-lucy-suspicion')).toEqual({
 			type: 'unlock-scene',
 			sceneId: 'scene-lucy-suspicion'

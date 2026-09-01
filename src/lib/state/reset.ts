@@ -52,7 +52,7 @@ export async function resetStoryProgress(): Promise<void> {
 /**
  * Factory reset: installed stories, characters, savegames, profile, settings and package assets.
  * Nothing is re-seeded afterwards — content only ever enters the app through an explicit import
- * (docs/concept.md §4.1), and `/chat/riddlon` offers the bundled example back.
+ * (docs/arc42 §6.2), and `/chat/riddlon` offers the bundled example back.
  */
 export async function resetEverything(): Promise<void> {
 	await clearAllStoredData();

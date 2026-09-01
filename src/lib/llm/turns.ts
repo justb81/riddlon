@@ -3,7 +3,7 @@
  *
  * Strictly mechanical: nothing here decides *what* a character knows or may reveal. The
  * prompt-template and safety-rule schemas (`rules/prompts.json`, `rules/safety.json`) are open
- * points in docs/concept.md §9, so `systemPrompt` is passed through as an opaque string and the
+ * points in docs/arc42 §11, so `systemPrompt` is passed through as an opaque string and the
  * story engine (#7/#8) will own everything semantic.
  */
 

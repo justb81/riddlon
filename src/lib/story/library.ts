@@ -4,7 +4,7 @@
  *
  * Every catalog row is built from the real registry (`storyRuntime.installedPackages`). The
  * decorative "also installed" stories that used to live here were pure mockup content and made a
- * freshly reset library look populated — docs/concept.md §4.3's registry is the only source now.
+ * freshly reset library look populated — docs/arc42 §5.3's registry is the only source now.
  */
 
 export type StoryStatus = 'running' | 'notStarted' | 'solved' | 'unknown';

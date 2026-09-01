@@ -7,7 +7,7 @@ const pronounsSchema = z.object({
 });
 
 /**
- * docs/concept.md §6 gives two alternative shapes — a minimal one keyed on `addressAs`
+ * docs/arc42 §8.2 gives two alternative shapes — a minimal one keyed on `addressAs`
  * and an extended one with a structured `pronouns` object. Treated here as alternates of
  * the same concern: at least one of the two must be present.
  */

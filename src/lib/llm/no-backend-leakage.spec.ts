@@ -77,7 +77,7 @@ describe('backend containment', () => {
 	});
 
 	it('no cloud provider SDK is referenced anywhere in src', () => {
-		// docs/concept.md §2/§8: local inference only. Nothing of ours may configure or import a
+		// docs/arc42 §1.2/§3.3: local inference only. Nothing of ours may configure or import a
 		// cloud-hosted model provider.
 		const forbidden = ['firebase', '@google/genai', '@huggingface/transformers', 'openai'];
 		const configGlobals = ['FIREBASE_CONFIG', 'GEMINI_CONFIG', 'OPENAI_CONFIG'];
