@@ -21,13 +21,13 @@ describe('appKeysToClear', () => {
 		).toEqual(['riddlon:onboarded']);
 	});
 
-	it('still removes the Gemini API key, a credential rather than a cache marker', () => {
+	it('still removes the inference endpoint, configuration rather than a cache marker', () => {
 		expect(
 			appKeysToClear([
 				'riddlon:llm:cached:Llama-3.2-3B-Instruct-q4f16_1-MLC',
-				'riddlon:llm:gemini-key'
+				'riddlon:llm:endpoint'
 			])
-		).toEqual(['riddlon:llm:gemini-key']);
+		).toEqual(['riddlon:llm:endpoint']);
 	});
 
 	it('leaves keys belonging to other apps on the same origin alone', () => {

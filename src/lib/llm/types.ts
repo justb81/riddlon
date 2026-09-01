@@ -2,10 +2,11 @@
  * The seam between the story/UI layers and whatever actually runs the model.
  *
  * The interface here is deliberately a thin re-shaping of the W3C/Chrome Prompt API rather than a
- * vocabulary of our own: `engine/` and `ui/` code against `LlmAdapter`/`LlmSession`, and the two
- * concrete providers (the browser's built-in `LanguageModel`, or a direct WebLLM engine) both
- * arrive as the same `LanguageModelLike` shape. Swapping either the model or the provider therefore
- * touches nothing outside `$lib/llm` — see `no-backend-leakage.spec.ts`, which enforces that.
+ * vocabulary of our own: `engine/` and `ui/` code against `LlmAdapter`/`LlmSession`, and all three
+ * concrete providers (a player-configured OpenAI-compatible endpoint, the browser's built-in
+ * `LanguageModel`, or a direct WebLLM engine) arrive as the same `LanguageModelLike` shape.
+ * Swapping either the model or the provider therefore touches nothing outside `$lib/llm` — see
+ * `no-backend-leakage.spec.ts`, which enforces that.
  *
  * The Prompt API types below are structural on purpose (no `declare global`): that's what lets the
  * specs inject a fake provider and exercise the real adapter in Node, with no WebGPU anywhere.
@@ -53,15 +54,15 @@ export interface LanguageModelLike {
 }
 
 /** Which implementation backs `LanguageModelLike` right now. */
-export type ProviderKind = 'native' | 'webllm' | 'gemini';
+export type ProviderKind = 'native' | 'webllm' | 'openai';
 
 export interface ResolvedProvider {
 	kind: ProviderKind;
 	LanguageModel: LanguageModelLike;
 	/** The concrete WebLLM model the provider was configured with; `undefined` otherwise. */
 	mlcModelId?: string;
-	/** The concrete Gemini model the provider was configured with; only set for `kind: 'gemini'`. */
-	geminiModelId?: string;
+	/** The model name the player entered for their endpoint; only set for `kind: 'openai'`. */
+	endpointModelId?: string;
 }
 
 /* -------------------------------------------------------------------------- */

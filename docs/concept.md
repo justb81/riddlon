@@ -9,9 +9,9 @@ Zielgenres für die erste Ausbaustufe: kleine Krimis und spannende historische G
 ## 2. Produktprinzipien
 
 - **Chat-first UX**: Die gesamte Interaktion — inklusive Systemfunktionen wie Story-Import — läuft, wo sinnvoll, über die Chat-Metapher, ergänzt durch klar sichtbare UI-Elemente für technische Schritte (Dateiauswahl, Fortschritt, Fehler).
-- **Offline-first**: Die App muss nach einmaliger Installation vollständig ohne Internetverbindung funktionieren, inklusive KI-Inferenz.
+- **Offline-first**: Die App muss nach einmaliger Installation vollständig ohne Internetverbindung funktionieren, inklusive KI-Inferenz — sofern die lokalen Backends genutzt werden. Wer stattdessen einen eigenen Inferenz-Endpunkt hinterlegt, tauscht diese Eigenschaft bewusst gegen ein stärkeres Modell (bei einem Server im eigenen Netz nur gegen LAN statt gar keiner Verbindung).
 - **Open Source & generisch**: Kein Story-Inhalt ist hartkodiert. Jede Geschichte, jeder Charakter ist ein austauschbares Content-Paket.
-- **Kein Cloud-Zwang**: Lokale KI-Inferenz im Browser ist der Standardmodus; Cloud-Modelle sind höchstens optionale Erweiterung, kein Kernbestandteil.
+- **Kein Cloud-Zwang**: Lokale KI-Inferenz im Browser ist der bevorzugte Modus, wo das Gerät sie hergibt; externe Modelle sind optionale Erweiterung, kein Kernbestandteil. Die ursprüngliche Annahme, reine Geräte-Inferenz genüge überall, hat sich nicht gehalten: Modelle unterhalb von ~3B fallen aus der Rolle oder werden inkohärent, und ein 3B-Modell braucht rund 2,3 GB VRAM, die viele aktuelle Geräte nicht haben. Deshalb kann der Spieler eine eigene OpenAI-kompatible Schnittstelle angeben — oft ein lokaler Server (Ollama, LM Studio, llama.cpp), also kein Cloud-Zwang, sondern ein zweiter lokaler Weg. Sie ist opt-in und standardmäßig leer.
 - **Kontrollierte Dramaturgie**: Die KI erzeugt lebendigen Dialog, aber die Story-Engine (deterministischer Zustandsgraph) kontrolliert Fortschritt, Reveals und Verzweigungen — nicht das freie LLM.
 - **Seriöses Zielgenre**: Krimi/Historie/Drama, keine Ausrichtung auf Erotik-/Adult-Content-Communities.
 - **Wiederverwendbarkeit von Charakteren**: Charaktere sind eigenständige, story-unabhängige Entitäten, die in mehreren Geschichten auftreten können.

@@ -33,15 +33,15 @@ or URL importer (docs/concept.md §4.1). An example package is bundled under `st
 installed through that same URL importer — see "Story packages" below. Searching for `Lucy` in
 `src/lib/` should find nothing but the content-module test fixtures.
 
-| Module        | Responsibility                                                                | Status                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ui/`         | Chat interface, contact list, menus, settings                                 | Implemented — see "Chat UI" below                                                                                                             |
-| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                 | Implemented (`src/lib/engine/`), driving the UI through `$lib/state/engine.svelte.ts`                                                         |
-| `content/`    | Validator/loader/importer/installer for story packages                        | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`), both wired to `/chat/riddlon`                               |
-| `characters/` | Local, story-independent character library                                    | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                         |
-| `llm/`        | Model selection, session management, prompting, streaming, swappable backends | Implemented — see "Local LLM" below                                                                                                           |
-| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)       | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`), reset in `clear-data.ts` |
-| `pwa/`        | Service worker, offline behavior, asset precaching                            | Implemented (template base)                                                                                                                   |
+| Module        | Responsibility                                                                   | Status                                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ui/`         | Chat interface, contact list, menus, settings                                    | Implemented — see "Chat UI" below                                                                                                             |
+| `engine/`     | Story state machine: scenes, flags, clues, triggers, progress                    | Implemented (`src/lib/engine/`), driving the UI through `$lib/state/engine.svelte.ts`                                                         |
+| `content/`    | Validator/loader/importer/installer for story packages                           | Implemented (`src/lib/content/`) — ZIP (`zip-import.ts`) + URL (`url-import.ts`), both wired to `/chat/riddlon`                               |
+| `characters/` | Local, story-independent character library                                       | Implemented (`src/lib/characters/`, backed by `src/lib/storage/character-library.ts`)                                                         |
+| `llm/`        | Backend selection, session management, prompting, streaming, swappable providers | Implemented — see "Local LLM" below                                                                                                           |
+| `storage/`    | Savegames, local story library, caches (IndexedDB + Cache/Blob storage)          | Implemented (`src/lib/storage/`) — IndexedDB via `idb` (`db.ts`), binary assets via Cache Storage (`blob-store.ts`), reset in `clear-data.ts` |
+| `pwa/`        | Service worker, offline behavior, asset precaching                               | Implemented (template base)                                                                                                                   |
 
 ## Story packages (`stories/`)
 
@@ -83,25 +83,29 @@ package under `stories/` on a plain `npm test`.
 `src/lib/llm/` runs inference in the browser. It does **not** define its own backend vocabulary: the
 interface _is_ the [W3C/Chrome Prompt API](https://webmachinelearning.github.io/prompt-api/)
 (`LanguageModel.availability()` / `create()` / `promptStreaming()`). Three providers implement it,
-tried in order — **native first, direct WebLLM second, Gemini BYOK last resort** — and `provider.ts`
-is the only file that knows any of the three exists:
+tried in order — **configured endpoint first, native second, direct WebLLM last** — and
+`provider.ts` is the only file that knows any of the three exists:
 
-1. **Native** — the browser's own built-in Prompt API (Gemini Nano in Chrome), probed off
-   `globalThis.LanguageModel`. Costs no download, so it wins whenever present.
-2. **WebLLM** (`webllm-direct.ts`) — a direct `@mlc-ai/web-llm` engine over WebGPU, for browsers with
+1. **OpenAI-compatible endpoint** (`openai-compatible.ts`) — a player-supplied base URL + model name
+   (+ optional API key) for any server speaking `POST /chat/completions`: Ollama, LM Studio,
+   llama.cpp, vLLM, OpenRouter, or Google's own OpenAI-compatibility layer. **It outranks both local
+   backends whenever it is configured**, which is the opposite of the Gemini BYOK tier it replaced
+   (issue #84, gone): such an endpoint is very often a server on the player's own machine or LAN, so
+   it is usually a _better_ model than the 3B catalog entry rather than a compromise, and someone who
+   entered one meant to use it. Opt-in and empty by default, so the local path stays the default
+   experience. Stored by `endpoint-config.ts`.
+2. **Native** — the browser's own built-in Prompt API (Gemini Nano in Chrome), probed off
+   `globalThis.LanguageModel`. Costs no download, so it wins whenever no endpoint is configured.
+3. **WebLLM** (`webllm-direct.ts`) — a direct `@mlc-ai/web-llm` engine over WebGPU, for browsers with
    no native model. There used to be a `prompt-api-polyfill` dependency driving this; issue #69
    replaced it with a hand-written direct engine (see below), and the polyfill package is gone
    entirely — not even a `package.json` dependency.
-3. **Gemini** (`gemini-direct.ts`, issue #84) — a player-supplied, BYOK Gemini API key, tried only
-   when the WebLLM catalog model can't run on this device (no WebGPU, or not enough VRAM) _and_ a key
-   is stored in settings. Never preferred over a usable local model; a rescue path for devices that
-   can play no other way, not an alternative players opt into for quality.
 
 - **`catalog.ts`** — the only place a Riddlon model id maps to an MLC model id. One entry today,
   `llama-3.2-3b` (also `DEFAULT_MODEL_ID`), chosen for German dialogue. There used to be a
   `llama-3.2-1b` fallback tier for weaker devices; issue #85's live-browser testing found it, and
   every other tested sub-1GB-VRAM model, broke character or produced incoherent output, so a device
-  that can't hold 3B now falls to the `unsupported` state (or the Gemini fallback above) rather than
+  that can't hold 3B now falls to the `unsupported` state (or the endpoint above) rather than
   a smaller, unusable local tier. The player never picks a model directly (the settings screen's
   model list is a read-only status view, not a picker; see `model-status.ts`). Deliberately no larger
   tier either: Llama 3.2 tops out at 3B, and the older Llama 3.1 8B isn't worth doubling the download
@@ -117,32 +121,42 @@ is the only file that knows any of the three exists:
   logical session — one per character, plus the director — gets its own real backend handle on all
   three providers; `webllm-direct.ts`'s one persistent `MLCEngine` (reused across sessions, KV-cache
   reset on switch rather than a multi-gigabyte reload) is what makes that affordable for WebLLM too.
-- **`provider.ts`** — the only file touching `globalThis.LanguageModel`. Its `resolveProvider(modelId,
-capabilities?)` tries native, then WebLLM, then — only when `capabilities` says WebLLM can't run
-  `modelId` and a Gemini key is stored (`gemini-key.ts`) — Gemini. `capabilities` is optional and
-  supplied by `llm.svelte.ts` (which already probes WebGPU once at boot) purely so this module never
-  has to re-probe WebGPU itself; callers that omit it (tests, `/dev/llm`'s force-WebLLM harness) just
-  get the pre-#84 behaviour of an unsupported WebLLM model failing outright.
-- **`gemini-direct.ts`** — `createGeminiLanguageModel(apiKey, modelId)`, a `LanguageModelLike` over
-  the Gemini REST API via plain `fetch` (no SDK — same reasoning as the four stubbed cloud SDKs
-  below). `create()`/`availability()` never touch the network, only `prompt()`/`promptStreaming()`
-  do, so resolving this provider and the adapter's warm-up handle cost nothing. 401/403/429 responses
-  map to the `invalid-api-key`/`quota-exceeded` `LlmErrorCode`s.
-- **`gemini-key.ts`** — the BYOK key's own `localStorage` module (`riddlon:llm:gemini-key`), separate
-  from `profile.svelte.ts` (deliberately in-memory only) because this has to survive a reload. Never
-  leaves the device except inside the Gemini request itself.
+- **`provider.ts`** — the only file touching `globalThis.LanguageModel`. Its
+  `resolveProvider(modelId)` tries the configured endpoint, then native, then WebLLM. It takes no
+  capabilities argument: the endpoint's turn no longer depends on what the device can do (the
+  pre-#84 `capabilities?` parameter existed solely to gate the Gemini tier behind `canRunModel`, and
+  went with it).
+- **`openai-compatible.ts`** — `createOpenAiCompatibleLanguageModel(config)`, a `LanguageModelLike`
+  over `POST {baseUrl}/chat/completions` via plain `fetch` (no `openai` SDK: dead weight in the
+  bundle for every player who never configures an endpoint — a size argument, not a policy one).
+  `create()`/`availability()` never touch the network, only `prompt()`/`promptStreaming()` do, so
+  resolving this provider and the adapter's warm-up handle cost nothing. `PromptApiMessage` already
+  _is_ the OpenAI `messages[]` shape, so there is no mapping layer. Handles the `data: [DONE]`
+  sentinel, and falls back to reading one whole completion when a gateway ignores `stream: true`.
+  401/403/429 map to the `invalid-api-key`/`quota-exceeded` `LlmErrorCode`s; a `fetch` throw (which
+  is also the CORS case) maps to `download-failed`. Also exports `testEndpoint()` — one `GET
+/models` behind the settings screen's "Verbindung testen", where **a 404 counts as reachable**
+  because not every gateway serves that route and any HTTP response already proves host and CORS are
+  fine. That button matters precisely because an endpoint outranks a working local model: without
+  it, a typo's only symptom is a silently dead chat on the first message.
+- **`endpoint-config.ts`** — the endpoint's own `localStorage` module (`riddlon:llm:endpoint`, one
+  JSON blob), separate from `profile.svelte.ts` (deliberately in-memory only) because this has to
+  survive a reload. **`baseUrl` and `model` are both required for `hasEndpointConfig()` to be true** —
+  a half-filled settings form must not outrank a local model that works. Everything but the four
+  storage functions is pure and spec'd (`normalizeBaseUrl` strips a pasted `/chat/completions`;
+  `isLocalEndpoint` is what lets settings say "stays on your device" instead of warning about a
+  loopback address).
 - **`llm.svelte.ts`** — the `llm` singleton the UI reads: status, real download progress, which
-  backend won, which models are cached. `profile.model` holds the _choice_; `llm.activeModelId` holds
-  what's _loaded_ — they differ whenever a selected model hasn't been downloaded. `supported`/`canRun`
-  count a device as usable once a Gemini key is stored, even with no WebGPU — otherwise `#load` would
-  fail before ever reaching `provider.ts`'s own Gemini branch. `localUnusable` deliberately ignores
-  any stored key (native and WebLLM both fail here) and is what gates whether the settings screen
-  shows the Gemini key field at all, so the field doesn't vanish the moment a key makes the device
-  `supported` again.
-- **`stubs/unsupported-backend.ts`** + `resolve.alias` in `vite.config.ts` — an unrelated, pre-#84
-  guard: Firebase/Gemini/OpenAI/Transformers.js are aliased to a throwing stub so nothing pulls in an
-  actual cloud SDK by accident (concept §2/§8's "no cloud calls" enforced by the build). The Gemini
-  BYOK path above is a separate, deliberate opt-in over plain `fetch`, not this stub's `Gemini`.
+  backend won, which models are cached. There is no player-held model _choice_ to reconcile it
+  against (`profile.svelte.ts` deliberately has no such field): `llm.activeModelId` is what's
+  _loaded_, and the settings model list is a read-only view of it. `supported`/`canRun`
+  count a device as usable once an endpoint is configured, even with no WebGPU — otherwise `#load`
+  would fail with `no-webgpu` before ever reaching `provider.ts`. `isModelReady` asks the adapter's
+  own `availability()` (rather than the WebLLM cache) whenever an endpoint or native will win, or the
+  boot screen shows a first-run download bar for weights nobody is going to fetch. `localUnusable`
+  deliberately ignores any configured endpoint (native and WebLLM both fail here) and now only picks
+  the wording of the settings hint, not whether the endpoint form appears — it is always shown,
+  because it is a preference rather than a rescue path.
 - **`persona.ts`** — pure prompt building for one character in one scene: identity/voice from the
   character file, role and knowledge from this story's cast binding, `goals` from the scene,
   `relationships` resolved to names (a solo scene has no `otherParticipants`, so this is the only
@@ -200,14 +214,14 @@ original design used a single fake "phone frame" with in-memory screen switching
 `chats/chat1.md` in the original design handoff if you need the full back-and-forth that produced
 this design):
 
-| Route                | Screen                                                                |
-| -------------------- | --------------------------------------------------------------------- |
-| `/`                  | Splash + boot sequence, then auto-navigates to `/chats`               |
-| `/chats`             | Chat overview / thread list                                           |
-| `/chat?thread=<key>` | Solo or group conversation — shared shell                             |
-| `/chat/riddlon`      | The "Riddlon" system chat: installed-story library + ZIP/URL import   |
-| `/story`             | Storyübersicht — chapter timeline, clues and achievements             |
-| `/settings`          | Profile & settings (nickname, pronouns, disguise mode, model, notify) |
+| Route                | Screen                                                                             |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `/`                  | Splash + boot sequence, then auto-navigates to `/chats`                            |
+| `/chats`             | Chat overview / thread list                                                        |
+| `/chat?thread=<key>` | Solo or group conversation — shared shell                                          |
+| `/chat/riddlon`      | The "Riddlon" system chat: installed-story library + ZIP/URL import                |
+| `/story`             | Storyübersicht — chapter timeline, clues and achievements                          |
+| `/settings`          | Profile & settings (nickname, pronouns, disguise mode, inference endpoint, notify) |
 
 **The conversation route takes its thread as a query parameter, not a path segment.** Thread keys
 are character/scene UUIDs from the installed package, and `adapter-static` (configured without a
@@ -260,7 +274,8 @@ Building blocks:
   Survives navigating between screens (like `toast.svelte.ts`).
 - **`$lib/state/profile.svelte.ts`** — the `profile` singleton: nickname, pronouns, disguise mode
   (`pure` / `subtle` / `game` — controls how much game-y chrome shows across `/chats` and `/chat`),
-  local model choice, notification toggle. In-memory only; no persistence.
+  notification toggle. In-memory only; no persistence — and deliberately no model or endpoint
+  field, those live in `$lib/llm/` (see "Local LLM").
 - **`$lib/story/*`** — no story content, only generic derivations and display types.
   `persona-input.ts` composes "this character, in this scene, of this package" into
   `buildPersonaPrompt`'s input — pure and spec'd against the package under `stories/` rather than a

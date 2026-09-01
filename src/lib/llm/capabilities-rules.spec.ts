@@ -1,33 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	isMeteredConnection,
-	resolveBackend,
-	shouldAutoStartDownload
-} from './capabilities-rules.js';
-
-describe('resolveBackend', () => {
-	it('prefers the built-in model, which needs no download at all', () => {
-		expect(resolveBackend({ hasNativeLanguageModel: true, hasWebGpu: true })).toEqual({
-			backend: 'native'
-		});
-		expect(resolveBackend({ hasNativeLanguageModel: true, hasWebGpu: false })).toEqual({
-			backend: 'native'
-		});
-	});
-
-	it('falls back to WebLLM when only WebGPU is available', () => {
-		expect(resolveBackend({ hasNativeLanguageModel: false, hasWebGpu: true })).toEqual({
-			backend: 'webllm'
-		});
-	});
-
-	it('reports a renderable reason when neither is available', () => {
-		expect(resolveBackend({ hasNativeLanguageModel: false, hasWebGpu: false })).toEqual({
-			backend: 'none',
-			reason: 'no-webgpu'
-		});
-	});
-});
+import { isMeteredConnection, shouldAutoStartDownload } from './capabilities-rules.js';
 
 describe('isMeteredConnection', () => {
 	it('honours an explicit data-saver preference', () => {

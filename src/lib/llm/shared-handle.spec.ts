@@ -7,7 +7,7 @@
  * arrived as the next turn of an ongoing German roleplay, with an empty system instruction — a weak
  * model just continued the roleplay instead of answering with JSON, stalling the story forever
  * (`director.ts`, `story-session.svelte.ts`). `webllm-direct.ts` replaced that shared handle with one
- * persistent engine reused across cheap *per-session* handles, so this now holds on both providers.
+ * persistent engine reused across cheap *per-session* handles, so this now holds on every provider.
  * `adapter.spec.ts`'s parametrized "session pooling" suite proves the general case (Lucy/Max don't
  * bleed into each other); this file proves the specific one `story-session.svelte.ts` relies on.
  */

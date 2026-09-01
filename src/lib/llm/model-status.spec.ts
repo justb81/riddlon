@@ -10,7 +10,7 @@ const base: ModelRowInput = {
 	progress: 0,
 	hasNativeLanguageModel: false,
 	unsupportedReason: undefined,
-	hasGeminiApiKey: false
+	hasEndpointConfig: false
 };
 
 describe('modelRowStatus', () => {
@@ -136,42 +136,101 @@ describe('modelRowStatus', () => {
 		});
 	});
 
-	describe('the Gemini row (issue #84)', () => {
-		const geminiBase: ModelRowInput = { ...base, kind: 'gemini' };
+	describe('the endpoint row', () => {
+		const endpointBase: ModelRowInput = { ...base, kind: 'openai' };
 
-		it('is inactive whenever native is present, regardless of a stored key', () => {
+		it('reports that nothing has been entered yet', () => {
 			expect(
-				modelRowStatus({ ...geminiBase, hasNativeLanguageModel: true, hasGeminiApiKey: true })
+				modelRowStatus({ ...endpointBase, hasNativeLanguageModel: true, hasEndpointConfig: false })
+			).toEqual({ kind: 'not-configured' });
+		});
+
+		it('is inactive while configured but not yet the resolved backend', () => {
+			expect(
+				modelRowStatus({ ...endpointBase, hasEndpointConfig: true, backend: 'webllm' })
 			).toEqual({ kind: 'inactive' });
 		});
 
-		it('reports a missing key once native is known absent', () => {
-			expect(
-				modelRowStatus({ ...geminiBase, hasNativeLanguageModel: false, hasGeminiApiKey: false })
-			).toEqual({ kind: 'key-missing' });
-		});
-
-		it('is inactive with a key stored but Gemini not the resolved backend', () => {
+		it('is active once the endpoint has resolved and is ready', () => {
 			expect(
 				modelRowStatus({
-					...geminiBase,
-					hasNativeLanguageModel: false,
-					hasGeminiApiKey: true,
-					backend: 'webllm'
-				})
-			).toEqual({ kind: 'inactive' });
-		});
-
-		it('is active once Gemini has resolved and is ready', () => {
-			expect(
-				modelRowStatus({
-					...geminiBase,
-					hasNativeLanguageModel: false,
-					hasGeminiApiKey: true,
-					backend: 'gemini',
+					...endpointBase,
+					hasEndpointConfig: true,
+					backend: 'openai',
 					status: 'ready'
 				})
 			).toEqual({ kind: 'active' });
+		});
+
+		it('wins over a present native Prompt API', () => {
+			// The opposite of the Gemini tier this replaced: a configured endpoint outranks the local
+			// backends rather than rescuing a device that has none.
+			expect(
+				modelRowStatus({
+					...endpointBase,
+					hasNativeLanguageModel: true,
+					hasEndpointConfig: true,
+					backend: 'openai',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'active' });
+		});
+	});
+
+	describe('precedence of a configured endpoint over the local rows', () => {
+		it('pushes the native row to inactive', () => {
+			expect(
+				modelRowStatus({
+					...base,
+					kind: 'native',
+					hasNativeLanguageModel: true,
+					hasEndpointConfig: true,
+					backend: 'openai',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'inactive' });
+		});
+
+		it('pushes a runnable WebLLM row to inactive', () => {
+			expect(
+				modelRowStatus({
+					...base,
+					kind: 'llama-3.2-3b',
+					hasNativeLanguageModel: false,
+					hasEndpointConfig: true,
+					backend: 'openai',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'inactive' });
+		});
+
+		it('still explains why a WebLLM row could not have run anyway', () => {
+			// "kein WebGPU" is diagnosis the player needs whether or not something else is running,
+			// so it survives the precedence check rather than being flattened to "inactive".
+			expect(
+				modelRowStatus({
+					...base,
+					kind: 'llama-3.2-3b',
+					hasNativeLanguageModel: false,
+					hasEndpointConfig: true,
+					unsupportedReason: 'no-webgpu',
+					backend: 'openai',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'unsupported', reason: 'no-webgpu' });
+		});
+
+		it('still reports an absent native Prompt API', () => {
+			expect(
+				modelRowStatus({
+					...base,
+					kind: 'native',
+					hasNativeLanguageModel: false,
+					hasEndpointConfig: true,
+					backend: 'openai',
+					status: 'ready'
+				})
+			).toEqual({ kind: 'unavailable' });
 		});
 	});
 });

@@ -49,50 +49,47 @@ describe('force-WebLLM override (issue #69 step 1 harness)', () => {
 });
 
 /**
- * Issue #84: a stored Gemini key is only ever tried once WebLLM itself can't run the requested
- * model — never preferred over a usable local model, and never attempted without a key.
+ * A configured OpenAI-compatible endpoint outranks everything else — the opposite of the Gemini
+ * tier it replaces, which only ran when nothing local could. These three cases are the whole
+ * contract: nothing configured falls through to the local path, a configured endpoint wins even
+ * against a native Prompt API, and `/dev/llm`'s force-WebLLM override still skips it.
  */
-describe('Gemini fallback (issue #84)', () => {
-	const cannotRunLocally = {
-		hasNativeLanguageModel: false,
-		hasWebGpu: false,
-		maxBufferBytes: undefined,
-		metered: undefined
-	};
+describe('OpenAI-compatible endpoint precedence', () => {
+	const CONFIG = { baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' };
 
 	beforeEach(() => {
 		vi.resetModules();
-		// No native candidate on this global — resolveNative() must fall through cleanly.
-		(globalThis as { window?: unknown }).window = {};
+		// A native candidate *is* present throughout, so "endpoint wins" is a real precedence test
+		// rather than an artefact of native being unavailable.
+		(globalThis as { window?: unknown }).window = {
+			LanguageModel: { availability: vi.fn().mockResolvedValue('available') }
+		};
 	});
 
 	afterEach(() => {
 		delete (globalThis as { window?: unknown }).window;
-		vi.doUnmock('./gemini-key.js');
+		vi.doUnmock('./endpoint-config.js');
 	});
 
-	it('resolves WebLLM anyway when no Gemini key is stored, even though the model cannot run', async () => {
-		vi.doMock('./gemini-key.js', () => ({ getGeminiApiKey: () => undefined }));
+	it('resolves native when no endpoint is configured', async () => {
+		vi.doMock('./endpoint-config.js', () => ({ getEndpointConfig: () => undefined }));
 		const { resolveProvider } = await import('./provider.js');
-		const provider = await resolveProvider(DEFAULT_MODEL_ID, cannotRunLocally);
-		expect(provider.kind).toBe('webllm');
+		expect((await resolveProvider(DEFAULT_MODEL_ID)).kind).toBe('native');
 	});
 
-	it('falls back to Gemini once a key is stored and the model cannot run locally', async () => {
-		vi.doMock('./gemini-key.js', () => ({ getGeminiApiKey: () => 'test-key' }));
+	it('prefers a configured endpoint over a usable native Prompt API', async () => {
+		vi.doMock('./endpoint-config.js', () => ({ getEndpointConfig: () => CONFIG }));
 		const { resolveProvider } = await import('./provider.js');
-		const provider = await resolveProvider(DEFAULT_MODEL_ID, cannotRunLocally);
-		expect(provider.kind).toBe('gemini');
-		expect(provider.geminiModelId).toBeTruthy();
+		const provider = await resolveProvider(DEFAULT_MODEL_ID);
+		expect(provider.kind).toBe('openai');
+		expect(provider.endpointModelId).toBe('llama3.2');
 	});
 
-	it('never prefers Gemini over a model that can run locally, even with a key stored', async () => {
-		vi.doMock('./gemini-key.js', () => ({ getGeminiApiKey: () => 'test-key' }));
-		const { resolveProvider } = await import('./provider.js');
-		const provider = await resolveProvider(DEFAULT_MODEL_ID, {
-			...cannotRunLocally,
-			hasWebGpu: true
-		});
-		expect(provider.kind).toBe('webllm');
+	it('still drops to WebLLM when the dev harness forces it, endpoint or not', async () => {
+		vi.doMock('./endpoint-config.js', () => ({ getEndpointConfig: () => CONFIG }));
+		const { resolveProvider, setForceWebLlm } = await import('./provider.js');
+		setForceWebLlm(true);
+		expect((await resolveProvider(DEFAULT_MODEL_ID)).kind).toBe('webllm');
+		setForceWebLlm(false);
 	});
 });

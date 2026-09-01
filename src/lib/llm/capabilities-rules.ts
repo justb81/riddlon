@@ -3,8 +3,6 @@
  * can be tested in Node. Pure: no globals, no `navigator`, no WebGPU.
  */
 
-import type { LlmErrorCode } from './errors.js';
-
 export interface DeviceFacts {
 	hasWebGpu: boolean;
 	/** Largest buffer the GPU adapter will allocate, when the browser reports it. */
@@ -39,20 +37,4 @@ export function isMeteredConnection(facts: MeteredFacts): boolean {
  */
 export function shouldAutoStartDownload(metered: boolean | undefined): boolean {
 	return metered !== true;
-}
-
-export type BackendChoice =
-	{ backend: 'native' } | { backend: 'webllm' } | { backend: 'none'; reason: LlmErrorCode };
-
-/**
- * Native first: a built-in model costs no download at all, so it wins whenever it exists. WebLLM is
- * the fallback and needs WebGPU. Neither available is a normal, renderable outcome.
- */
-export function resolveBackend(facts: {
-	hasNativeLanguageModel: boolean;
-	hasWebGpu: boolean;
-}): BackendChoice {
-	if (facts.hasNativeLanguageModel) return { backend: 'native' };
-	if (facts.hasWebGpu) return { backend: 'webllm' };
-	return { backend: 'none', reason: 'no-webgpu' };
 }

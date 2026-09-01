@@ -22,7 +22,7 @@ import {
 import { shouldAutoStartDownload } from './capabilities-rules.js';
 import { DEFAULT_MODEL_ID, MODEL_ORDER, type LocalModelId } from './catalog.js';
 import { LlmError, classifyLoadError, type LlmErrorCode } from './errors.js';
-import { hasGeminiApiKey } from './gemini-key.js';
+import { hasEndpointConfig } from './endpoint-config.js';
 import { isModelCached, markModelCached } from './model-cache.js';
 import { resetProvider, resolveProvider } from './provider.js';
 import type { LlmAdapter, LlmSession, LlmSessionConfig, LlmStatus, ProviderKind } from './types.js';
@@ -54,14 +54,15 @@ class LlmStore {
 	}
 
 	/**
-	 * A device with neither a native Prompt API nor usable WebGPU still counts as `supported` once a
-	 * Gemini key is stored (issue #84) — `#load` would otherwise fail it with `no-webgpu` before ever
-	 * reaching `provider.ts`'s own Gemini fallback.
+	 * A device with neither a native Prompt API nor usable WebGPU still counts as `supported` once an
+	 * OpenAI-compatible endpoint is configured — `#load` would otherwise fail it with `no-webgpu`
+	 * before ever reaching `provider.ts`, which resolves that endpoint without asking the device
+	 * anything.
 	 */
 	get supported(): boolean {
 		const capabilities = this.capabilities;
 		if (!capabilities) return true;
-		return capabilities.hasNativeLanguageModel || capabilities.hasWebGpu || hasGeminiApiKey();
+		return capabilities.hasNativeLanguageModel || capabilities.hasWebGpu || hasEndpointConfig();
 	}
 
 	/** Whether a first-run download may begin without asking (unmetered connection). */
@@ -74,14 +75,15 @@ class LlmStore {
 		const capabilities = this.capabilities;
 		if (!capabilities) return true;
 		if (canRunModel(capabilities, modelId)) return true;
-		return hasGeminiApiKey();
+		return hasEndpointConfig();
 	}
 
 	/**
 	 * True once capabilities are known and neither native nor the default WebLLM model can run here
-	 * — deliberately ignoring any stored Gemini key, unlike `supported`/`canRun`. The settings screen
-	 * uses this (not `supported`) to decide whether to show the Gemini key field at all, so the field
-	 * doesn't disappear the moment a key makes the device `supported` again.
+	 * — deliberately ignoring any configured endpoint, unlike `supported`/`canRun`. The settings
+	 * screen uses this (not `supported`) to word its endpoint hint: "this device can't run a local
+	 * model at all" has to stay true after saving an endpoint, or the explanation would vanish the
+	 * moment it starts applying.
 	 */
 	get localUnusable(): boolean {
 		const capabilities = this.capabilities;
@@ -133,17 +135,16 @@ class LlmStore {
 
 	/**
 	 * Whether loading `modelId` right now would find the model already on the device — as opposed to
-	 * needing a real download. Native-aware: when the native Prompt API is present it answers for
-	 * `modelId` regardless of catalog choice (`provider.ts`'s `resolveFresh` tries native first), so
-	 * this asks its own `availability()` rather than `isModelCached`, which only ever probes the
-	 * WebLLM cache and so can't see native state at all — on a device that already has e.g. Gemini
-	 * Nano, `isModelCached` would say "not cached" and the boot screen would show an unearned
-	 * first-run download bar for a model that needs no download.
+	 * needing a real download. Backend-aware: whenever something other than WebLLM will win, it asks
+	 * that backend's own `availability()` rather than `isModelCached`, which only ever probes the
+	 * WebLLM cache and so can't see the other two at all. On a device that already has Gemini Nano,
+	 * or one with an endpoint configured, `isModelCached` would say "not cached" and the boot screen
+	 * would show an unearned first-run download bar for weights nobody is going to fetch.
 	 */
 	async isModelReady(modelId: LocalModelId): Promise<boolean> {
 		if (!browser) return false;
 		if (!this.capabilities) await this.detect();
-		if (this.capabilities?.hasNativeLanguageModel) {
+		if (hasEndpointConfig() || this.capabilities?.hasNativeLanguageModel) {
 			return (await this.#ensureAdapter(modelId).availability()) === 'ready';
 		}
 		return this.isModelCached(modelId);
@@ -209,13 +210,13 @@ class LlmStore {
 			throw error;
 		}
 
-		this.backend = (await resolveProvider(modelId, this.capabilities ?? undefined)).kind;
+		this.backend = (await resolveProvider(modelId)).kind;
 		this.activeModelId = modelId;
 		this.progress = 1;
 		this.status = 'ready';
 
 		// Only a WebLLM load actually downloaded `modelId`'s weights — marking it cached under a
-		// native or Gemini backend would make the (still unusable) catalog row look downloaded on
+		// native or endpoint backend would make the (still unusable) catalog row look downloaded on
 		// the next boot.
 		if (this.backend === 'webllm') {
 			this.cached = { ...this.cached, [modelId]: true };
@@ -239,9 +240,11 @@ class LlmStore {
 
 	/**
 	 * Switches models: tears down the live engine so the next load picks up the new weights.
-	 * `force` skips the no-op guard even when `modelId` is unchanged — needed after flipping
-	 * something that changes how the *same* model id resolves, like `/dev/llm`'s force-WebLLM
-	 * override, where the live engine has to be rebuilt against a different backend.
+	 * `force` skips the no-op guard even when `modelId` is unchanged — needed after changing
+	 * something that changes how the *same* model id resolves: saving or clearing an endpoint in
+	 * settings, or `/dev/llm`'s force-WebLLM override. In both cases the live engine has to be
+	 * rebuilt against a different backend, and `provider.ts`'s memo (keyed by model id alone)
+	 * has to be dropped, which `resetProvider()` below does.
 	 */
 	async selectModel(modelId: LocalModelId, opts: { force?: boolean } = {}): Promise<void> {
 		if (!browser) return;
@@ -268,10 +271,7 @@ class LlmStore {
 
 	#ensureAdapter(modelId: LocalModelId): LlmAdapter {
 		if (!this.#adapter || this.#adapterModelId !== modelId) {
-			this.#adapter = createLlmAdapter(
-				{ modelId },
-				{ resolveProvider: (id) => resolveProvider(id, this.capabilities ?? undefined) }
-			);
+			this.#adapter = createLlmAdapter({ modelId }, { resolveProvider });
 			this.#adapterModelId = modelId;
 		}
 		return this.#adapter;

@@ -1,6 +1,6 @@
 /**
- * Native first, direct WebLLM second, Gemini BYOK last resort — and the only file in the app that
- * knows any of the three exists.
+ * A player-configured endpoint first, then the browser's native Prompt API, then direct WebLLM —
+ * and the only file in the app that knows any of the three exists.
  *
  * The WebLLM path used to go through `prompt-api-polyfill`, whose own backend rebuilt the whole
  * `MLCEngine` on every logical session (issue #69). `webllm-direct.ts` now owns one persistent
@@ -9,22 +9,21 @@
  * still read as a global rather than declared here on `Window`, since a native implementation is
  * the browser's own, not something this module installs.
  *
- * Issue #84 adds a third tier below WebLLM: a player-supplied Gemini API key, tried only when the
- * requested WebLLM catalog model can't run on this device (no WebGPU, or not enough VRAM — see
- * `capabilities.ts`'s `unsupportedModelReason`) *and* a key is stored. It is never preferred over a
- * usable local model. `resolveProvider`'s optional `capabilities` parameter exists solely to make
- * that decision without this module re-probing WebGPU itself — `llm.svelte.ts` already probes it
- * once at boot and passes the result through.
+ * An OpenAI-compatible endpoint outranks both. That is the opposite of the Gemini BYOK tier it
+ * replaces, which only ever ran when nothing local could — and it is deliberate: such an endpoint
+ * is very often a server on the player's own machine or LAN (Ollama, LM Studio, llama.cpp), so it
+ * is usually a better model than the 3B catalogue entry rather than a compromise, and a player who
+ * went to the trouble of entering one meant to use it. It is opt-in and empty by default, so the
+ * local path stays the default experience.
  */
 
 import { browser } from '$app/environment';
-import { canRunModel, type LlmCapabilities } from './capabilities.js';
 import { findModel, type LocalModelId } from './catalog.js';
+import { getEndpointConfig, type InferenceEndpointConfig } from './endpoint-config.js';
 import { LlmError } from './errors.js';
-import { createGeminiLanguageModel, DEFAULT_GEMINI_MODEL_ID } from './gemini-direct.js';
-import { getGeminiApiKey } from './gemini-key.js';
+import { createOpenAiCompatibleLanguageModel } from './openai-compatible.js';
 import { createWebLlmLanguageModel } from './webllm-direct.js';
-import type { LanguageModelLike, ResolvedProvider } from './types.js';
+import type { LanguageModelLike, ProviderKind, ResolvedProvider } from './types.js';
 
 declare global {
 	interface Window {
@@ -38,10 +37,10 @@ let inFlight: { modelId: LocalModelId; promise: Promise<ResolvedProvider> } | un
 
 /**
  * Dev-only override (issue #69's step 1: measuring `resetChat()` timing needs a real WebLLM
- * session, which a device with a native Prompt API would otherwise always shadow) — skips
- * `resolveNative()` so `resolveFresh` falls straight through to WebLLM. Never surfaced to
- * the player; only `/dev/llm` sets it. Caller must `resetProvider()` after flipping it, same as
- * any other change that should affect the next resolve.
+ * session, which a device with a native Prompt API would otherwise always shadow) — skips every
+ * tier above WebLLM, the configured endpoint included, so `resolveFresh` falls straight through.
+ * Never surfaced to the player; only `/dev/llm` sets it. Caller must `resetProvider()` after
+ * flipping it, same as any other change that should affect the next resolve.
  */
 let forceWebLlm = false;
 
@@ -53,21 +52,13 @@ export function isForcingWebLlm(): boolean {
 	return forceWebLlm;
 }
 
-/**
- * `capabilities` is optional purely so callers that don't care about the Gemini tier (tests, the
- * force-WebLLM dev harness) can omit it — without it, an unsupported WebLLM model is still
- * attempted and fails exactly as before issue #84.
- */
-export async function resolveProvider(
-	modelId: LocalModelId,
-	capabilities?: LlmCapabilities
-): Promise<ResolvedProvider> {
+export async function resolveProvider(modelId: LocalModelId): Promise<ResolvedProvider> {
 	if (!browser) throw new LlmError('no-webgpu');
 
 	if (cached?.modelId === modelId) return cached.provider;
 	if (inFlight?.modelId === modelId) return inFlight.promise;
 
-	const promise = resolveFresh(modelId, capabilities);
+	const promise = resolveFresh(modelId);
 	inFlight = { modelId, promise };
 
 	try {
@@ -79,18 +70,13 @@ export async function resolveProvider(
 	}
 }
 
-async function resolveFresh(
-	modelId: LocalModelId,
-	capabilities?: LlmCapabilities
-): Promise<ResolvedProvider> {
+async function resolveFresh(modelId: LocalModelId): Promise<ResolvedProvider> {
 	if (!forceWebLlm) {
+		const endpoint = getEndpointConfig();
+		if (endpoint) return resolveEndpoint(endpoint);
+
 		const native = await resolveNative();
 		if (native) return native;
-	}
-
-	if (!forceWebLlm && capabilities && !canRunModel(capabilities, modelId)) {
-		const apiKey = getGeminiApiKey();
-		if (apiKey) return resolveGemini(apiKey);
 	}
 
 	return resolveWebLlm(modelId);
@@ -126,18 +112,18 @@ async function resolveWebLlm(modelId: LocalModelId): Promise<ResolvedProvider> {
 	return { kind: 'webllm', LanguageModel, mlcModelId: model.mlcModelId };
 }
 
-async function resolveGemini(apiKey: string): Promise<ResolvedProvider> {
-	const LanguageModel = createGeminiLanguageModel(apiKey, DEFAULT_GEMINI_MODEL_ID);
+function resolveEndpoint(config: InferenceEndpointConfig): ResolvedProvider {
+	const LanguageModel = createOpenAiCompatibleLanguageModel(config);
 
-	logResolved('gemini', DEFAULT_GEMINI_MODEL_ID);
-	return { kind: 'gemini', LanguageModel, geminiModelId: DEFAULT_GEMINI_MODEL_ID };
+	logResolved('openai', config.model);
+	return { kind: 'openai', LanguageModel, endpointModelId: config.model };
 }
 
 /**
  * The only way to tell from the outside which backend actually got picked — the manual verification
  * checklist relies on it, since a GPU-less CI can never exercise this path.
  */
-function logResolved(kind: 'native' | 'webllm' | 'gemini', detailId?: string): void {
+function logResolved(kind: ProviderKind, detailId?: string): void {
 	const detail = detailId ? ` (${detailId})` : '';
 	console.info(`[riddlon/llm] inference backend: ${kind}${detail}`);
 }
@@ -146,9 +132,4 @@ function logResolved(kind: 'native' | 'webllm' | 'gemini', detailId?: string): v
 export function resetProvider(): void {
 	cached = undefined;
 	inFlight = undefined;
-}
-
-/** Test-only alias, matching the `resetDbConnectionForTests` convention in $lib/storage/db.ts. */
-export function resetProviderForTests(): void {
-	resetProvider();
 }
