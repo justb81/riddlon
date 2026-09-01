@@ -88,6 +88,15 @@ Implements the importer / installer / registry split.
 | `install-package.ts`              | The **installer**: validate, store assets content-addressed, resolve character references into the shared library, register in the story registry. Never throws; every failure is a typed `ImportError`. |
 | `semver.ts` / `player-version.ts` | Version comparison and the supported format major / current player version.                                                                                                                              |
 
+### `characters/`
+
+Two functions, deliberately small — the library itself is a storage concern.
+
+| Building block | Responsibility                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `resolve.ts`   | Folds a character identity together with its cast binding and engine state into the effective state the UI shows |
+| `install.ts`   | Reconciles a package's character copies against the local library by UUID on import                              |
+
 ## 5.4 Level 2 — `llm/`
 
 | Building block                                                                           | Responsibility                                                                                                                                      |
@@ -157,4 +166,5 @@ Shared chrome lives in `src/lib/components/chat/`: `AppFrame` (the responsive tw
 `ChatList` (mounted exactly once, moving between "whole screen" and "sidebar"), `AppHeader` (60 px)
 and `InfoBand` (46 px) used on every screen so header height is identical everywhere, plus
 `MessageBubble`, `Composer`, `Avatar`, `ThreadRow`, `TypingIndicator`, `ChipRow`, `MilestoneItem`
-and `CelebrationOverlay`.
+and `CelebrationOverlay`. `components/ui/Toast.svelte` renders the `toast` singleton, and
+`components/icons/RiddlonMark.svelte` is the wordmark used on the splash and in the system chat.

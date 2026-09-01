@@ -34,13 +34,13 @@ After the first load and one story import, none of the external nodes is require
 
 ## 7.2 Application Build and Release
 
-| Step         | Mechanism                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Build        | `npm run build` → `adapter-static` emits a prerendered shell into `build/`. `prebuild` runs `stories:bundle` first. |
-| CI           | `.github/workflows/ci.yml` runs `lint`, `check`, `test` and `build` on every pull request and on `main`.            |
-| Versioning   | `.github/workflows/release-please.yml` raises the version/changelog pull request from Conventional Commits.         |
-| Deployment   | `.github/workflows/deploy.yml` builds with `BASE_PATH` set to the Pages subpath and publishes on each release.      |
-| Dependencies | `.github/workflows/dependabot.yml` opens weekly grouped dependency pull requests with a 7-day cooldown.             |
+| Step         | Mechanism                                                                                                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build        | `npm run build` → `adapter-static` emits a prerendered shell into `build/`. `prebuild` runs `stories:bundle` first.                                                                 |
+| CI           | `.github/workflows/ci.yml` runs `lint`, `check`, `test` and `build` on every pull request and on `main`.                                                                            |
+| Versioning   | `.github/workflows/release-please.yml`, with `release-please-config.json` and `.release-please-manifest.json`, raises the version/changelog pull request from Conventional Commits. |
+| Deployment   | `.github/workflows/deploy.yml` builds with `BASE_PATH` set to the Pages subpath and publishes on each release.                                                                      |
+| Dependencies | `.github/dependabot.yml` (a config, not a workflow) opens weekly grouped dependency pull requests with a 7-day cooldown.                                                            |
 
 Two operational notes: release-please needs a `RELEASE_TOKEN` repository secret (a PAT) so a created
 release can trigger the deploy workflow, and **Settings → Pages → Source: GitHub Actions** must be
@@ -122,6 +122,8 @@ npm run preview  # serve the production build locally
 | Single test by name | `npx vitest run -t "storyThreads"`                   |
 | Lint                | `npm run lint`                                       |
 | Format              | `npm run format`                                     |
+
+`.vscode/` ships recommended extensions for the toolchain; nothing in the build depends on it.
 
 The service worker is never registered in dev (`vite.config.ts` sets `serviceWorker.register:
 false`, and `+layout.svelte` actively unregisters leftovers), so a cache-first worker from an earlier

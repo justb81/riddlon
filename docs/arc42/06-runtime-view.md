@@ -183,7 +183,10 @@ Two actions behind `/settings`:
 | `resetStoryProgress()` | Savegames                                                                                  | Installed packages, characters, profile |
 | `resetEverything()`    | Packages, characters, saves, profile, settings, package assets, the active-package pointer | Downloaded model weights                |
 
-Both end in a full page load, because the state singletons memoise their `init()`. Model weights
-survive on purpose: `appKeysToClear()` keeps the `riddlon:llm:*` markers so no multi-gigabyte
-re-download is triggered, and clears `riddlon:active-package` so no pointer outlives the package it
-named.
+Both end in a full page load, because the state singletons memoise their `init()`.
+
+Model weights survive on purpose: `appKeysToClear()` keeps the `riddlon:llm:*` cache markers, so no
+multi-gigabyte re-download is triggered by a factory reset. Two keys are carved out of that rule in
+opposite directions — `riddlon:active-package` goes, so no pointer outlives the package the wipe
+deleted, and the **Gemini API key goes too** despite sitting under the `riddlon:llm:` prefix: it is a
+credential, not a cache, so "alles zurücksetzen" clears it like any other app key.

@@ -349,7 +349,9 @@ Required: the form of address. Recommended but optional: display name, avatar, s
 The two shapes are alternates of the same concern; the schema requires **at least one** of
 `addressAs` and `pronouns`. A story may declare `playerProfileDefaults` in `story/story.json` to say
 which profile fields it needs; the shape beyond the field name is unspecified and passed through
-without deep validation.
+without deep validation. A companion `playerProfileSchema` field was sketched in the original
+concept but never implemented — a package cannot declare _required_ profile fields today, only
+defaults.
 
 At runtime the profile is split across two homes: nickname, bio and pronouns belong to the package
 format's `PlayerProfile` and live in IndexedDB (`playerProfileStore`); disguise level and the
@@ -403,7 +405,10 @@ are reported separately, so the UI can show a placeholder name until the reveal 
 | 3     | **Gemini** | Only when the catalog model cannot run on this device (no WebGPU, or not enough VRAM) **and** the player has stored their own API key. |
 
 Gemini is a rescue path for devices that can play no other way, never an alternative players opt
-into for quality. `resolveProvider(modelId, capabilities?)` takes the device capabilities as an
+into for quality. `create()` and `availability()` never touch the network — only `prompt()` and
+`promptStreaming()` do — so resolving the provider and holding the adapter's warm-up handle cost
+nothing. Response codes map onto the shared `LlmErrorCode` vocabulary: 401 and 403 become
+`invalid-api-key`, 429 becomes `quota-exceeded`. `resolveProvider(modelId, capabilities?)` takes the device capabilities as an
 optional argument purely so this module never has to probe WebGPU itself; callers that omit it get
 the behaviour of an unsupported WebLLM model failing outright.
 
@@ -482,7 +487,12 @@ provider so the real logic is exercised in Node with no GPU.
 
 - Every logical session — one per character, plus the director — gets its own real backend handle on
   all three providers. WebLLM affords that because `webllm-direct.ts` keeps **one** persistent
-  `MLCEngine` and resets the KV cache on switch, rather than reloading multiple gigabytes.
+  `MLCEngine`, reused across every logical session. Device sizing means only one engine may ever be
+  live, so this module — not `provider.ts` — owns it, and reloads it only when the selected model id
+  actually changes. Isolation between sessions is free: `chat.completions.create()` is a stateless,
+  OpenAI-style call, and `prefill()` already compares the full message array against whatever
+  conversation is loaded — matching turns reuse the KV cache, a mismatch resets it. No explicit
+  `resetChat()` is needed, and no multi-second reload happens on a session switch.
 - **`createSession(key, config)` returns the existing session but adopts the new config.** This looks
   wrong and is essential: a thread keeps one session per character for the whole story while the
   scene driving their goals advances underneath it, so the persona must be re-applied every turn.
@@ -544,6 +554,24 @@ Design notes:
 
 ## 8.7 UI, Layout and Design System
 
+### Chat-first, with a neutral system contact
+
+Everything the player does happens inside the messenger metaphor, but the app never blurs fiction
+and administration. The interface has three modes inside one chat system:
+
+| Mode            | What it is                                                                  |
+| --------------- | --------------------------------------------------------------------------- |
+| **Play chat**   | The actual story interaction with characters                                |
+| **System chat** | Import, installation, updates, library management                           |
+| **Meta panels** | Inline cards for technical steps: file picking, progress, conflicts, errors |
+
+System functions run through a **neutral system contact** — "Riddlon", at `/chat/riddlon` — and
+never through a story character. A character asking the player to pick a ZIP file would break the
+fiction and make the app's own state indistinguishable from the plot; a separate, obviously
+non-fictional contact keeps the two apart. That is also why the technical steps get explicit UI
+cards rather than being narrated: a file picker or a download progress bar must read as the app
+talking, not as a character talking.
+
 ### Design reference
 
 `docs/design/riddlon-app-mockup.dc.html` (plus `support.js`) is the Claude Design prototype for the
@@ -561,7 +589,7 @@ runnable standalone — it depends on Claude Design's `support.js` runtime and a
 
 The key rule the mockup states about itself: the rust/terracotta accent (`#c1502e`) is used
 **exclusively** for progress, contradictions and achievements. Everything else is navy (`#151a26`)
-and cream, so "something is rust-coloured" always means "this is a game signal, not just chat".
+and cream (`#f3eee3`), so "something is rust-coloured" always means "this is a game signal, not just chat".
 
 Typography: **DM Sans** for UI, **IBM Plex Mono** for labels, timestamps and system text,
 **Instrument Serif** for the splash wordmark and the celebration headline. Semantic tokens — colour,
@@ -640,10 +668,11 @@ It comes from the installed package and carries the package's own `language`.
   must survive a reload — and is sent only inside the Gemini request itself. Prompt content does
   leave the device on this path; that is the trade the player makes to play at all on a device with
   no local model.
-- **Cloud SDKs cannot creep in.** `resolve.alias` in `vite.config.ts` points Firebase, Gemini, OpenAI
-  and Transformers.js at a throwing stub, so an accidental import fails the build rather than quietly
-  shipping a network dependency. The deliberate Gemini path uses plain `fetch` and is unrelated to
-  that stub.
+- **No cloud SDK is a dependency.** `package.json` carries no Firebase, OpenAI, Gemini or
+  Transformers.js package; the Gemini path above is plain `fetch` against a documented REST endpoint.
+  Nothing in the build currently _enforces_ this, though — the only automated boundary check is
+  `no-backend-leakage.spec.ts`, and it guards `@mlc-ai/web-llm`, not cloud SDKs. See
+  [§11.2](./11-risks-and-technical-debt.md#112-technical-risks).
 - **Imported content is untrusted.** Every package is schema-validated before anything is stored, all
   ids are checked for duplicates and dangling references, and the director's output is filtered
   against a per-scene allowlist so neither a package nor a model can set state the active scene did

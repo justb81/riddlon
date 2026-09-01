@@ -171,13 +171,18 @@ package into `static/stories/` at build time and install it through the ordinary
 redeploy the site. There is no privileged install route into the registry — the example package
 exercises the same code path a third-party package does.
 
-## ADR 14: Cloud SDKs are aliased to a throwing stub
+## ADR 14: No cloud SDK dependency
 
 **Context.** "No cloud calls" is easy to state and easy to violate by adding one convenient
-dependency.
+dependency. An earlier iteration aliased Firebase, Gemini, OpenAI and Transformers.js to a throwing
+stub in `vite.config.ts` to make that violation fail the build.
 
-**Decision.** Alias Firebase, Gemini, OpenAI and Transformers.js to a throwing stub in
-`vite.config.ts`.
+**Decision.** Keep the _rule_ — no cloud SDK is a dependency of this project; the one deliberate
+cloud path ([ADR 8](#adr-8-gemini-byok-as-a-last-resort-provider)) is plain `fetch` — but the build
+no longer carries the stub alias that enforced it. Enforcement is by review today.
 
-**Consequences.** An accidental cloud dependency fails the build instead of shipping. The deliberate
-Gemini path (ADR 8) has to use plain `fetch`, which is a feature, not a workaround.
+**Consequences.** `package.json` is clean, and the Gemini path stays SDK-free, which keeps the
+bundle small and the request shape visible. But nothing fails if someone adds such a dependency:
+`no-backend-leakage.spec.ts` guards `@mlc-ai/web-llm` only. That gap is recorded in
+[§11.2](./11-risks-and-technical-debt.md#112-technical-risks); reinstating a build-level guard would
+supersede this ADR.
