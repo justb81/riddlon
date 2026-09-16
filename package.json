@@ -46,7 +46,7 @@
 		"vitest": "^4.1.11"
 	},
 	"dependencies": {
-		"@mlc-ai/web-llm": "0.2.84",
+		"@mlc-ai/web-llm": "0.2.85",
 		"fflate": "^0.8.3",
 		"idb": "^8.0.3",
 		"zod": "^4.5.4"
