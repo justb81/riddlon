@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	buildDirectorPrompt,
+	buildDirectorSchema,
 	claimableClueIds,
 	parseDirectorVerdict,
 	settableFlags,
@@ -198,5 +199,39 @@ describe('settableFlags — group-scene outcomes', () => {
 				outcomeConditions: ['flag:done', 'flag:extra']
 			})
 		).toEqual(['flag:done', 'flag:extra']);
+	});
+});
+
+describe('buildDirectorSchema', () => {
+	it('enumerates exactly the allowlist, so a constrained decoder cannot invent an id', () => {
+		expect(buildDirectorSchema(allowed)).toEqual({
+			type: 'object',
+			properties: {
+				flags: { type: 'array', items: { type: 'string', enum: ['flag:lucy-identified'] } },
+				clues: {
+					type: 'array',
+					items: {
+						type: 'object',
+						properties: {
+							id: { type: 'string', enum: ['clue:time-window'] },
+							character: { type: 'string', enum: [LUCY, MAX] },
+							value: { type: 'string' }
+						},
+						required: ['id', 'character', 'value'],
+						additionalProperties: false
+					}
+				}
+			},
+			required: ['flags', 'clues'],
+			additionalProperties: false
+		});
+	});
+
+	it('allows only empty arrays when nothing is open, instead of an invalid empty enum', () => {
+		const schema = buildDirectorSchema({ flags: [], clueIds: [], characters: allowed.characters });
+		const { flags, clues } = schema.properties as Record<string, Record<string, unknown>>;
+		expect(flags.maxItems).toBe(0);
+		expect(clues.maxItems).toBe(0);
+		expect(JSON.stringify(schema)).not.toContain('"enum":[]');
 	});
 });

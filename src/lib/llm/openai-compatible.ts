@@ -118,7 +118,13 @@ class OpenAiCompatibleSession implements LanguageModelSessionLike {
 							model: this.config.model,
 							messages,
 							stream: true,
-							temperature: this.#temperature
+							temperature: this.#temperature,
+							response_format: opts.responseConstraint
+								? {
+										type: 'json_schema',
+										json_schema: { name: 'response', schema: opts.responseConstraint }
+									}
+								: undefined
 						}),
 						signal
 					});

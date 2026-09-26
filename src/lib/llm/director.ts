@@ -125,6 +125,49 @@ export function buildDirectorPrompt(input: {
 	].join('\n');
 }
 
+/** An array of strings limited to `values`; with nothing allowed, the only valid array is `[]`. */
+function enumArray(values: readonly string[]): Record<string, unknown> {
+	return values.length > 0
+		? { type: 'array', items: { type: 'string', enum: [...values] } }
+		: { type: 'array', items: { type: 'string' }, maxItems: 0 };
+}
+
+/**
+ * The JSON Schema the verdict is decoded against (docs/arc42 §8.4.4): the same allowlist
+ * `parseDirectorVerdict` enforces, as `enum`s, so a constrained decoder cannot even emit prose,
+ * an invented id or a flag in `clues`. A provider may ignore it — the parser stays the safety net.
+ */
+export function buildDirectorSchema(allowed: {
+	flags: readonly string[];
+	clueIds: readonly string[];
+	characters: readonly DirectorCharacter[];
+}): Record<string, unknown> {
+	const characterIds = allowed.characters.map((c) => c.id);
+	const clues =
+		allowed.clueIds.length > 0 && characterIds.length > 0
+			? {
+					type: 'array',
+					items: {
+						type: 'object',
+						properties: {
+							id: { type: 'string', enum: [...allowed.clueIds] },
+							character: { type: 'string', enum: characterIds },
+							value: { type: 'string' }
+						},
+						required: ['id', 'character', 'value'],
+						additionalProperties: false
+					}
+				}
+			: { type: 'array', items: { type: 'object' }, maxItems: 0 };
+
+	return {
+		type: 'object',
+		properties: { flags: enumArray(allowed.flags), clues },
+		required: ['flags', 'clues'],
+		additionalProperties: false
+	};
+}
+
 /** Extracts the first balanced `{…}` block, so prose around the JSON doesn't defeat the parse. */
 function firstJsonObject(raw: string): string | null {
 	const start = raw.indexOf('{');
