@@ -111,6 +111,44 @@ describe('request shape', () => {
 		});
 	});
 
+	it('sends a response schema as json_schema response_format', async () => {
+		const spy = stubFetch(async () => sseResponse(['data: [DONE]']));
+		const session = await createOpenAiCompatibleLanguageModel(CONFIG).create({ temperature: 0 });
+		const schema = { type: 'object' };
+		await session.prompt('hi', { responseConstraint: schema });
+
+		expect(JSON.parse(String(spy.mock.calls[0]?.[1]?.body))).toMatchObject({
+			temperature: 0,
+			response_format: { type: 'json_schema', json_schema: { name: 'response', schema } }
+		});
+	});
+
+	it('retries unconstrained when the server rejects the schema', async () => {
+		const spy = stubFetch(async (_url, init) =>
+			JSON.parse(String(init?.body)).response_format
+				? new Response('{"error":{"message":"json_schema unsupported"}}', { status: 500 })
+				: sseResponse([deltaLine('{}'), 'data: [DONE]'])
+		);
+		const session = await createOpenAiCompatibleLanguageModel(CONFIG).create();
+		expect(await session.prompt('hi', { responseConstraint: { type: 'object' } })).toBe('{}');
+		expect(spy).toHaveBeenCalledTimes(2);
+	});
+
+	it('does not retry an auth failure', async () => {
+		const spy = stubFetch(async () => new Response('', { status: 401 }));
+		const session = await createOpenAiCompatibleLanguageModel(CONFIG).create();
+		await expect(
+			session.prompt('hi', { responseConstraint: { type: 'object' } })
+		).rejects.toThrow();
+		expect(spy).toHaveBeenCalledTimes(1);
+	});
+
+	it('sends no response_format without a schema', async () => {
+		const spy = stubFetch(async () => sseResponse(['data: [DONE]']));
+		await drain(await createOpenAiCompatibleLanguageModel(CONFIG).create(), 'hi');
+		expect(JSON.parse(String(spy.mock.calls[0]?.[1]?.body))).not.toHaveProperty('response_format');
+	});
+
 	it('sends no authorization header when no key is configured', async () => {
 		const spy = stubFetch(async () => sseResponse(['data: [DONE]']));
 		const session = await createOpenAiCompatibleLanguageModel(CONFIG).create();

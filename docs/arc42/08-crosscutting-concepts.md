@@ -608,6 +608,19 @@ so they are normalised **before** the allowlist check, never after: a flag repor
 (`"lucy-identified"` instead of `"flag:lucy-identified"`, sometimes even inside the `clues` array),
 and a character named by display name instead of UUID.
 
+The parser is the second line of defence, not the first. The director session runs at
+`temperature: 0`, and each call passes `buildDirectorSchema(allowed)` — a JSON Schema whose `enum`s
+list only the open flags, open clue ids and cast ids — as `LlmSession.prompt()`'s `responseSchema`.
+The adapter forwards it as the Prompt API's `responseConstraint`; every provider maps it to its own
+constrained decoder: the native Prompt API takes it as is, WebLLM as `response_format:
+{ type: 'json_object', schema }` (XGrammar), an OpenAI-compatible endpoint as `response_format:
+{ type: 'json_schema', … }`. A provider or server may ignore it — and a server that does not know
+`json_schema` may reject the request outright (llama-cpp-python answers 500), so the
+OpenAI-compatible provider retries such a turn once unconstrained. The parser therefore keeps its
+allowlist and salvage rules, and additionally keeps only the first claim per clue and character in
+one verdict: constrained, the model tends to list one clue several times with different values,
+which would otherwise read as that source contradicting itself.
+
 ### 8.4.5 Sessions and History
 
 `adapter.ts` defines `LlmAdapter` / `LlmSession`, the surface `state/` codes against, and injects its

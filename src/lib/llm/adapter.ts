@@ -29,6 +29,7 @@ import type {
 	LlmAdapterConfig,
 	LlmAvailability,
 	LlmProgress,
+	LlmPromptOptions,
 	LlmSession,
 	LlmSessionConfig,
 	LlmTurn,
@@ -93,20 +94,23 @@ class AdapterSession implements LlmSession {
 		return true;
 	}
 
-	async prompt(text: string, opts: { signal?: AbortSignal } = {}): Promise<string> {
+	async prompt(text: string, opts: LlmPromptOptions = {}): Promise<string> {
 		let answer = '';
 		for await (const delta of this.stream(text, opts)) answer += delta;
 		return answer;
 	}
 
-	async *stream(text: string, opts: { signal?: AbortSignal } = {}): AsyncIterable<string> {
+	async *stream(text: string, opts: LlmPromptOptions = {}): AsyncIterable<string> {
 		throwIfAborted(opts.signal);
 
 		const { input, backend } = await this.runtime.prepareTurn(this, text);
 		let produced = '';
 
 		try {
-			const raw = backend.promptStreaming(input, { signal: opts.signal });
+			const raw = backend.promptStreaming(input, {
+				signal: opts.signal,
+				responseConstraint: opts.responseSchema
+			});
 			for await (const delta of toDeltas(readableToAsyncIterable(raw))) {
 				produced += delta;
 				yield delta;
