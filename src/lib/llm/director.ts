@@ -278,6 +278,10 @@ export function parseDirectorVerdict(
 		// An empty value would record a claim that says nothing but still counts as a source,
 		// which is exactly how a clue would end up falsely "conflicting".
 		if (!trimmed) continue;
+		// One claim per clue and character per verdict. Constrained decoding makes the model list
+		// the same clue several times (reproduced live: "rotes Portmonnaie", "Jackentasche", "Max"…),
+		// and a second value from the same source would register as a contradiction.
+		if (clues.some((c) => c.id === id && c.characterId === characterId)) continue;
 		clues.push({ id, characterId, value: trimmed });
 	}
 

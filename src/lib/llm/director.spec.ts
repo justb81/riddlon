@@ -202,6 +202,23 @@ describe('settableFlags — group-scene outcomes', () => {
 	});
 });
 
+describe('repeated claims', () => {
+	it('keeps only the first value per clue and character, so one source cannot contradict itself', () => {
+		const raw = JSON.stringify({
+			flags: [],
+			clues: [
+				{ id: 'clue:time-window', character: LUCY, value: 'gegen 22 Uhr' },
+				{ id: 'clue:time-window', character: LUCY, value: 'Jackentasche' },
+				{ id: 'clue:time-window', character: MAX, value: 'gegen Mitternacht' }
+			]
+		});
+		expect(parseDirectorVerdict(raw, allowed).clues).toEqual([
+			{ id: 'clue:time-window', characterId: LUCY, value: 'gegen 22 Uhr' },
+			{ id: 'clue:time-window', characterId: MAX, value: 'gegen Mitternacht' }
+		]);
+	});
+});
+
 describe('buildDirectorSchema', () => {
 	it('enumerates exactly the allowlist, so a constrained decoder cannot invent an id', () => {
 		expect(buildDirectorSchema(allowed)).toEqual({
