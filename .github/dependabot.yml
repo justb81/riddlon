@@ -12,6 +12,11 @@ updates:
     # for at least 7 days. Guards against freshly-published compromised releases.
     cooldown:
       default-days: 7
+    # `typescript` stays on 6.x for typescript-eslint; TS 7 comes in as
+    # `@typescript/native` — see docs/arc42 §9 ADR 18.
+    ignore:
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
     groups:
       dev-dependencies:
         dependency-type: development
