@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/justb81/riddlon/compare/riddlon-v0.11.0...riddlon-v0.12.0) (2026-09-26)
+
+
+### Features
+
+* **llm:** constrain director output to a JSON schema at temperature 0 ([2d68d29](https://github.com/justb81/riddlon/commit/2d68d29df49e34bdeac2708950cbf7a250384308))
+* **llm:** constrain director output to a JSON schema at temperature 0 ([5e3719c](https://github.com/justb81/riddlon/commit/5e3719cc8b2c29be80965485c864e711dc951569)), closes [#107](https://github.com/justb81/riddlon/issues/107)
+
+
+### Bug Fixes
+
+* **llm:** retry director turn unconstrained on schema rejection and dedupe claims ([a756341](https://github.com/justb81/riddlon/commit/a75634121d59c7358e98a1b9d662ad2ff927c0cf)), closes [#107](https://github.com/justb81/riddlon/issues/107)
+
 ## [0.11.0](https://github.com/justb81/riddlon/compare/riddlon-v0.10.0...riddlon-v0.11.0) (2026-09-01)
 
 
