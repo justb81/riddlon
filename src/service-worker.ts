@@ -14,7 +14,11 @@
 // an update can silently take over mid-session with no way for the page to
 // know its already-executing JS is stale.
 
-import { build, files, version } from '$service-worker';
+import { version } from '$app/env';
+import { immutable, assets, prerendered } from '$app/manifest';
+import { resolve } from '$app/paths';
+
+const _resolve = resolve as unknown as (p: string) => string;
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
@@ -23,7 +27,11 @@ const sw = self as unknown as ServiceWorkerGlobalScope;
 // weight cache the local LLM keeps are NOT ours to delete.
 const SHELL_PREFIX = 'riddlon-shell-';
 const CACHE = `${SHELL_PREFIX}${version}`;
-const PRECACHE = [...build, ...files];
+const PRECACHE = [
+	...immutable.map((a) => _resolve(a.path)),
+	...assets.map((a) => _resolve(a.path)),
+	...prerendered.map((p) => _resolve(p.path))
+];
 
 sw.addEventListener('install', (event) => {
 	event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));

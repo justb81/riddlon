@@ -8,7 +8,7 @@
  * Callers own the `StoryEngine` instance — there is no engine singleton yet; wiring one up
  * for the live UI is #14-#17's job once a package can actually be installed and played.
  */
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 /** Returns a cleanup function that removes the listeners. Inert (no-op cleanup) outside the browser. */
 export function watchForResume(onResume: () => void): () => void {

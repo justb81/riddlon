@@ -11,7 +11,7 @@ import {
 	setEndpointConfig
 } from './endpoint-config.js';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 /** Enough of the Storage interface for the four browser-guarded functions. */
 function installLocalStorage(): Map<string, string> {

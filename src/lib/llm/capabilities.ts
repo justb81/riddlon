@@ -8,7 +8,7 @@
  * WebGPU or the Network Information API — see `capabilities-rules.ts`.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { DEFAULT_MODEL_ID, MODEL_ORDER, findModel, type LocalModelId } from './catalog.js';
 import { type DeviceFacts, type MeteredFacts, isMeteredConnection } from './capabilities-rules.js';
 import type { LlmErrorCode } from './errors.js';

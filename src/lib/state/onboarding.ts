@@ -1,6 +1,6 @@
 /** Tracks whether the splash screen has ever completed a first-run install on this device. */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 const KEY = 'riddlon:onboarded';
 
