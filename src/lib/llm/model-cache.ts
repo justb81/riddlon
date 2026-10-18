@@ -13,7 +13,7 @@
  * rather than a broken boot.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { findModel, type LocalModelId } from './catalog.js';
 
 const MARKER_PREFIX = 'riddlon:llm:cached:';

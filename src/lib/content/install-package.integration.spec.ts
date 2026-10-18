@@ -10,7 +10,7 @@ import {
 	withMissingCharacterFile
 } from './__fixtures__/lucys-portmonnaie.js';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {

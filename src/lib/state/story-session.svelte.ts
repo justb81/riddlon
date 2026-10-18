@@ -11,7 +11,7 @@
  * A singleton (like `toast.svelte.ts`) so a conversation survives navigating between screens.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { llm } from '$lib/llm/llm.svelte.js';
 import {
 	buildDirectorPrompt,

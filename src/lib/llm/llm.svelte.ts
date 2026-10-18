@@ -11,7 +11,7 @@
  * is the only source of truth — the settings screen's model list is a read-only view over it.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { createLlmAdapter } from './adapter.js';
 import {
 	canRunModel,
