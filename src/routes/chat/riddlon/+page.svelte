@@ -44,7 +44,9 @@
 		// any other URL import — there is no privileged "demo" route into the registry any more.
 		void (async () => {
 			try {
-				const response = await fetch(asset('stories/index.json'));
+				const response = await fetch(
+					asset('stories/index.json' as unknown as Parameters<typeof asset>[0])
+				);
 				if (response.ok) bundled = parseBundledStories(await response.json());
 			} catch {
 				// Nothing bundled (or an offline first run before the precache filled) — the ZIP and
