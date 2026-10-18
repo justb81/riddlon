@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { base, resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import AppFrame from '$lib/components/chat/AppFrame.svelte';
 	import AppHeader from '$lib/components/chat/AppHeader.svelte';
@@ -44,7 +44,7 @@
 		// any other URL import — there is no privileged "demo" route into the registry any more.
 		void (async () => {
 			try {
-				const response = await fetch(`${base}/stories/index.json`);
+				const response = await fetch(asset('stories/index.json'));
 				if (response.ok) bundled = parseBundledStories(await response.json());
 			} catch {
 				// Nothing bundled (or an offline first run before the precache filled) — the ZIP and
@@ -123,7 +123,11 @@
 	async function installBundled(story: BundledStory): Promise<void> {
 		importing = true;
 		try {
-			await afterImport(await importPackageFromUrl(`${base}/stories/${story.zip}`));
+			await afterImport(
+				await importPackageFromUrl(
+					asset(`stories/${story.zip}` as unknown as Parameters<typeof asset>[0])
+				)
+			);
 		} finally {
 			importing = false;
 		}

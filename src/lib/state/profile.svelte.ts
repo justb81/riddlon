@@ -1,6 +1,6 @@
 /** App-wide player profile & settings singleton — "gilt für alle Geschichten". */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { playerProfileStore } from '$lib/storage/index.js';
 import type { DisguiseMode, Pronoun } from './profile.js';
 

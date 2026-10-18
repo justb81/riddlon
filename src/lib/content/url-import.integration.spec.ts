@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { zipPackageFiles } from './__fixtures__/zip.js';
 import { buildValidPackageFiles } from './__fixtures__/lucys-portmonnaie.js';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 describe('importPackageFromUrl (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {

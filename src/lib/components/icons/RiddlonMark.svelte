@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { base } from '$app/paths';
+	import { asset } from '$app/paths';
 
 	let { size = 40, class: className = '' }: { size?: number; class?: string } = $props();
 </script>
 
 <img
-	src="{base}/pwa-icon.svg"
+	src={asset('pwa-icon.svg')}
 	alt=""
 	width={size}
 	height={size}
