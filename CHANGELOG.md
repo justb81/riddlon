@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.1](https://github.com/justb81/riddlon/compare/riddlon-v0.12.0...riddlon-v0.12.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* cast asset path for generated stories ([fa2cdee](https://github.com/justb81/riddlon/commit/fa2cdeedc1468f374aedcdba85e8c6c8397111ec))
+* migrate to SvelteKit 3 APIs for kit/adapter bump ([768e8ca](https://github.com/justb81/riddlon/commit/768e8cab7a4dfa4961a5f88d68081a32a5feb3a4))
+* use $app/tsconfig for SvelteKit 3 ([60b640d](https://github.com/justb81/riddlon/commit/60b640dd73c6af3c5c732ee6dc4346a13170e9fc))
+
 ## [0.12.0](https://github.com/justb81/riddlon/compare/riddlon-v0.11.0...riddlon-v0.12.0) (2026-09-26)
 
 
