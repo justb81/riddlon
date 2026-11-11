@@ -78,6 +78,7 @@ function makeTestBundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: ['flag:max-unlocked'],
 					exitConditions: [],
+					settableFlags: [],
 					revealables: [],
 					next: []
 				}

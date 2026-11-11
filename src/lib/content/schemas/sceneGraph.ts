@@ -13,6 +13,10 @@ const baseSceneFields = {
 	suggestedReplies: z.array(z.string()).default([]),
 	entryConditions: z.array(symbolicRefSchema).default([]),
 	exitConditions: z.array(symbolicRefSchema).default([]),
+	/** `flag:` refs the director may set in this scene **without** that completing it (#97) — an
+	 *  accusation, a lie, a promise: a consequence a later beat can read while this one goes on.
+	 *  Unlike `exitConditions`, nothing here is evaluated by the engine for scene completion. */
+	settableFlags: z.array(symbolicRefSchema).default([]),
 	revealables: z.array(symbolicRefSchema).default([]),
 	/** Restricts which `world/facts.json` / `world/secrets.json` entries this scene's characters
 	 *  bring into the model prompt (#79) — a small model stays on-topic and rule-compliant with

@@ -39,6 +39,7 @@ function bundle(seedChats: StoryBundle['story']['seedChats']): StoryBundle {
 					autoOpen: false,
 					entryConditions: [],
 					exitConditions: ['flag:max-questioned'],
+					settableFlags: [],
 					revealables: [],
 					next: []
 				}

@@ -287,7 +287,8 @@ class StorySession {
 			goals: scene.goals,
 			exitConditions: this.#exitConditionsFor(sceneId),
 			revealables: this.#revealablesFor(sceneId),
-			outcomeConditions: this.#outcomeConditionsFor(sceneId)
+			outcomeConditions: this.#outcomeConditionsFor(sceneId),
+			settableFlags: this.#settableFlagsFor(sceneId)
 		};
 		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
 
@@ -306,9 +307,15 @@ class StorySession {
 		});
 		if (openFlags.length === 0 && openClueIds.length === 0) return;
 
+		const isOpen = (refs: readonly string[] | undefined) =>
+			(refs ?? []).filter((ref) => openFlags.includes(ref));
 		const directorScene = {
 			goals: scene.goals,
-			exitConditions: openFlags,
+			exitConditions: [
+				...isOpen(declaredScene.exitConditions),
+				...isOpen(declaredScene.outcomeConditions)
+			],
+			settableFlags: isOpen(declaredScene.settableFlags),
 			revealables: openClueIds
 		};
 		const scenes = new Set(thread.sceneIds);
@@ -426,6 +433,11 @@ class StorySession {
 		const node = this.#sceneNode(sceneId);
 		if (node?.type !== 'group-chat-scene') return [];
 		return node.outcomes.map((outcome) => outcome.condition);
+	}
+
+	/** Flags the scene lets the director set without ending it (#97). */
+	#settableFlagsFor(sceneId: string): string[] {
+		return [...(this.#sceneNode(sceneId)?.settableFlags ?? [])];
 	}
 
 	#revealablesFor(sceneId: string): string[] {

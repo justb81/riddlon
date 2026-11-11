@@ -81,8 +81,8 @@ describe('shipped story packages in stories/', () => {
 
 	/**
 	 * An outcome whose flags nothing can set is an ending only a playtest script can reach. The
-	 * director may only set `flag:` refs the *scene* declares — its `exitConditions` plus, for a
-	 * group scene, its own outcome conditions (`llm/director.ts`'s `settableFlags`) — and a group
+	 * director may only set `flag:` refs the *scene* declares — its `exitConditions` and `settableFlags`
+	 * plus, for a group scene, its own outcome conditions (`llm/director.ts`'s `settableFlags`) — and a group
 	 * scene deliberately ships no exit conditions, which is how `flag:evidence-presented` and
 	 * `flag:false-accusation` ended up unsettable in play while the walkthrough still "solved" the
 	 * story (#39, #55).
@@ -95,6 +95,7 @@ describe('shipped story packages in stories/', () => {
 		const settableFlags = new Set(
 			(bundle?.graph.nodes ?? []).flatMap((node) => [
 				...node.exitConditions,
+				...node.settableFlags,
 				...(node.type === 'group-chat-scene'
 					? node.outcomes.map((outcome) => outcome.condition)
 					: [])
@@ -108,6 +109,24 @@ describe('shipped story packages in stories/', () => {
 			)
 			.map((outcome) => outcome.id);
 		expect(unreachable).toEqual([]);
+	});
+
+	/**
+	 * A `settableFlags` entry nothing reads is a typo with no symptom (#97): the director can set
+	 * it, and nothing in the story ever reacts. Lint on shipped content, like the dead flags
+	 * `story:playtest` surfaces.
+	 */
+	it.each(storySlugs)('%s reads every flag a scene lets the director set', (slug) => {
+		const bundle = loadStoryBundle(readStoryPackageFiles(path.join(STORIES_DIR, slug))).bundle;
+		const nodes = bundle?.graph.nodes ?? [];
+		const everythingElse = JSON.stringify([
+			bundle?.story,
+			nodes.map((node) => ({ ...node, settableFlags: [] }))
+		]);
+		const unread = nodes
+			.flatMap((node) => node.settableFlags)
+			.filter((ref) => !new RegExp(`[":]${ref}"`).test(everythingElse));
+		expect(unread).toEqual([]);
 	});
 
 	/** An achievement without conditions can never be awarded (#32) — fine in the format, not in

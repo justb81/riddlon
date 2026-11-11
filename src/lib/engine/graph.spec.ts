@@ -93,6 +93,7 @@ function makeTestBundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: ['flag:max-unlocked'],
 					exitConditions: ['flag:max-questioned'],
+					settableFlags: [],
 					revealables: [],
 					next: [{ target: SCENE_REPORT, when: [] }]
 				},
@@ -105,6 +106,7 @@ function makeTestBundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: ['flag:report-done'],
+					settableFlags: [],
 					revealables: [],
 					next: [{ target: SCENE_GROUP, when: ['flag:evidence-confirmed'] }]
 				},
@@ -117,6 +119,7 @@ function makeTestBundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: [],
+					settableFlags: [],
 					revealables: [],
 					playerRole: 'confront',
 					outcomes: [{ id: 'max-confesses', condition: 'flag:confession-done', tone: 'success' }]
