@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { z } from 'zod';
 import { playerProfileSchema, type PlayerProfile } from '$lib/content/index.js';
 import { getDb } from './db.js';

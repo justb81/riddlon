@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CharacterIdentity, Manifest } from '$lib/content/index.js';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 describe('installPackageCharacters (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {

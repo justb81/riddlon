@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { CharacterIdentity } from '$lib/content/index.js';
 import { getDb, type LibraryCharacterRecord } from './db.js';
 

@@ -38,8 +38,13 @@ export interface PromptApiCreateOptions {
 	monitor?: (target: EventTarget) => void;
 }
 
+/** A JSON Schema object; opaque here — each provider hands it to its own constrained decoder. */
+export type JsonSchema = Record<string, unknown>;
+
 export interface PromptApiPromptOptions {
 	signal?: AbortSignal;
+	/** The Prompt API's own name for schema-constrained output; a provider may ignore it. */
+	responseConstraint?: JsonSchema;
 }
 
 export interface LanguageModelSessionLike {
@@ -99,15 +104,21 @@ export interface LlmSessionConfig {
 	maxHistoryTurns?: number;
 }
 
+export interface LlmPromptOptions {
+	signal?: AbortSignal;
+	/** Constrains this one answer to a JSON Schema (docs/arc42 §8.4.4). Best effort per provider. */
+	responseSchema?: JsonSchema;
+}
+
 export interface LlmSession {
 	/** Caller-chosen identity, e.g. a thread id. Stable across underlying rebuilds. */
 	readonly key: string;
 	readonly modelId: LocalModelId;
 	/** Everything said so far, owned by us rather than the backend, so a rebuild can replay it. */
 	readonly turns: readonly LlmTurn[];
-	prompt(text: string, opts?: { signal?: AbortSignal }): Promise<string>;
+	prompt(text: string, opts?: LlmPromptOptions): Promise<string>;
 	/** Yields *deltas*, not cumulative snapshots. */
-	stream(text: string, opts?: { signal?: AbortSignal }): AsyncIterable<string>;
+	stream(text: string, opts?: LlmPromptOptions): AsyncIterable<string>;
 	destroy(): Promise<void>;
 }
 

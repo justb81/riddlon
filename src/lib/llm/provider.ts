@@ -17,7 +17,7 @@
  * local path stays the default experience.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { findModel, type LocalModelId } from './catalog.js';
 import { getEndpointConfig, type InferenceEndpointConfig } from './endpoint-config.js';
 import { LlmError } from './errors.js';

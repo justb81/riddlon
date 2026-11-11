@@ -11,7 +11,7 @@
  * Node-testable (`endpoint-config.spec.ts`) rather than only reachable through a browser.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 export interface InferenceEndpointConfig {
 	/** OpenAI-style API root, e.g. `http://localhost:11434/v1`. No trailing slash. */

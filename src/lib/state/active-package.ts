@@ -11,7 +11,7 @@
  * the story.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 const KEY = 'riddlon:active-package';
 

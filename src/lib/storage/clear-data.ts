@@ -8,7 +8,7 @@
  * away from) and resolves immediately.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { ASSET_CACHE_NAME } from './blob-store.js';
 import { getDb } from './db.js';
 

@@ -53,6 +53,8 @@ interface MlcEngineLike {
 				messages: PromptApiMessage[];
 				stream: boolean;
 				temperature?: number;
+				/** WebLLM takes the schema as a JSON *string* and enforces it with XGrammar. */
+				response_format?: { type: 'json_object'; schema?: string };
 			}): Promise<AsyncIterable<MlcChatCompletionChunk> | MlcChatCompletion>;
 		};
 	};
@@ -158,7 +160,10 @@ class WebLlmSession implements LanguageModelSessionLike {
 					const stream = (await engineHandle.chat.completions.create({
 						messages,
 						stream: true,
-						temperature: this.#temperature
+						temperature: this.#temperature,
+						response_format: opts.responseConstraint
+							? { type: 'json_object', schema: JSON.stringify(opts.responseConstraint) }
+							: undefined
 					})) as AsyncIterable<MlcChatCompletionChunk>;
 
 					for await (const chunk of stream) {

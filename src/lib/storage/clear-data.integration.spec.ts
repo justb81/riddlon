@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '$lib/content/index.js';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 // Node has no Cache Storage API (see CLAUDE.md, "Manual browser testing"), so the asset side of
 // `clearAllStoredData` is stubbed here — what this spec is about is the IndexedDB wipe. That the

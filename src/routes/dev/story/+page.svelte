@@ -23,6 +23,7 @@
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import {
 		buildDirectorPrompt,
+		buildDirectorSchema,
 		claimableClueIds,
 		parseDirectorVerdict,
 		settableFlags,
@@ -132,15 +133,17 @@
 			// see what accumulated history does to it.
 			const session = await llm.session('director-probe', {
 				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
+				temperature: 0,
 				maxHistoryTurns: 0
 			});
-			probeRaw = await session.prompt(prompt);
-			await session.destroy();
-			probeVerdict = parseDirectorVerdict(probeRaw, {
+			const allowed = {
 				flags: settableFlags(directorScene),
 				clueIds: claimableClueIds(directorScene),
 				characters: sceneCast.map((c) => ({ id: c.id, name: c.displayName }))
-			});
+			};
+			probeRaw = await session.prompt(prompt, { responseSchema: buildDirectorSchema(allowed) });
+			await session.destroy();
+			probeVerdict = parseDirectorVerdict(probeRaw, allowed);
 		} catch (error) {
 			probeError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 		} finally {

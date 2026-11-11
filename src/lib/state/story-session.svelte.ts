@@ -11,10 +11,11 @@
  * A singleton (like `toast.svelte.ts`) so a conversation survives navigating between screens.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { llm } from '$lib/llm/llm.svelte.js';
 import {
 	buildDirectorPrompt,
+	buildDirectorSchema,
 	claimableClueIds,
 	parseDirectorVerdict,
 	settableFlags,
@@ -326,6 +327,12 @@ class StorySession {
 				text: m.text
 			}));
 
+		const allowed = {
+			flags: openFlags,
+			clueIds: openClueIds,
+			characters: cast.map((c) => ({ id: c.id, name: c.displayName }))
+		};
+
 		let raw: string;
 		try {
 			// A fresh, historyless session each time: the director must judge this exchange, not
@@ -333,15 +340,18 @@ class StorySession {
 			// (see adapter.ts), so this costs a decode pass but no model reload.
 			const session = await llm.session('director', {
 				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
+				// A verdict is a judgement, not prose: sampling it would make the story move by chance.
+				temperature: 0,
 				maxHistoryTurns: 0
 			});
 			raw = await session.prompt(
 				buildDirectorPrompt({
 					scene: directorScene,
 					clues: bundle.clues.map((clue) => ({ id: clue.id, label: clue.label })),
-					characters: cast.map((c) => ({ id: c.id, name: c.displayName })),
+					characters: allowed.characters,
 					turns
-				})
+				}),
+				{ responseSchema: buildDirectorSchema(allowed) }
 			);
 			await session.destroy();
 		} catch {
@@ -349,11 +359,7 @@ class StorySession {
 			return;
 		}
 
-		const verdict = parseDirectorVerdict(raw, {
-			flags: openFlags,
-			clueIds: openClueIds,
-			characters: cast.map((c) => ({ id: c.id, name: c.displayName }))
-		});
+		const verdict = parseDirectorVerdict(raw, allowed);
 		this.lastDirectorRaw = raw;
 		this.lastDirectorVerdict = verdict;
 		this.#applyVerdict(verdict, lastMessage);

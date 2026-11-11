@@ -7,7 +7,7 @@
  * boot again.
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { ENDPOINT_STORAGE_KEY } from '$lib/llm/endpoint-config.js';
 import { clearAllStoredData, clearSaves } from '$lib/storage/index.js';
 

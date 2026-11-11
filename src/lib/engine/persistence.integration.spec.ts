@@ -8,7 +8,7 @@ import { recordClueClaim } from './clues.js';
 
 const MINIMAL_BUNDLE = { manifest: { id: 'pkg-1' }, clues: [] } as unknown as StoryBundle;
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 
 describe('persistence (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {

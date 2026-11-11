@@ -267,3 +267,20 @@ would suppress that character's first real message forever. Two costs are accept
 before a package update carries that version's seed history for good (package updates are an open
 gap, [§11.1](./11-risks-and-technical-debt.md)), and seed messages are part of the director's
 context window like any other history.
+
+## ADR 18: TypeScript 7 for type-checking, TypeScript 6 kept for linting
+
+**Context.** TypeScript 7 is the native (Go) compiler and no longer ships the JavaScript compiler
+API. `svelte-check` only runs against it with `--tsgo` and TypeScript 6 installed next to it, and
+typescript-eslint, the only TypeScript parser for ESLint (and the one `eslint-plugin-svelte` uses for
+`<script lang="ts">`), supports neither TypeScript 7.0 nor the native compiler.
+
+**Decision.** Install both side by side: `typescript` is pinned to `~6.0` and serves ESLint and
+`svelte-check`'s Svelte transform, and TypeScript 7 is aliased as `@typescript/native`, which
+`npm run check` uses through `svelte-check --tsgo`. Replacing ESLint with oxlint would drop
+TypeScript 6 but lose the `eslint-plugin-svelte` rules, so it was rejected.
+
+**Consequences.** Type errors come from the TypeScript 7 checker; lint results still depend on the
+TypeScript 6 parser. Dependabot ignores major bumps of `typescript` so it does not propose the
+unsupported upgrade again. The pin is temporary debt, see
+[§11.2](./11-risks-and-technical-debt.md#112-technical-risks).

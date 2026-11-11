@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { Manifest, StoryBundle } from '$lib/content/index.js';
 import { getDb, type InstalledPackageContent, type InstalledPackageRecord } from './db.js';
 import { characterLibrary } from './character-library.js';

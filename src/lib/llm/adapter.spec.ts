@@ -327,6 +327,21 @@ describe('abort and failure handling', () => {
 	});
 });
 
+describe('response schema', () => {
+	it('hands a turn’s schema to the provider as the Prompt API’s responseConstraint', async () => {
+		const { provider, adapter } = setup('llama-3.2-3b', { chunks: ['{}'] });
+		const session = await adapter.createSession('director', { systemPrompt: '', temperature: 0 });
+		const schema = { type: 'object' };
+		await session.prompt('Urteil?', { responseSchema: schema });
+		await session.prompt('Noch eins?');
+
+		expect(provider.LanguageModel.calls.map((c) => c.options?.responseConstraint)).toEqual([
+			schema,
+			undefined
+		]);
+	});
+});
+
 describe('lifecycle', () => {
 	it('returns the same session object for the same key', async () => {
 		const { adapter } = setup('llama-3.2-3b');

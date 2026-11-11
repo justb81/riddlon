@@ -15,6 +15,7 @@
 import { LlmError, type LlmErrorCode } from './errors.js';
 import type { InferenceEndpointConfig } from './endpoint-config.js';
 import type {
+	JsonSchema,
 	LanguageModelLike,
 	LanguageModelSessionLike,
 	PromptApiAvailability,
@@ -39,6 +40,10 @@ function authHeaders(apiKey: string | undefined): Record<string, string> {
 	// A local Ollama or llama.cpp server rejects nothing and expects no key; sending an empty
 	// bearer token would be worse than sending none.
 	return apiKey ? { authorization: `Bearer ${apiKey}` } : {};
+}
+
+function isAuthOrQuota(status: number): boolean {
+	return codeForStatus(status) !== 'unknown';
 }
 
 function codeForStatus(status: number): LlmErrorCode {
@@ -109,19 +114,31 @@ class OpenAiCompatibleSession implements LanguageModelSessionLike {
 					return;
 				}
 
-				let response: Response;
-				try {
-					response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+				const post = (schema: JsonSchema | undefined) =>
+					fetch(`${this.config.baseUrl}/chat/completions`, {
 						method: 'POST',
 						headers: { 'content-type': 'application/json', ...authHeaders(this.config.apiKey) },
 						body: JSON.stringify({
 							model: this.config.model,
 							messages,
 							stream: true,
-							temperature: this.#temperature
+							temperature: this.#temperature,
+							response_format: schema
+								? { type: 'json_schema', json_schema: { name: 'response', schema } }
+								: undefined
 						}),
 						signal
 					});
+
+				let response: Response;
+				try {
+					response = await post(opts.responseConstraint);
+					// Not every server knows `json_schema` (llama-cpp-python rejects the whole request
+					// with a 500), and a constraint is best effort: retry once unconstrained rather than
+					// fail the turn. Auth and quota errors would only fail again.
+					if (opts.responseConstraint && !response.ok && !isAuthOrQuota(response.status)) {
+						response = await post(undefined);
+					}
 				} catch (error) {
 					if (signal?.aborted) {
 						controller.error(signal.reason ?? new DOMException('Aborted', 'AbortError'));

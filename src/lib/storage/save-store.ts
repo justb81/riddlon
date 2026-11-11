@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { getDb, type SaveChatMessage, type SaveRecord } from './db.js';
 
 /**
