@@ -37,7 +37,8 @@ export const saveStore = {
 			chatHistory: [...seedMessages],
 			pendingDelayedEvents: [],
 			clueStates: [],
-			earnedAchievementIds: []
+			earnedAchievementIds: [],
+			threadReads: {}
 		};
 		await db.put('saves', record);
 		return record;
@@ -97,6 +98,25 @@ export const saveStore = {
 		const updated: SaveRecord = {
 			...existing,
 			chatHistory: [...existing.chatHistory, message],
+			updatedAt: new Date().toISOString()
+		};
+		await db.put('saves', updated);
+		return updated;
+	},
+
+	/** Merges one thread's read marker into the save's `threadReads` (#51). */
+	async markThreadRead(
+		saveId: string,
+		threadKey: string,
+		at: string
+	): Promise<SaveRecord | undefined> {
+		if (!browser) return undefined;
+		const db = await getDb();
+		const existing = await db.get('saves', saveId);
+		if (!existing) return undefined;
+		const updated: SaveRecord = {
+			...existing,
+			threadReads: { ...existing.threadReads, [threadKey]: at },
 			updatedAt: new Date().toISOString()
 		};
 		await db.put('saves', updated);

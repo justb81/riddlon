@@ -24,6 +24,7 @@ import {
 import { isLlmError } from '$lib/llm/errors.js';
 import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
 import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
+import { countUnread } from '$lib/story/unread.js';
 import { formatMessageTimestamp } from '$lib/story/message-time.js';
 import { t } from '$lib/i18n/i18n.svelte.js';
 import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
@@ -61,6 +62,8 @@ class StorySession {
 	/** A newly activated package's history is still loading. */
 	syncing = $state(false);
 	history = $state<SaveChatMessage[]>([]);
+	/** Thread key → ISO time it was last open (#51). */
+	threadReads = $state<Record<string, string>>({});
 	/** Scenes currently waiting on the model. */
 	typingSceneIds = $state<string[]>([]);
 	openClueMessageId = $state<string | null>(null);
@@ -115,6 +118,28 @@ class StorySession {
 		return this.messagesFor(threadKey).at(-1);
 	}
 
+	/** Messages from someone else since the thread was last open. Authored seed history is
+	 *  installed content, never news, so it does not count (#51). */
+	unreadFor(threadKey: string): number {
+		const thread = storyRuntime.threadFor(threadKey);
+		if (!thread) return 0;
+		const scenes = new Set(thread.sceneIds);
+		const messages = this.history
+			.filter((m) => !m.seed && scenes.has(m.sceneId))
+			.map(toChatMessage);
+		return countUnread(messages, this.threadReads[threadKey]);
+	}
+
+	/** Call while the thread is open; persists the marker only when it actually moves anything. */
+	markRead(threadKey: string): void {
+		const saveId = storyRuntime.saveId;
+		if (!saveId || !storyRuntime.threadFor(threadKey)) return;
+		if (this.threadReads[threadKey] && this.unreadFor(threadKey) === 0) return;
+		const at = new Date().toISOString();
+		this.threadReads = { ...this.threadReads, [threadKey]: at };
+		void saveStore.markThreadRead(saveId, threadKey, at);
+	}
+
 	typingFor(threadKey: string): boolean {
 		const thread = storyRuntime.threadFor(threadKey);
 		if (!thread) return false;
@@ -158,6 +183,16 @@ class StorySession {
 		// Claimed before anything else awaits, so a second call can't load the same save twice.
 		this.#loadedSaveId = saveId;
 		this.history = existing.chatHistory;
+		this.threadReads = { ...existing.threadReads };
+		// A save from before read markers existed: everything already there counts as read, so an
+		// old save can't open with an inflated badge (#51).
+		if (existing.threadReads === undefined) {
+			const at = new Date().toISOString();
+			for (const thread of storyRuntime.threads) {
+				this.threadReads[thread.key] = at;
+				void saveStore.markThreadRead(saveId, thread.key, at);
+			}
+		}
 		// Seed messages are authored history, not a scene the player has already been greeted in —
 		// counting them would make `openThread` skip the character's actual first message (#30).
 		this.#openedScenes = new Set(existing.chatHistory.filter((m) => !m.seed).map((m) => m.sceneId));
