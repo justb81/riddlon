@@ -128,8 +128,9 @@ The engine never invents flags; the director sets them as the conversation reach
 `flag:false-accusation` (set when the player accuses someone wrongly — drives the
 `false-accusation-made` outcome and, later, the "Ohne Falschbeschuldigung gelöst" achievement).
 
-`flag:false-accusation` is settable only in the group confrontation, because that is the one scene
-whose outcomes name it — see "The two endings" above.
+`flag:false-accusation` is settable in two places: Sabine's questioning scene (declared in its
+`settableFlags`, so accusing her mid-conversation does not end that scene) and the group
+confrontation, whose outcomes name it — see "The two endings" above.
 
 `flag:lucy-nudge-due` is set _by_ the engine, via `event:lucy-nudge` (step 2). That event is
 conditioned on `not:flag:lucy-identified` and dropped if the condition no longer holds when it comes

@@ -200,3 +200,58 @@ describe('settableFlags — group-scene outcomes', () => {
 		).toEqual(['flag:done', 'flag:extra']);
 	});
 });
+
+/** #97: a flag a scene lets the director set without that scene ending. */
+describe('settableFlags — mid-scene flags', () => {
+	it('adds a scene’s own settableFlags to the allowlist, without duplicating or negating', () => {
+		expect(
+			settableFlags({
+				goals: [],
+				exitConditions: ['flag:done'],
+				revealables: [],
+				settableFlags: ['flag:done', 'flag:lied', 'not:flag:lied', 'scene-completed:x']
+			})
+		).toEqual(['flag:done', 'flag:lied']);
+	});
+
+	it('lists a mid-scene flag apart from the "all goals met" flags in the prompt', () => {
+		const prompt = buildDirectorPrompt({
+			scene: {
+				goals: ['question-sabine'],
+				exitConditions: ['flag:sabine-questioned'],
+				settableFlags: ['flag:false-accusation'],
+				revealables: []
+			},
+			clues: [],
+			characters: [],
+			turns: []
+		});
+		const [goalsPart, midScenePart] = prompt.split('Weitere flags');
+		expect(goalsPart).toContain('- flag:sabine-questioned');
+		expect(goalsPart).not.toContain('flag:false-accusation');
+		expect(midScenePart).toContain('- flag:false-accusation');
+		expect(midScenePart).toContain('nicht das Ende der Szene');
+	});
+
+	it('omits the mid-scene section for a scene that declares none', () => {
+		const prompt = buildDirectorPrompt({
+			scene: { goals: [], exitConditions: ['flag:a'], revealables: [] },
+			clues: [],
+			characters: [],
+			turns: []
+		});
+		expect(prompt).not.toContain('Weitere flags');
+	});
+
+	it('accepts a mid-scene flag in a verdict and still drops everything undeclared', () => {
+		const verdict = parseDirectorVerdict(
+			'{"flags":["flag:false-accusation","flag:other"],"clues":[]}',
+			{
+				flags: ['flag:false-accusation'],
+				clueIds: [],
+				characters: []
+			}
+		);
+		expect(verdict.flags).toEqual(['flag:false-accusation']);
+	});
+});

@@ -32,6 +32,28 @@ describe('sceneNodeSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('defaults settableFlags to empty, and accepts them on chat and group scenes (#97)', () => {
+		const plain = sceneNodeSchema.parse({
+			id: SCENE_ID,
+			type: 'chat-scene',
+			participants: [MAX_ID]
+		});
+		expect(plain.settableFlags).toEqual([]);
+
+		for (const scene of [
+			{ type: 'chat-scene' },
+			{ type: 'group-chat-scene', playerRole: 'accuser' }
+		]) {
+			const parsed = sceneNodeSchema.parse({
+				id: SCENE_ID,
+				participants: [MAX_ID],
+				settableFlags: ['flag:false-accusation'],
+				...scene
+			});
+			expect(parsed.settableFlags).toEqual(['flag:false-accusation']);
+		}
+	});
+
 	it('defaults suggestedReplies to an empty array when omitted', () => {
 		const result = sceneNodeSchema.parse({
 			id: SCENE_ID,

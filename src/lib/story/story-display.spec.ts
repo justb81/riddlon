@@ -66,6 +66,7 @@ function bundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: ['flag:briefed'],
+					settableFlags: [],
 					revealables: [],
 					next: []
 				},
@@ -78,6 +79,7 @@ function bundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: [],
+					settableFlags: [],
 					revealables: [],
 					next: []
 				},
@@ -90,6 +92,7 @@ function bundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: [],
+					settableFlags: [],
 					revealables: [],
 					next: []
 				},
@@ -102,6 +105,7 @@ function bundle(): StoryBundle {
 					autoOpen: true,
 					entryConditions: [],
 					exitConditions: [],
+					settableFlags: [],
 					revealables: [],
 					playerRole: 'confront',
 					outcomes: [

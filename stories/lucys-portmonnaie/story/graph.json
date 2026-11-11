@@ -89,6 +89,7 @@
 			"autoOpen": false,
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:sabine-questioned"],
+			"settableFlags": ["flag:false-accusation"],
 			"revealables": [
 				"clue:time-window",
 				"clue:location",

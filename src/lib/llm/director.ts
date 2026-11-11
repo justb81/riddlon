@@ -39,6 +39,11 @@ export interface DirectorScene {
 	 * scene that ends the story, and every authored ending is unreachable in play.
 	 */
 	outcomeConditions?: readonly string[];
+	/**
+	 * `flag:` refs the scene lets the director set *without* completing it (#97). Settable like
+	 * the two sources above, but they do not mean "all goals met" — see `buildDirectorPrompt`.
+	 */
+	settableFlags?: readonly string[];
 }
 
 export interface DirectorTurn {
@@ -70,7 +75,11 @@ const EMPTY_VERDICT: DirectorVerdict = { flags: [], clues: [] };
  * could "reach" an ending by asserting the very thing that rules it out.
  */
 export function settableFlags(scene: DirectorScene): string[] {
-	const refs = [...scene.exitConditions, ...(scene.outcomeConditions ?? [])];
+	const refs = [
+		...scene.exitConditions,
+		...(scene.outcomeConditions ?? []),
+		...(scene.settableFlags ?? [])
+	];
 	return [...new Set(refs.filter((ref) => ref.startsWith('flag:')))];
 }
 
@@ -89,7 +98,12 @@ export function buildDirectorPrompt(input: {
 	characters: readonly DirectorCharacter[];
 	turns: readonly DirectorTurn[];
 }): string {
-	const flags = settableFlags(input.scene);
+	const midSceneFlags = new Set(
+		(input.scene.settableFlags ?? []).filter(
+			(ref) => ref.startsWith('flag:') && !input.scene.exitConditions.includes(ref)
+		)
+	);
+	const flags = settableFlags(input.scene).filter((ref) => !midSceneFlags.has(ref));
 	const clueIds = claimableClueIds(input.scene);
 	const clueLines = clueIds.map((id) => {
 		const label = input.clues.find((clue) => clue.id === id)?.label;
@@ -111,6 +125,14 @@ export function buildDirectorPrompt(input: {
 		'sobald jedes Ziel oben im Gespräch nachweislich erreicht wurde, auch wenn kein einzelner',
 		'Satz das wörtlich sagt:',
 		...(flags.length > 0 ? flags.map((ref) => `- ${ref}`) : ['(keine)']),
+		...(midSceneFlags.size > 0
+			? [
+					'',
+					'Weitere flags — jeder markiert nur ein einzelnes Ereignis, das nicht das Ende der Szene',
+					'bedeutet. Setze ihn, sobald dieses Ereignis im Gespräch tatsächlich eingetreten ist:',
+					...[...midSceneFlags].map((ref) => `- ${ref}`)
+				]
+			: []),
 		'',
 		'Erlaubte clues (nur eintragen, wenn eine Figur eine konkrete Angabe gemacht hat):',
 		...(clueLines.length > 0 ? clueLines : ['(keine)']),

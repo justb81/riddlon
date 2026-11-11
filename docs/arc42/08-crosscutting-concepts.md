@@ -201,6 +201,7 @@ The story is a **state graph**, not a prompt chain. `story/graph.json` is a flat
 | `suggestedReplies`                      | `[]`    | Pre-written player utterances shown as chips above the composer. Unlike `goals` these are things the _player_ might say. Shown only at the most game-like disguise level (an app setting, not a package field).                                                                |
 | `entryConditions`                       | `[]`    | All must hold for the scene to unlock. An empty list unlocks at story start                                                                                                                                                                                                    |
 | `exitConditions`                        | `[]`    | All must hold for the scene to complete                                                                                                                                                                                                                                        |
+| `settableFlags`                         | `[]`    | `flag:` refs the director may set in this scene _without_ completing it — an accusation, a lie, a promise a later beat can read while this one goes on. Never evaluated for completion; negated refs are never settable.                                                       |
 | `revealables`                           | `[]`    | The clue / fact refs this scene may reveal — the director's allowlist                                                                                                                                                                                                          |
 | `relevantFactIds` / `relevantSecretIds` | _unset_ | Narrow which world entries reach the model for this scene, on top of what the character knows at all. A small model stays more rule-compliant with fewer, on-topic statements. Omitting either falls back to "everything the character knows", so older packages keep working. |
 | `next`                                  | `[]`    | Conditional transitions, `chat-scene` only                                                                                                                                                                                                                                     |
@@ -338,7 +339,8 @@ A group scene deliberately ships **no `exitConditions`**: an empty list is vacuo
 would complete the scene the moment it unlocks (see [§8.3](#83-story-engine)). Its outcome
 conditions are therefore also its settable-flag surface — the director may set any `flag:` an
 outcome names, but never a negated one, or it could assert away the very condition that rules an
-ending out.
+ending out. A scene that wants a consequence set mid-scene, without ending it, declares it in
+`settableFlags` ([§8.1.4](#814-scenes-and-the-story-graph)); that works in a chat scene and in a group scene alike.
 
 The format defines **no turn-taking rules**. Who answers in a group chat is an app-side decision,
 implemented as `pickResponder()` in `llm/persona.ts` and documented there.
