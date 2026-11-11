@@ -55,6 +55,7 @@
 		count?: string;
 		preview: string;
 		time: string;
+		unread?: number;
 	}
 
 	const storyThreads = $derived.by((): ThreadEntry[] =>
@@ -76,7 +77,8 @@
 				initial: thread.kind === 'solo' ? (names[0]?.slice(0, 1).toUpperCase() ?? '?') : undefined,
 				count: thread.kind === 'group' ? String(thread.participantIds.length + 1) : undefined,
 				preview,
-				time: last?.time ?? ''
+				time: last?.time ?? '',
+				unread: loading ? 0 : storySession.unreadFor(thread.key)
 			};
 		})
 	);
@@ -213,6 +215,7 @@
 			count={thread.count}
 			preview={thread.preview}
 			time={thread.time}
+			unread={thread.unread ?? 0}
 			active={thread.id === activeId}
 		/>
 	{/each}

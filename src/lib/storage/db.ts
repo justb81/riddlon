@@ -103,6 +103,9 @@ export interface SaveRecord {
 	/** Achievement ids already earned this playthrough (#32); absent on older records. Sticky,
 	 *  so the `achievement-earned` effect never re-fires on a resume. */
 	earnedAchievementIds: string[];
+	/** Thread key → ISO time the player last had that thread open (#51). Keyed by thread, not
+	 *  scene, because a thread folds several scenes. Absent on older records. */
+	threadReads?: Record<string, string>;
 }
 
 export interface PlayerProfileRecord extends PlayerProfile {

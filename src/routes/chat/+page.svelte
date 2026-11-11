@@ -88,6 +88,13 @@
 	});
 
 	$effect(() => {
+		// Open thread = read thread; re-runs when a new message lands while it is open (#51).
+		if (threadKey && ready && !storySession.syncing && messages.length >= 0) {
+			storySession.markRead(threadKey);
+		}
+	});
+
+	$effect(() => {
 		// `messages.length` is read here only to make the effect re-run on new messages.
 		if (scrollEl && messages.length >= 0) scrollEl.scrollTop = scrollEl.scrollHeight;
 	});

@@ -886,3 +886,10 @@ Two subtleties worth knowing before touching `storyRuntime`:
 
 `#doInit` walks a candidate list and activates the first package that yields a loadable bundle, so
 one bad record can never leave the runtime with no session while the library still lists a story.
+
+**Unread counts are derived, not stored.** `SaveRecord.threadReads` maps a _thread key_ (not a scene
+id — a thread folds several scenes) to the ISO time the thread was last open; the chat route calls
+`storySession.markRead()` while it is open and `ChatList` reads `unreadFor()`. `story/unread.ts`
+counts messages from neither `me` nor `system` newer than that marker; authored seed history never
+counts. A save written before the field existed is baselined to "read now" on load, so it cannot
+open with an inflated badge. The field is optional, so `DB_VERSION` is unchanged.

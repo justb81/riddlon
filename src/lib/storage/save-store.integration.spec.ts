@@ -15,6 +15,21 @@ describe('saveStore (real IndexedDB via fake-indexeddb)', () => {
 		});
 	});
 
+	it('merges thread read markers and keeps them across a reload (#51)', async () => {
+		const { saveStore } = await import('./save-store.js');
+		const created = await saveStore.createForPackage('package-a');
+		await saveStore.markThreadRead(created!.id, 'a', '2026-01-01T10:00:00.000Z');
+		await saveStore.markThreadRead(created!.id, 'b', '2026-01-02T10:00:00.000Z');
+
+		const { resetDbConnectionForTests } = await import('./db.js');
+		await resetDbConnectionForTests();
+		const reloaded = await saveStore.get(created!.id);
+		expect(reloaded?.threadReads).toEqual({
+			a: '2026-01-01T10:00:00.000Z',
+			b: '2026-01-02T10:00:00.000Z'
+		});
+	});
+
 	it('survives a fresh db handle (proxy for surviving a page reload)', async () => {
 		const { saveStore } = await import('./save-store.js');
 		const created = await saveStore.createForPackage('package-a');
