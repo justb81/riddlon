@@ -346,13 +346,15 @@ class StorySession {
 		if (!hasDirectorQuestions(questions)) return;
 
 		const scenes = new Set(thread.sceneIds);
-		const turns = this.history
-			.filter((m) => scenes.has(m.sceneId))
-			.slice(-DIRECTOR_WINDOW)
-			.map((m) => ({
-				who: m.from === SPEAKER_ME ? profile.nickname : storyRuntime.displayNameFor(m.from),
-				text: m.text
-			}));
+		const sceneMessages = this.history.filter((m) => scenes.has(m.sceneId));
+		const toTurn = (m: SaveChatMessage) => ({
+			who: m.from === SPEAKER_ME ? profile.nickname : storyRuntime.displayNameFor(m.from),
+			text: m.text
+		});
+		const turns = sceneMessages.slice(-DIRECTOR_WINDOW).map(toTurn);
+		// The player's last line and the replies after it — what events are judged on.
+		const lastPlayer = sceneMessages.findLastIndex((m) => m.from === SPEAKER_ME);
+		const lastExchange = sceneMessages.slice(Math.max(lastPlayer, 0)).map(toTurn);
 		// The same names the transcript uses — a masked character is "Unbekannt" in both, or a claim
 		// could never be traced back to their lines.
 		const characters = cast.map((c) => ({ id: c.id, name: storyRuntime.displayNameFor(c.id) }));
@@ -370,9 +372,12 @@ class StorySession {
 				temperature: 0,
 				maxHistoryTurns: 0
 			});
-			raw = await session.prompt(buildDirectorPrompt({ questions, clues, characters, turns }), {
-				responseSchema: buildDirectorSchema({ questions, characters })
-			});
+			raw = await session.prompt(
+				buildDirectorPrompt({ questions, clues, characters, turns, lastExchange }),
+				{
+					responseSchema: buildDirectorSchema({ questions, characters })
+				}
+			);
 			await session.destroy();
 		} catch {
 			// No verdict is a valid outcome: the story simply doesn't advance this turn.
