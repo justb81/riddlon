@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.13.0](https://github.com/justb81/riddlon/compare/riddlon-v0.12.1...riddlon-v0.13.0) (2026-11-12)
+
+
+### Features
+
+* **content:** per-scene settableFlags ([#97](https://github.com/justb81/riddlon/issues/97)) ([0fef31d](https://github.com/justb81/riddlon/commit/0fef31de02b0d18222edb03533dc0b9cef3795e8))
+* **content:** per-scene settableFlags the director may set without ending the scene ([4f8b199](https://github.com/justb81/riddlon/commit/4f8b19944850530f528591f8a3ab14638a99ef62))
+* **llm:** director asks per-goal questions and remembers reached goals ([6c59afa](https://github.com/justb81/riddlon/commit/6c59afa2e07747f277b831a999aed7d236895008))
+* **llm:** director asks per-goal questions and remembers reached goals ([dcd622f](https://github.com/justb81/riddlon/commit/dcd622f3f9d00e410c03f0f5199e36c1e4501ec8)), closes [#54](https://github.com/justb81/riddlon/issues/54)
+* **ui:** real unread counts per thread ([1393c1a](https://github.com/justb81/riddlon/commit/1393c1a913742826b2e62d11ee1f23ea46de4bf0))
+* **ui:** real unread counts per thread ([08e0edb](https://github.com/justb81/riddlon/commit/08e0edb2697f46ef2f041a5cea76e4974dfa9947)), closes [#51](https://github.com/justb81/riddlon/issues/51)
+
+
+### Bug Fixes
+
+* **llm:** judge director events on the last exchange only ([10e742d](https://github.com/justb81/riddlon/commit/10e742d78327f0c7646d220107ff6f9226b29132))
+* **llm:** judge director events on the last exchange only ([79e393d](https://github.com/justb81/riddlon/commit/79e393d7bf9e9cc08bac0062eb434bc124ade3ed))
+
 ## [0.12.1](https://github.com/justb81/riddlon/compare/riddlon-v0.12.0...riddlon-v0.12.1) (2026-10-22)
 
 
