@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { StoryBundle } from '$lib/content/index.js';
-import type { SaveRecord } from '$lib/storage/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import type { SaveRecord } from '#lib/storage/index.js';
 import { saveRecordPatchFromState, stateFromSaveRecord } from './persistence.js';
 import { createInitialState } from './state.js';
 import { recordClueClaim } from './clues.js';
@@ -12,7 +12,7 @@ vi.mock('$app/env', () => ({ browser: true }));
 
 describe('persistence (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {
-		const { resetDbConnectionForTests, DB_NAME } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests, DB_NAME } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests();
 		await new Promise<void>((resolve) => {
 			const req = indexedDB.deleteDatabase(DB_NAME);
@@ -23,7 +23,7 @@ describe('persistence (real IndexedDB via fake-indexeddb)', () => {
 	});
 
 	it('round-trips EngineState through saveStore across a simulated reload', async () => {
-		const { saveStore } = await import('$lib/storage/save-store.js');
+		const { saveStore } = await import('#lib/storage/save-store.js');
 		const state = createInitialState(MINIMAL_BUNDLE);
 		state.flags['flag:max-questioned'] = true;
 		state.unlockedSceneIds.add('scene-1');
@@ -41,7 +41,7 @@ describe('persistence (real IndexedDB via fake-indexeddb)', () => {
 		const save = await saveStore.createForPackage('pkg-1');
 		await saveStore.update(save!.id, saveRecordPatchFromState(state));
 
-		const { resetDbConnectionForTests } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests(); // simulate a fresh page load
 
 		const reloaded = await saveStore.get(save!.id);

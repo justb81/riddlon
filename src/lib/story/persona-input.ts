@@ -9,9 +9,9 @@
  * (the story just stops advancing) but trivially assertable in Node.
  */
 
-import type { EffectiveCharacterState } from '$lib/characters/index.js';
-import type { StoryBundle } from '$lib/content/index.js';
-import { buildPersonaPrompt } from '$lib/llm/persona.js';
+import type { EffectiveCharacterState } from '#lib/characters/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { buildPersonaPrompt } from '#lib/llm/persona.js';
 import type { ThreadKind } from './story-display.js';
 
 export interface PersonaContext {

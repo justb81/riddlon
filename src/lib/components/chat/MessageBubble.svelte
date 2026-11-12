@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Avatar from './Avatar.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { type ChatMessage } from '$lib/story/types.js';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import { type ChatMessage } from '#lib/story/types.js';
 
 	let {
 		message,

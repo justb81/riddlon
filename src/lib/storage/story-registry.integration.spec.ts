@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CharacterIdentity, Manifest } from '$lib/content/index.js';
+import type { CharacterIdentity, Manifest } from '#lib/content/index.js';
 
 vi.mock('$app/env', () => ({ browser: true }));
 
@@ -20,11 +20,11 @@ describe('storyRegistry + characterLibrary (real IndexedDB via fake-indexeddb)',
 		const { storyRegistry } = await import('./story-registry.js');
 		const { characterLibrary } = await import('./character-library.js');
 		const { buildValidPackageFiles, LUCY_ID } =
-			await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+			await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const { secondPackageManifest, secondPackageLucyCharacterFile, SECOND_PACKAGE_ID } =
-			await import('$lib/content/__fixtures__/second-package.js');
+			await import('#lib/content/__fixtures__/second-package.js');
 
-		const { MAX_ID, SABINE_ID } = await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+		const { MAX_ID, SABINE_ID } = await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const files = buildValidPackageFiles();
 		const firstManifest = files['manifest.json'] as Manifest;
 		await storyRegistry.install(firstManifest, {
@@ -60,9 +60,9 @@ describe('storyRegistry + characterLibrary (real IndexedDB via fake-indexeddb)',
 		const { storyRegistry } = await import('./story-registry.js');
 		const { characterLibrary } = await import('./character-library.js');
 		const { buildValidPackageFiles, LUCY_ID, MAX_ID, SABINE_ID } =
-			await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+			await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const { secondPackageManifest, secondPackageLucyCharacterFile, SECOND_PACKAGE_ID } =
-			await import('$lib/content/__fixtures__/second-package.js');
+			await import('#lib/content/__fixtures__/second-package.js');
 
 		const files = buildValidPackageFiles();
 		const firstManifest = files['manifest.json'] as Manifest;

@@ -1,12 +1,12 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CharacterIdentity, Manifest } from '$lib/content/index.js';
+import type { CharacterIdentity, Manifest } from '#lib/content/index.js';
 
 vi.mock('$app/env', () => ({ browser: true }));
 
 describe('installPackageCharacters (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {
-		const { resetDbConnectionForTests, DB_NAME } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests, DB_NAME } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests();
 		await new Promise<void>((resolve) => {
 			const req = indexedDB.deleteDatabase(DB_NAME);
@@ -18,9 +18,9 @@ describe('installPackageCharacters (real IndexedDB via fake-indexeddb)', () => {
 
 	it('installing the same package twice never creates two identities for the same character', async () => {
 		const { installPackageCharacters } = await import('./install.js');
-		const { characterLibrary } = await import('$lib/storage/index.js');
+		const { characterLibrary } = await import('#lib/storage/index.js');
 		const { buildValidPackageFiles, LUCY_ID, MAX_ID, SABINE_ID } =
-			await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+			await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const files = buildValidPackageFiles();
 		const manifest = files['manifest.json'] as Manifest;
 		const characters = [
@@ -40,11 +40,11 @@ describe('installPackageCharacters (real IndexedDB via fake-indexeddb)', () => {
 
 	it('two independently-authored packages sharing a character UUID link to one identity', async () => {
 		const { installPackageCharacters } = await import('./install.js');
-		const { characterLibrary } = await import('$lib/storage/index.js');
+		const { characterLibrary } = await import('#lib/storage/index.js');
 		const { buildValidPackageFiles, LUCY_ID } =
-			await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+			await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const { secondPackageManifest, secondPackageLucyCharacterFile } =
-			await import('$lib/content/__fixtures__/second-package.js');
+			await import('#lib/content/__fixtures__/second-package.js');
 		const files = buildValidPackageFiles();
 		const firstManifest = files['manifest.json'] as Manifest;
 

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { isUnlocked, knows, relationshipTo, resolveEffectiveCharacterState } from './resolve.js';
-import type { CastBinding, CharacterIdentity, Story } from '$lib/content/index.js';
+import type { CastBinding, CharacterIdentity, Story } from '#lib/content/index.js';
 import {
 	buildValidPackageFiles,
 	LUCY_ID,
 	MAX_ID,
 	SABINE_ID
-} from '$lib/content/__fixtures__/lucys-portmonnaie.js';
-import { secondPackageLucyCastBinding } from '$lib/content/__fixtures__/second-package.js';
+} from '#lib/content/__fixtures__/lucys-portmonnaie.js';
+import { secondPackageLucyCastBinding } from '#lib/content/__fixtures__/second-package.js';
 
 const files = buildValidPackageFiles();
 const story = files['story/story.json'] as Story;

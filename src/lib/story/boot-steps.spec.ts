@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PHASE_BUDGET } from '$lib/llm/progress.js';
-import { DEFAULT_MODEL_ID, findModel } from '$lib/llm/catalog.js';
+import { PHASE_BUDGET } from '#lib/llm/progress.js';
+import { DEFAULT_MODEL_ID, findModel } from '#lib/llm/catalog.js';
 import { bootStepFor, bootStepSpanMs, warmBootSteps, type BootPhase } from './boot-steps.js';
 
 const MODEL = findModel(DEFAULT_MODEL_ID);

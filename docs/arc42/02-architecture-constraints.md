@@ -32,7 +32,7 @@ These are enforced by tooling or by review and are easy to violate accidentally:
   `compilerOptions`, `paths.base`, service-worker registration off) lives inside the `sveltekit()`
   call in `vite.config.ts`.
 - **Relative imports carry explicit `.js` extensions** (`rewriteRelativeImportExtensions`); use the
-  `$lib` alias for `src/lib`.
+  `#lib/*` subpath import (package.json `imports`) for `src/lib`.
 - **Nothing touching the DOM may run at module top level or during prerender.** Guard with `browser`
   from `$app/environment` and feature-detect optional browser APIs.
 - **Pure logic lives in plain `.ts` files** next to their `.svelte.ts` consumers so the Node test

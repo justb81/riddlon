@@ -1,21 +1,21 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
-	import AppFrame from '$lib/components/chat/AppFrame.svelte';
-	import AppHeader from '$lib/components/chat/AppHeader.svelte';
-	import InfoBand from '$lib/components/chat/InfoBand.svelte';
-	import Avatar from '$lib/components/chat/Avatar.svelte';
-	import ChipRow from '$lib/components/chat/ChipRow.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { profile } from '$lib/state/profile.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { importPackageFromZipFile, importPackageFromUrl } from '$lib/content/index.js';
+	import AppFrame from '#lib/components/chat/AppFrame.svelte';
+	import AppHeader from '#lib/components/chat/AppHeader.svelte';
+	import InfoBand from '#lib/components/chat/InfoBand.svelte';
+	import Avatar from '#lib/components/chat/Avatar.svelte';
+	import ChipRow from '#lib/components/chat/ChipRow.svelte';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { profile } from '#lib/state/profile.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import { importPackageFromZipFile, importPackageFromUrl } from '#lib/content/index.js';
 	import {
 		formatPackageSize,
 		parseBundledStories,
 		type BundledStory,
 		type CatalogEntry
-	} from '$lib/story/library.js';
+	} from '#lib/story/library.js';
 
 	const statusKey = {
 		running: 'library.status.running',

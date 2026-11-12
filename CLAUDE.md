@@ -94,7 +94,7 @@ not `*.svelte.{test,spec}.*`. `requireAssertions` is on — every test must asse
   `vite.config.ts`.
 - **Runes are forced on** for all app code. Use `$state` / `$derived` / `$props`; stores are plain
   classes in `.svelte.ts` files exported as singletons.
-- **Relative imports use explicit `.js` extensions**; use the `$lib` alias for `src/lib`.
+- **Relative imports use explicit `.js` extensions**; use the `#lib/*` subpath import (package.json `imports`) for `src/lib`. Exception: a named _type_ import from a `.svelte` file must stay relative (`svelte-check` does not resolve `#lib` for those).
 - **Nothing touching the DOM may run at module top level or during prerender.** Guard with `browser`
   from `$app/environment` and feature-detect optional browser APIs.
 - **Pure logic goes in plain `.ts` files** next to their `.svelte.ts` consumers, so the Node test
@@ -139,7 +139,7 @@ rather than trying to make a Node test cover what only a browser can.
   ```
 
 - **Building a test package ZIP** — `src/lib/content/__fixtures__/*.ts` are plain data objects behind
-  the `$lib` alias, which a standalone Node script outside Vite cannot resolve.
+  the `#lib` subpath import, which a standalone Node script outside Vite cannot resolve.
   `__fixtures__/zip.ts`'s `zipPackageFiles()` turns such a files-map into real ZIP bytes using
   `fflate`. Either add a throwaway spec that calls it and writes the result with `node:fs`, or
   duplicate the JSON in a standalone script importing `zipSync` from

@@ -1,4 +1,4 @@
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import { isClueConflicting } from './clues.js';
 import { evaluateAll, evaluateCondition } from './conditions.js';
 import { buildEvaluationContext, type EngineEffect, type EngineState } from './state.js';

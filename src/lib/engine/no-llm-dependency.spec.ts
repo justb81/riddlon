@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
  * *allowed* to happen, `llm/` decides what a character *says* — the two must stay decoupled.
  */
 const ENGINE_DIR = dirname(fileURLToPath(import.meta.url));
-const LLM_IMPORT_RE = /from\s+['"](\$lib\/llm(?:\/|['"])|\.{1,2}\/(?:.*\/)?llm\/)/;
+const LLM_IMPORT_RE = /from\s+['"](#lib\/llm(?:\/|['"])|\.{1,2}\/(?:.*\/)?llm\/)/;
 
 function listSourceFiles(dir: string): string[] {
 	return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -20,7 +20,7 @@ function listSourceFiles(dir: string): string[] {
 }
 
 describe('engine/ has no dependency on llm/', () => {
-	it('no source file under src/lib/engine imports $lib/llm or a relative llm/ path', () => {
+	it('no source file under src/lib/engine imports #lib/llm or a relative llm/ path', () => {
 		const offenders = listSourceFiles(ENGINE_DIR).filter((file) =>
 			LLM_IMPORT_RE.test(readFileSync(file, 'utf-8'))
 		);

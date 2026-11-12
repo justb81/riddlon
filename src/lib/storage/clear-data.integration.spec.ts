@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Manifest } from '$lib/content/index.js';
+import type { Manifest } from '#lib/content/index.js';
 
 vi.mock('$app/env', () => ({ browser: true }));
 
@@ -30,14 +30,14 @@ describe('clearSaves / clearAllStoredData (real IndexedDB via fake-indexeddb)', 
 		});
 
 		const { buildValidPackageFiles } =
-			await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+			await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		manifest = buildValidPackageFiles()['manifest.json'] as Manifest;
 		await seed();
 	});
 
 	/** A device mid-story: one installed package, its character, a savegame and a profile. */
 	async function seed(): Promise<void> {
-		const { LUCY_ID } = await import('$lib/content/__fixtures__/lucys-portmonnaie.js');
+		const { LUCY_ID } = await import('#lib/content/__fixtures__/lucys-portmonnaie.js');
 		const { storyRegistry } = await import('./story-registry.js');
 		const { characterLibrary } = await import('./character-library.js');
 		const { saveStore } = await import('./save-store.js');

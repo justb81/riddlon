@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
-	import AppFrame from '$lib/components/chat/AppFrame.svelte';
-	import AppHeader from '$lib/components/chat/AppHeader.svelte';
-	import InfoBand from '$lib/components/chat/InfoBand.svelte';
-	import Avatar from '$lib/components/chat/Avatar.svelte';
-	import MilestoneItem from '$lib/components/chat/MilestoneItem.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import type { Milestone } from '$lib/story/types.js';
+	import AppFrame from '#lib/components/chat/AppFrame.svelte';
+	import AppHeader from '#lib/components/chat/AppHeader.svelte';
+	import InfoBand from '#lib/components/chat/InfoBand.svelte';
+	import Avatar from '#lib/components/chat/Avatar.svelte';
+	import MilestoneItem from '#lib/components/chat/MilestoneItem.svelte';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import type { Milestone } from '#lib/story/types.js';
 
 	/**
 	 * The case file for the active package. Everything here is engine state: the timeline is the

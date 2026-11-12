@@ -5,10 +5,10 @@
 	import InfoBand from './InfoBand.svelte';
 	import Avatar from './Avatar.svelte';
 	import ThreadRow from './ThreadRow.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { storySession } from '$lib/state/story-session.svelte.js';
-	import { profile } from '$lib/state/profile.svelte.js';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import { storySession } from '#lib/state/story-session.svelte.js';
+	import { profile } from '#lib/state/profile.svelte.js';
 
 	/**
 	 * The chat overview. On phones this *is* the `/chats` screen; from `lg` up the same component

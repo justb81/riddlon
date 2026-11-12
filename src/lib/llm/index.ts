@@ -6,7 +6,7 @@
  * model" a config change (issue #12, AC 1).
  *
  * The `llm` runes singleton is deliberately not re-exported: it lives in `llm.svelte.ts` and is
- * imported directly, matching how `$lib/state/*.svelte.ts` stores are consumed elsewhere.
+ * imported directly, matching how `#lib/state/*.svelte.ts` stores are consumed elsewhere.
  */
 
 export { createLlmAdapter } from './adapter.js';

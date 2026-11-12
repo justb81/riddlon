@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { StoryBundle } from '$lib/content/index.js';
-import { loadStoryBundle, validatePackage } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { loadStoryBundle, validatePackage } from '#lib/content/index.js';
 import {
 	buildWalkthroughPackageFiles,
 	LUCY_ID as WALKTHROUGH_LUCY_ID,
@@ -16,7 +16,7 @@ import {
 	SCENE_SABINE_QUESTIONING_1,
 	SCENE_SABINE_QUESTIONING_2,
 	SCENE_UNKNOWN_CONTACT
-} from '$lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
+} from '#lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
 import { isClueConflicting } from './clues.js';
 import { StoryEngine } from './engine.js';
 import { saveRecordPatchFromState, stateFromSaveRecord } from './persistence.js';

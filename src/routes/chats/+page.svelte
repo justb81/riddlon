@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import AppFrame from '$lib/components/chat/AppFrame.svelte';
-	import RiddlonMark from '$lib/components/icons/RiddlonMark.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
+	import AppFrame from '#lib/components/chat/AppFrame.svelte';
+	import RiddlonMark from '#lib/components/icons/RiddlonMark.svelte';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
 
 	// The list itself lives in <ChatList>, rendered by <AppFrame>: on phones it fills
 	// this screen, on desktop it docks as the sidebar and the placeholder below takes

@@ -14,17 +14,17 @@
 		llmModelOptions,
 		formatSizeLabel,
 		type LocalModelId
-	} from '$lib/llm/catalog.js';
-	import { i18nKeyForLlmError } from '$lib/llm/errors.js';
-	import { llm } from '$lib/llm/llm.svelte.js';
-	import { isForcingWebLlm, setForceWebLlm } from '$lib/llm/provider.js';
+	} from '#lib/llm/catalog.js';
+	import { i18nKeyForLlmError } from '#lib/llm/errors.js';
+	import { llm } from '#lib/llm/llm.svelte.js';
+	import { isForcingWebLlm, setForceWebLlm } from '#lib/llm/provider.js';
 	import {
 		clearEndpointConfig,
 		endpointHostLabel,
 		getEndpointConfig
-	} from '$lib/llm/endpoint-config.js';
-	import { testEndpoint } from '$lib/llm/openai-compatible.js';
-	import { t } from '$lib/i18n/i18n.svelte.js';
+	} from '#lib/llm/endpoint-config.js';
+	import { testEndpoint } from '#lib/llm/openai-compatible.js';
+	import { t } from '#lib/i18n/i18n.svelte.js';
 
 	const SYSTEM_PROMPT =
 		'Du bist Lucy, 28, aus einer Kriminalgeschichte. Antworte kurz, in der Ich-Form, auf Deutsch.';
@@ -126,7 +126,7 @@
 	<header class="flex flex-col gap-1">
 		<h1 class="font-serif text-2xl text-slate-50">LLM-Harness</h1>
 		<p class="text-caption text-slate-500">
-			Entwickler-Werkzeug für <code>$lib/llm</code>. Nicht Teil des Spiels.
+			Entwickler-Werkzeug für <code>#lib/llm</code>. Nicht Teil des Spiels.
 		</p>
 	</header>
 

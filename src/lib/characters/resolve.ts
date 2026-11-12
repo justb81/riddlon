@@ -1,4 +1,4 @@
-import type { CastBinding, CharacterIdentity } from '$lib/content/index.js';
+import type { CastBinding, CharacterIdentity } from '#lib/content/index.js';
 
 export interface EffectiveCharacterState {
 	id: string;

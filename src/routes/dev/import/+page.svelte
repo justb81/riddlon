@@ -3,7 +3,7 @@
 	 * Dev-only harness for the ZIP/URL story-package importer (#zip-import, #url-import).
 	 *
 	 * The conversational import UX in `/chat/riddlon` is still decorative (#ui-riddlon-chat
-	 * hasn't landed), so this is where the pipeline in `$lib/content/{unzip,install-package,
+	 * hasn't landed), so this is where the pipeline in `#lib/content/{unzip,install-package,
 	 * zip-import,url-import}.ts` gets exercised against a real browser (IndexedDB + Cache
 	 * Storage aren't available in the Node test environment). Not linked from anywhere in the app.
 	 *
@@ -13,8 +13,8 @@
 		importPackageFromZipFile,
 		importPackageFromUrl,
 		type ImportResult
-	} from '$lib/content/index.js';
-	import { storyRegistry, type InstalledPackageSummary } from '$lib/storage/index.js';
+	} from '#lib/content/index.js';
+	import { storyRegistry, type InstalledPackageSummary } from '#lib/storage/index.js';
 
 	let url = $state('');
 	let busy = $state(false);
@@ -65,7 +65,7 @@
 	<header class="flex flex-col gap-1">
 		<h1 class="font-serif text-2xl text-slate-50">Import-Harness</h1>
 		<p class="text-caption text-slate-500">
-			Entwickler-Werkzeug für <code>$lib/content</code> ZIP-/URL-Import. Nicht Teil des Spiels.
+			Entwickler-Werkzeug für <code>#lib/content</code> ZIP-/URL-Import. Nicht Teil des Spiels.
 		</p>
 	</header>
 

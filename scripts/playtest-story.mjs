@@ -106,7 +106,7 @@ async function main() {
 	}
 
 	// `configFile: false` skips the SvelteKit plugin — engine/content modules only use plain
-	// relative imports at runtime (any `$lib` reference in them is a type-only import, erased
+	// relative imports at runtime (any `#lib` reference in them is a type-only import, erased
 	// before this ever runs), so Vite's bare TS transform is all this needs (see build-stories.mjs).
 	const vite = await createServer({
 		configFile: false,

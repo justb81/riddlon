@@ -1,5 +1,5 @@
 <script lang="ts">
-	import RiddlonMark from '$lib/components/icons/RiddlonMark.svelte';
+	import RiddlonMark from '#lib/components/icons/RiddlonMark.svelte';
 
 	type AvatarKind = 'solo' | 'group' | 'system' | 'cover';
 

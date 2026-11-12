@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { StoryBundle } from '$lib/content/index.js';
-import { recordClueClaim, resolveClue } from '$lib/engine/clues.js';
-import { createInitialState } from '$lib/engine/state.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { recordClueClaim, resolveClue } from '#lib/engine/clues.js';
+import { createInitialState } from '#lib/engine/state.js';
 import {
 	achievementDisplays,
 	reachedOutcomes,

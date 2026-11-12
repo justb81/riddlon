@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Milestone } from '$lib/story/types.js';
+	import type { Milestone } from '#lib/story/types.js';
 
 	let { milestone }: { milestone: Milestone } = $props();
 </script>

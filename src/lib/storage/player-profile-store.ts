@@ -1,6 +1,6 @@
 import { browser } from '$app/env';
 import type { z } from 'zod';
-import { playerProfileSchema, type PlayerProfile } from '$lib/content/index.js';
+import { playerProfileSchema, type PlayerProfile } from '#lib/content/index.js';
 import { getDb } from './db.js';
 
 const SINGLETON_ID = 'singleton';
@@ -17,7 +17,7 @@ export class PlayerProfileValidationError extends Error {
 
 /**
  * The one store that validates before writing: unlike third-party package content
- * (validated once at import time by $lib/content), a player profile is authored directly
+ * (validated once at import time by #lib/content), a player profile is authored directly
  * via a settings form, so bad shape here should fail loudly rather than write silently.
  */
 export const playerProfileStore = {

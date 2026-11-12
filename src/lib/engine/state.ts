@@ -1,4 +1,4 @@
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import type { EvaluationContext } from './conditions.js';
 import type { EngineAction } from './actions.js';
 

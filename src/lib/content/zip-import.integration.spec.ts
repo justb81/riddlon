@@ -7,7 +7,7 @@ vi.mock('$app/env', () => ({ browser: true }));
 
 describe('importPackageFromZipFile (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {
-		const { resetDbConnectionForTests, DB_NAME } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests, DB_NAME } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests();
 		await new Promise<void>((resolve) => {
 			const req = indexedDB.deleteDatabase(DB_NAME);
@@ -19,7 +19,7 @@ describe('importPackageFromZipFile (real IndexedDB via fake-indexeddb)', () => {
 
 	it('reads a File (as selected via a file picker) and installs it', async () => {
 		const { importPackageFromZipFile } = await import('./zip-import.js');
-		const { storyRegistry } = await import('$lib/storage/index.js');
+		const { storyRegistry } = await import('#lib/storage/index.js');
 
 		const bytes = zipPackageFiles(buildValidPackageFiles());
 		const file = new File([new Uint8Array(bytes)], 'lucys-portmonnaie.zip', {

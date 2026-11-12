@@ -10,9 +10,9 @@
  * Framework-free and browser-free on purpose, so it runs under the Node test project.
  */
 
-import type { StoryBundle } from '$lib/content/index.js';
-import { isClueConflicting } from '$lib/engine/clues.js';
-import type { EngineState } from '$lib/engine/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { isClueConflicting } from '#lib/engine/clues.js';
+import type { EngineState } from '#lib/engine/index.js';
 
 export interface ClueDisplayClaim {
 	characterId: string;

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import './layout.css';
-	import Toast from '$lib/components/ui/Toast.svelte';
-	import CelebrationOverlay from '$lib/components/chat/CelebrationOverlay.svelte';
+	import Toast from '#lib/components/ui/Toast.svelte';
+	import CelebrationOverlay from '#lib/components/chat/CelebrationOverlay.svelte';
 	import { browser, dev, version } from '$app/env';
 	import { asset } from '$app/paths';
-	import { updateStatus } from '$lib/state/update.svelte.js';
+	import { updateStatus } from '#lib/state/update.svelte.js';
 
 	let { children } = $props();
 

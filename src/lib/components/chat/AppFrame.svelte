@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import ChatList from './ChatList.svelte';
-	import { windowChrome } from '$lib/state/windowChrome.svelte.js';
+	import { windowChrome } from '#lib/state/windowChrome.svelte.js';
 
 	/**
 	 * Responsive app shell around every chat screen.

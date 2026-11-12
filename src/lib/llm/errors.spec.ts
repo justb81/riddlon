@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import de from '$lib/i18n/de.json' with { type: 'json' };
+import de from '#lib/i18n/de.json' with { type: 'json' };
 import {
 	LlmError,
 	classifyLoadError,

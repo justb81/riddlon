@@ -1,5 +1,5 @@
 import { browser } from '$app/env';
-import type { Manifest, StoryBundle } from '$lib/content/index.js';
+import type { Manifest, StoryBundle } from '#lib/content/index.js';
 import { getDb, type InstalledPackageContent, type InstalledPackageRecord } from './db.js';
 import { characterLibrary } from './character-library.js';
 
@@ -39,7 +39,7 @@ export interface InstallPackageOptions {
 /**
  * Pure metadata store — it does NOT decide character link-vs-create itself (that's
  * `characterLibrary`'s job, see character-library.ts) to avoid a circular dependency with
- * `$lib/characters` (#6 depends on this module, not the reverse). `install()` just records
+ * `#lib/characters` (#6 depends on this module, not the reverse). `install()` just records
  * which characters this package references, for `uninstall()`'s unlink step.
  */
 export const storyRegistry = {

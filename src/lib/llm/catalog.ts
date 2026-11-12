@@ -1,7 +1,7 @@
 /**
  * The one place a Riddlon model id maps to a concrete MLC model, its size and its context budget.
  *
- * Nothing outside `$lib/llm` may reference an MLC model id — that's what keeps "swap the model"
+ * Nothing outside `#lib/llm` may reference an MLC model id — that's what keeps "swap the model"
  * a config change rather than a code change (issue #12's first acceptance criterion).
  *
  * Model choice: the reference story is German, and Phi-3 Mini / Llama 3 8B (the placeholders in
@@ -73,7 +73,7 @@ export function findModel(id: LocalModelId): LlmModelDescriptor {
 	return LLM_MODELS[id];
 }
 
-/** German size label, e.g. `1,9 GB` — the UI is German-only (see $lib/i18n). */
+/** German size label, e.g. `1,9 GB` — the UI is German-only (see #lib/i18n). */
 export function formatSizeLabel(bytes: number): string {
 	const gb = bytes / GB;
 	if (gb >= 1) return `${gb.toFixed(1).replace('.', ',')} GB`;

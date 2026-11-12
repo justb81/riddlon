@@ -100,7 +100,7 @@ body {
  * 100dvw the right reference for the far side.
  *
  * `[data-wco='true']` is only ever set while the overlay is actually visible (see
- * `$lib/state/windowChrome.svelte.ts`), and the `--rd-titlebar-*` fallbacks make
+ * `#lib/state/windowChrome.svelte.ts`), and the `--rd-titlebar-*` fallbacks make
  * the padding collapse to plain `px-4.5` everywhere else.
  */
 .app-header[data-wco='true'] {

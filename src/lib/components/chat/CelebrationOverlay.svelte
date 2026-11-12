@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { storySession } from '$lib/state/story-session.svelte.js';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import { storySession } from '#lib/state/story-session.svelte.js';
 
 	/**
 	 * Shown when the engine reaches one of the active package's `outcomes` — the only
