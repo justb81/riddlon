@@ -63,6 +63,11 @@ Two traps worth knowing before you start:
      knows never reaches the model, and a goal that depends on it becomes unreachable.
    - **Goal order is prompt order**: a scene's first goal is what the opening message is built
      around. Put the beat that actually opens the scene first.
+   - **Every goal must be visible in the conversation.** A chat scene completes only once the
+     director has judged _each_ of its goals reached
+     ([§8.4.4](../docs/arc42/08-crosscutting-concepts.md#844-the-director-pass)). A goal that only
+     describes how a character behaves afterwards ("go quiet") gives the director nothing to see,
+     and the scene may never end.
    - An empty `entryConditions` list unlocks the scene at story start. If a scene must only be
      reachable through a delayed event, give it a sentinel condition nothing else sets.
 4. **Validate**: `npm run stories:validate`, until clean.

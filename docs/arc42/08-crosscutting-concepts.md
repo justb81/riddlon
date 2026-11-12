@@ -502,6 +502,16 @@ resume.
 earlier one. That is what makes `clue-confirmed:<id>:<n>` an evidence gate and what surfaces
 contradictions to the UI.
 
+**A contradiction means two claims that say different things, not two different strings.** Claim
+values are free text from the director, and the same statement comes back phrased differently on
+every run — compared exactly, "gegen 22 Uhr" and "ca. 22 Uhr" were a contradiction the player never
+caused. `claimValuesAgree` in `engine/clues.ts` therefore drops phrasing words ("gegen", "ca.",
+articles, prepositions), stems the rest roughly, and lets two values agree when they negate alike and
+one's content words are contained in the other's: "an der Garderobe" agrees with "die Jacke hing an
+der Garderobe", "22 Uhr" does not agree with "Mitternacht", and "war nicht an der Garderobe" never
+agrees with "war an der Garderobe". It is deliberately conservative and German-specific; a repeat of
+an agreeing value by the same source is a no-op.
+
 **Characters** are visible when their cast binding says so — `initialState: visible`, or
 `unlockCondition` satisfied — or when an `unlock-character:` action forced them. Masked characters
 are reported separately, so the UI can show a placeholder name until the reveal condition holds.
@@ -597,22 +607,48 @@ Packages ship no dialogue and no keyword triggers: a scene declares `goals`, `ex
 conversation into those symbols. **That is the director, and it is the only thing that advances the
 graph.**
 
-After each character reply, a second, short model call judges whether the active scene's exit
-conditions are now met and which revealables were claimed. The verdict is applied through the engine.
+After each character reply, a second, short model call answers the active scene's **open questions**
+— not one verdict. `buildDirectorQuestions` derives them from the scene node and the current state:
 
-Both halves — prompt building and answer parsing — are pure and spec'd. The parser is deliberately
-paranoid: a local 3B model will wrap its JSON in prose, invent ids, or return nothing. Every id is
-filtered against what **the active scene itself** declared, so the worst case of a bad answer is
-"nothing happens", never "some other flag got set".
+| Question | Asked as                            | From                                                          | Applied as                                                 |
+| -------- | ----------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| Clues    | an array of claims, written first   | `revealables` a cast member has not claimed yet               | `recordClueClaim`                                          |
+| Goals    | one `true`/`false` per goal         | `goals` not yet reached, while an exit flag is open           | remembered; the exit flag is set once **every** goal holds |
+| Events   | one `true`/`false` per flag         | `settableFlags`; a scene's exit flags if it declares no goals | `setFlag`                                                  |
+| Ending   | one choice: `none` or an outcome id | a group scene's flag-conditioned `outcomes`, label and text   | `setFlag` on that one outcome's condition                  |
+
+**The model never decides a scene's exit flag.** Measured against Chrome's built-in model (#54), a
+single "are all goals met?" verdict set the exit flag in about half the runs where the goal had been
+reached, and in fewer than half once the same answer also had to list clues; the model was also
+non-deterministic, so one large judgement failed more often than several small ones. The director now
+answers yes/no per goal, `storySession` remembers reached goals per scene across turns
+(`SaveRecord.reachedGoals`, [§8.11](#811-state-management)), and `exitFlagsReached` sets the exit
+flag once all of them have held at some point. That also removes a structural gap: the director only
+sees the last six messages, so a scene whose goals were spread over a longer conversation could never
+show all of them in one window.
+
+**Endings are one choice.** Asked as flags, the model set "Fall gelöst" and "Falsche Beschuldigung"
+for the same confession in 3 of 4 runs; the parser now voids any answer naming two endings, in either
+answer shape, and the schema makes `outcome` a single enum value.
+
+Both halves — question and prompt building, answer parsing — are pure and spec'd. The parser is
+deliberately paranoid: a local model will wrap its JSON in prose, invent ids, or return nothing. Every
+id is filtered against what **the active scene itself** asked, so the worst case of a bad answer is
+"nothing happens", never "some other flag got set". **A clue value must be traceable**: it is dropped
+when it only repeats the clue's label (6 of 33 constrained claims did), or when none of its content
+words appears in a line the claimed character actually said in the transcript.
 
 Two near-miss shapes are common enough that dropping them outright would stop the story in practice,
-so they are normalised **before** the allowlist check, never after: a flag reported as a bare id
-(`"lucy-identified"` instead of `"flag:lucy-identified"`, sometimes even inside the `clues` array),
-and a character named by display name instead of UUID.
+so they are normalised **before** the allowlist check, never after: an event reported inside the
+`clues` array or as a bare id without `flag:`, and a character named by display name instead of UUID.
+Characters are named in the prompt exactly as the transcript names them, so a masked character
+appears under its masked name in both, or its claims could never be traced to its lines.
 
-The parser is the second line of defence, not the first. The director session runs at
-`temperature: 0`, and each call passes `buildDirectorSchema(allowed)` — a JSON Schema whose `enum`s
-list only the open flags, open clue ids and cast ids — as `LlmSession.prompt()`'s `responseSchema`.
+The parser is the second line of defence, not the first. The director session asks for
+`temperature: 0` — which Chrome's built-in model ignores on web pages (identical prompts give
+different answers, measured in #54; WebLLM and endpoints are unmeasured) — and each call passes `buildDirectorSchema` — a JSON
+Schema with fixed boolean keys per goal and event, `enum`s for the open clue ids, cast ids and
+endings — as `LlmSession.prompt()`'s `responseSchema`.
 The adapter forwards it as the Prompt API's `responseConstraint`; every provider maps it to its own
 constrained decoder: the native Prompt API takes it as is, WebLLM as `response_format:
 { type: 'json_object', schema }` (XGrammar), an OpenAI-compatible endpoint as `response_format:
@@ -893,3 +929,9 @@ id — a thread folds several scenes) to the ISO time the thread was last open; 
 counts messages from neither `me` nor `system` newer than that marker; authored seed history never
 counts. A save written before the field existed is baselined to "read now" on load, so it cannot
 open with an inflated badge. The field is optional, so `DB_VERSION` is unchanged.
+
+**Reached goals live in the save, not in the engine.** `SaveRecord.reachedGoals` maps a scene id to
+the goal slugs the director has judged reached ([§8.4.4](#844-the-director-pass)); `storySession`
+loads it with the chat history and only ever adds to it (`saveStore.markGoalsReached`). It is the
+director's memory, not progress: the engine still only sees the exit flag that `exitFlagsReached`
+derives from it. Optional as well, so an older save simply starts with no goals reached.

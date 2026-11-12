@@ -30,6 +30,22 @@ describe('saveStore (real IndexedDB via fake-indexeddb)', () => {
 		});
 	});
 
+	it('unions reached goals per scene and keeps them across a reload (#54)', async () => {
+		const { saveStore } = await import('./save-store.js');
+		const created = await saveStore.createForPackage('package-a');
+		await saveStore.markGoalsReached(created!.id, 'scene-1', ['seed-timeline']);
+		await saveStore.markGoalsReached(created!.id, 'scene-1', ['seed-location', 'seed-timeline']);
+		await saveStore.markGoalsReached(created!.id, 'scene-2', ['report-findings']);
+
+		const { resetDbConnectionForTests } = await import('./db.js');
+		await resetDbConnectionForTests();
+		const reloaded = await saveStore.get(created!.id);
+		expect(reloaded?.reachedGoals).toEqual({
+			'scene-1': ['seed-timeline', 'seed-location'],
+			'scene-2': ['report-findings']
+		});
+	});
+
 	it('survives a fresh db handle (proxy for surviving a page reload)', async () => {
 		const { saveStore } = await import('./save-store.js');
 		const created = await saveStore.createForPackage('package-a');

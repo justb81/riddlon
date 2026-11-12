@@ -69,6 +69,14 @@ answer against what that scene declared, then apply the verdict through the engi
 "nothing happens". When the model is weak, the story stalls rather than derailing — which is the
 safer failure, and why `/dev/story`'s director probe exists to diagnose it.
 
+**Amended (#54).** The director no longer judges exit conditions. Measured, one verdict over a whole
+scene stalled the story in about half the runs where its goal was reached. It now answers one
+yes/no per goal and one single choice per ending. The app remembers reached goals across turns and
+derives the exit flag once all of them hold. Trade-off: a goal wrongly judged reached stays reached,
+so a single false positive can now end a scene early. Measured, early flags rose from 1 to 8 of 40
+runs while reached goals went from 19 to 36 of 36 ([§11.2](./11-risks-and-technical-debt.md)).
+Details in [§8.4.4](./08-crosscutting-concepts.md#844-the-director-pass).
+
 ## ADR 6: The Prompt API is the internal LLM interface
 
 **Context.** "Swap the model without touching engine or UI" is a stated requirement.

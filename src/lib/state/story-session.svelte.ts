@@ -15,10 +15,11 @@ import { browser } from '$app/env';
 import { llm } from '$lib/llm/llm.svelte.js';
 import {
 	buildDirectorPrompt,
+	buildDirectorQuestions,
 	buildDirectorSchema,
-	claimableClueIds,
+	exitFlagsReached,
+	hasDirectorQuestions,
 	parseDirectorVerdict,
-	settableFlags,
 	type DirectorVerdict
 } from '$lib/llm/director.js';
 import { isLlmError } from '$lib/llm/errors.js';
@@ -75,6 +76,8 @@ class StorySession {
 	 *  because a wrong verdict is otherwise invisible. */
 	lastDirectorRaw = $state<string | null>(null);
 	lastDirectorVerdict = $state<DirectorVerdict | null>(null);
+	/** Scene id → goals the director has judged reached so far (#54), persisted in the save. */
+	reachedGoals = $state<Record<string, string[]>>({});
 
 	#initPromise: Promise<void> | null = null;
 	#loadedSaveId: string | null = null;
@@ -184,6 +187,7 @@ class StorySession {
 		this.#loadedSaveId = saveId;
 		this.history = existing.chatHistory;
 		this.threadReads = { ...existing.threadReads };
+		this.reachedGoals = { ...existing.reachedGoals };
 		// A save from before read markers existed: everything already there counts as read, so an
 		// old save can't open with an inflated badge (#51).
 		if (existing.threadReads === undefined) {
@@ -305,54 +309,42 @@ class StorySession {
 	}
 
 	/**
-	 * Asks the model whether the scene's own exit conditions are met and which clue claims were
-	 * made, then applies the verdict through the engine. This is what advances the graph: a
-	 * package declares `exitConditions: ["flag:…"]` but ships nothing that could ever set them.
+	 * Asks the model the scene's open questions — clue claims, each goal, each mid-scene event, the
+	 * ending of a group scene — then applies the verdict through the engine. This is what advances
+	 * the graph: a package declares `exitConditions: ["flag:…"]` but ships nothing that could ever
+	 * set them. The exit flag itself is never the model's call: it is set here once every goal of the
+	 * scene has been judged reached, in this turn or an earlier one (docs/arc42 §8.4.4).
 	 */
 	async #runDirector(
 		sceneId: string,
 		thread: StoryThread,
 		lastMessage: SaveChatMessage | undefined
 	): Promise<void> {
-		const scene = storyRuntime.sceneById(sceneId);
+		const node = this.#sceneNode(sceneId);
 		const bundle = storyRuntime.bundle;
-		if (!scene || !bundle) return;
+		if (!node || !bundle) return;
 
-		const declaredScene = {
-			goals: scene.goals,
-			exitConditions: this.#exitConditionsFor(sceneId),
-			revealables: this.#revealablesFor(sceneId),
-			outcomeConditions: this.#outcomeConditionsFor(sceneId),
-			settableFlags: this.#settableFlagsFor(sceneId)
-		};
 		const cast = storyRuntime.cast.filter((c) => thread.participantIds.includes(c.id));
+		const isFlagSet = (ref: string) => storyRuntime.isConditionMet(ref);
 
-		// Only what's still worth judging: a flag already true, or a clue every cast member has
-		// already claimed, gains nothing from asking again — and re-asking is how a clue that was
-		// claimed once ends up claimed a second time with a different value, i.e. a false
-		// contradiction the player never caused.
-		const openFlags = settableFlags(declaredScene).filter(
-			(flag) => !storyRuntime.isConditionMet(flag)
+		// Only what's still worth asking: a flag already true, a goal already reached, or a clue
+		// every cast member has already claimed gains nothing from asking again — and re-asking is
+		// how a clue claimed once ends up claimed a second time with a different value.
+		const questions = buildDirectorQuestions(
+			{ ...node, outcomes: node.type === 'group-chat-scene' ? node.outcomes : [] },
+			{
+				reachedGoals: new Set(this.reachedGoals[sceneId] ?? []),
+				isFlagSet,
+				isClueOpen: (clueId) => {
+					const claimedBy = new Set(
+						(storyRuntime.clueDisplays[clueId]?.sources ?? []).map((s) => s.characterId)
+					);
+					return cast.some((c) => !claimedBy.has(c.id));
+				}
+			}
 		);
-		const openClueIds = claimableClueIds(declaredScene).filter((clueId) => {
-			const claimedBy = new Set(
-				(storyRuntime.clueDisplays[clueId]?.sources ?? []).map((source) => source.characterId)
-			);
-			return cast.some((c) => !claimedBy.has(c.id));
-		});
-		if (openFlags.length === 0 && openClueIds.length === 0) return;
+		if (!hasDirectorQuestions(questions)) return;
 
-		const isOpen = (refs: readonly string[] | undefined) =>
-			(refs ?? []).filter((ref) => openFlags.includes(ref));
-		const directorScene = {
-			goals: scene.goals,
-			exitConditions: [
-				...isOpen(declaredScene.exitConditions),
-				...isOpen(declaredScene.outcomeConditions)
-			],
-			settableFlags: isOpen(declaredScene.settableFlags),
-			revealables: openClueIds
-		};
 		const scenes = new Set(thread.sceneIds);
 		const turns = this.history
 			.filter((m) => scenes.has(m.sceneId))
@@ -361,12 +353,10 @@ class StorySession {
 				who: m.from === SPEAKER_ME ? profile.nickname : storyRuntime.displayNameFor(m.from),
 				text: m.text
 			}));
-
-		const allowed = {
-			flags: openFlags,
-			clueIds: openClueIds,
-			characters: cast.map((c) => ({ id: c.id, name: c.displayName }))
-		};
+		// The same names the transcript uses — a masked character is "Unbekannt" in both, or a claim
+		// could never be traced back to their lines.
+		const characters = cast.map((c) => ({ id: c.id, name: storyRuntime.displayNameFor(c.id) }));
+		const clues = bundle.clues.map((clue) => ({ id: clue.id, label: clue.label }));
 
 		let raw: string;
 		try {
@@ -375,32 +365,42 @@ class StorySession {
 			// (see adapter.ts), so this costs a decode pass but no model reload.
 			const session = await llm.session('director', {
 				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
-				// A verdict is a judgement, not prose: sampling it would make the story move by chance.
+				// Chrome's built-in model ignores this on web pages, so its verdict varies between runs
+				// (measured in #54) — one reason the questions are kept small. Other providers: unmeasured.
 				temperature: 0,
 				maxHistoryTurns: 0
 			});
-			raw = await session.prompt(
-				buildDirectorPrompt({
-					scene: directorScene,
-					clues: bundle.clues.map((clue) => ({ id: clue.id, label: clue.label })),
-					characters: allowed.characters,
-					turns
-				}),
-				{ responseSchema: buildDirectorSchema(allowed) }
-			);
+			raw = await session.prompt(buildDirectorPrompt({ questions, clues, characters, turns }), {
+				responseSchema: buildDirectorSchema({ questions, characters })
+			});
 			await session.destroy();
 		} catch {
 			// No verdict is a valid outcome: the story simply doesn't advance this turn.
 			return;
 		}
 
-		const verdict = parseDirectorVerdict(raw, allowed);
+		const verdict = parseDirectorVerdict(raw, { questions, characters, clues, turns });
 		this.lastDirectorRaw = raw;
 		this.lastDirectorVerdict = verdict;
-		this.#applyVerdict(verdict, lastMessage);
+		await this.#applyVerdict(sceneId, verdict, lastMessage);
 	}
 
-	#applyVerdict(verdict: DirectorVerdict, lastMessage: SaveChatMessage | undefined): void {
+	/** `/dev/story`'s "Apply verdict": exactly what a live turn would apply, minus the clue pin. */
+	applyDirectorVerdict(sceneId: string, verdict: DirectorVerdict): Promise<void> {
+		return this.#applyVerdict(sceneId, verdict, undefined);
+	}
+
+	async #applyVerdict(
+		sceneId: string,
+		verdict: DirectorVerdict,
+		lastMessage: SaveChatMessage | undefined
+	): Promise<void> {
+		const reached = await this.#rememberGoals(sceneId, verdict.goals);
+		const node = this.#sceneNode(sceneId);
+		const exitFlags = node
+			? exitFlagsReached(node, reached, (ref) => storyRuntime.isConditionMet(ref))
+			: [];
+
 		let solved = false;
 		for (const claim of verdict.clues) {
 			const effects = storyRuntime.recordClueClaim(claim.id, claim.characterId, claim.value);
@@ -410,7 +410,7 @@ class StorySession {
 			}
 			solved ||= effects.some((effect) => effect.type === 'outcome-reached');
 		}
-		for (const flag of verdict.flags) {
+		for (const flag of [...verdict.flags, ...exitFlags]) {
 			const effects = storyRuntime.setFlag(flag);
 			solved ||= effects.some((effect) => effect.type === 'outcome-reached');
 		}
@@ -459,24 +459,15 @@ class StorySession {
 		return storyRuntime.bundle?.graph.nodes.find((node) => node.id === sceneId);
 	}
 
-	#exitConditionsFor(sceneId: string): string[] {
-		return [...(this.#sceneNode(sceneId)?.exitConditions ?? [])];
-	}
-
-	/** A group scene's own outcome conditions — see `settableFlags` on why they are settable. */
-	#outcomeConditionsFor(sceneId: string): string[] {
-		const node = this.#sceneNode(sceneId);
-		if (node?.type !== 'group-chat-scene') return [];
-		return node.outcomes.map((outcome) => outcome.condition);
-	}
-
-	/** Flags the scene lets the director set without ending it (#97). */
-	#settableFlagsFor(sceneId: string): string[] {
-		return [...(this.#sceneNode(sceneId)?.settableFlags ?? [])];
-	}
-
-	#revealablesFor(sceneId: string): string[] {
-		return [...(this.#sceneNode(sceneId)?.revealables ?? [])];
+	/** Adds this verdict's goals to the scene's remembered ones and returns the full set (#54). */
+	async #rememberGoals(sceneId: string, goals: readonly string[]): Promise<Set<string>> {
+		const known = this.reachedGoals[sceneId] ?? [];
+		const reached = new Set([...known, ...goals]);
+		if (reached.size === known.length) return reached;
+		this.reachedGoals = { ...this.reachedGoals, [sceneId]: [...reached] };
+		const saveId = storyRuntime.saveId;
+		if (saveId) await saveStore.markGoalsReached(saveId, sceneId, goals);
+		return reached;
 	}
 
 	#setTyping(sceneId: string, typing: boolean): void {

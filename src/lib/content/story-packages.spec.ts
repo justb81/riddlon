@@ -82,7 +82,7 @@ describe('shipped story packages in stories/', () => {
 	/**
 	 * An outcome whose flags nothing can set is an ending only a playtest script can reach. The
 	 * director may only set `flag:` refs the *scene* declares — its `exitConditions` and `settableFlags`
-	 * plus, for a group scene, its own outcome conditions (`llm/director.ts`'s `settableFlags`) — and a group
+	 * plus, for a group scene, its own outcome conditions (`llm/director.ts`'s `buildDirectorQuestions`) — and a group
 	 * scene deliberately ships no exit conditions, which is how `flag:evidence-presented` and
 	 * `flag:false-accusation` ended up unsettable in play while the walkthrough still "solved" the
 	 * story (#39, #55).
