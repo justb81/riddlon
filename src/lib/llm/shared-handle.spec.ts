@@ -27,11 +27,7 @@ const DIRECTOR: LlmSessionConfig = {
 };
 
 const DIRECTOR_PROMPT = buildDirectorPrompt({
-	scene: {
-		goals: ['reveal-identity-as-lucy'],
-		exitConditions: ['flag:lucy-identified'],
-		revealables: []
-	},
+	questions: { goals: ['reveal-identity-as-lucy'], events: [], outcomes: [], clueIds: [] },
 	clues: [],
 	characters: [{ id: 'lucy-id', name: 'Lucy' }],
 	turns: [

@@ -23,10 +23,10 @@
 	import { llm } from '$lib/llm/llm.svelte.js';
 	import {
 		buildDirectorPrompt,
+		buildDirectorQuestions,
 		buildDirectorSchema,
-		claimableClueIds,
 		parseDirectorVerdict,
-		settableFlags,
+		type DirectorQuestions,
 		type DirectorVerdict
 	} from '$lib/llm/director.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
@@ -60,14 +60,34 @@
 	const thread = $derived(storyRuntime.threadFor(threadKey));
 	/** The graph node, not the display projection — only it carries exitConditions/revealables. */
 	const node = $derived(storyRuntime.bundle?.graph.nodes.find((n) => n.id === sceneId));
-	const directorScene = $derived(
-		node
-			? { goals: node.goals, exitConditions: node.exitConditions, revealables: node.revealables }
-			: { goals: [], exitConditions: [], revealables: [] }
-	);
 	/** Whoever the picked scene is with — the only characters a claim may be attributed to. */
 	const sceneCast = $derived(
 		storyRuntime.cast.filter((c) => node?.participants.includes(c.id) ?? false)
+	);
+	/** Named as the transcript names them, exactly as `story-session` does for a live pass. */
+	const sceneCharacters = $derived(
+		sceneCast.map((c) => ({ id: c.id, name: storyRuntime.displayNameFor(c.id) }))
+	);
+	/** What a live pass would ask right now: open goals, events, endings and clues. */
+	const questions = $derived<DirectorQuestions>(
+		node
+			? buildDirectorQuestions(
+					{ ...node, outcomes: node.type === 'group-chat-scene' ? node.outcomes : [] },
+					{
+						reachedGoals: new Set(storySession.reachedGoals[node.id] ?? []),
+						isFlagSet: (ref) => storyRuntime.isConditionMet(ref),
+						isClueOpen: (clueId) => {
+							const claimedBy = new Set(
+								(storyRuntime.clueDisplays[clueId]?.sources ?? []).map((s) => s.characterId)
+							);
+							return sceneCast.some((c) => !claimedBy.has(c.id));
+						}
+					}
+				)
+			: { goals: [], events: [], outcomes: [], clueIds: [] }
+	);
+	const clueLabels = $derived(
+		(storyRuntime.bundle?.clues ?? []).map((clue) => ({ id: clue.id, label: clue.label }))
 	);
 
 	/** Defaults to the first thread; `loadThread()` then takes the scene the app itself calls active. */
@@ -103,9 +123,9 @@
 
 	function buildPrompt(): string {
 		probePrompt = buildDirectorPrompt({
-			scene: directorScene,
-			clues: (storyRuntime.bundle?.clues ?? []).map((clue) => ({ id: clue.id, label: clue.label })),
-			characters: sceneCast.map((c) => ({ id: c.id, name: c.displayName })),
+			questions,
+			clues: clueLabels,
+			characters: sceneCharacters,
 			turns: parseTranscript(transcript)
 		});
 		return probePrompt;
@@ -136,14 +156,16 @@
 				temperature: 0,
 				maxHistoryTurns: 0
 			});
-			const allowed = {
-				flags: settableFlags(directorScene),
-				clueIds: claimableClueIds(directorScene),
-				characters: sceneCast.map((c) => ({ id: c.id, name: c.displayName }))
-			};
-			probeRaw = await session.prompt(prompt, { responseSchema: buildDirectorSchema(allowed) });
+			probeRaw = await session.prompt(prompt, {
+				responseSchema: buildDirectorSchema({ questions, characters: sceneCharacters })
+			});
 			await session.destroy();
-			probeVerdict = parseDirectorVerdict(probeRaw, allowed);
+			probeVerdict = parseDirectorVerdict(probeRaw, {
+				questions,
+				characters: sceneCharacters,
+				clues: clueLabels,
+				turns: parseTranscript(transcript)
+			});
 		} catch (error) {
 			probeError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 		} finally {
@@ -151,14 +173,9 @@
 		}
 	}
 
-	/** Applies exactly what the app would have applied, so the graph moves for real. */
+	/** Applies exactly what the app would have applied — goals remembered, exit flag derived. */
 	function applyVerdict(): void {
-		const verdict = probeVerdict;
-		if (!verdict) return;
-		for (const claim of verdict.clues) {
-			storyRuntime.recordClueClaim(claim.id, claim.characterId, claim.value);
-		}
-		for (const flag of verdict.flags) storyRuntime.setFlag(flag);
+		if (probeVerdict && node) void storySession.applyDirectorVerdict(node.id, probeVerdict);
 	}
 </script>
 
@@ -332,10 +349,16 @@
 		<dl class="mt-3 grid grid-cols-[10rem_1fr] gap-1 font-mono text-[11px]">
 			<dt class="text-slate-500">scene node</dt>
 			<dd>{node ? node.id : `not found (sceneId=${sceneId || '—'})`}</dd>
-			<dt class="text-slate-500">settable flags</dt>
-			<dd>{settableFlags(directorScene).join(', ') || '(keine)'}</dd>
+			<dt class="text-slate-500">open goals</dt>
+			<dd>{questions.goals.join(', ') || '(keine)'}</dd>
+			<dt class="text-slate-500">reached goals</dt>
+			<dd>{(node && storySession.reachedGoals[node.id]?.join(', ')) || '(keine)'}</dd>
+			<dt class="text-slate-500">events</dt>
+			<dd>{questions.events.join(', ') || '(keine)'}</dd>
+			<dt class="text-slate-500">outcomes</dt>
+			<dd>{questions.outcomes.map((o) => o.id).join(', ') || '(keine)'}</dd>
 			<dt class="text-slate-500">claimable clues</dt>
-			<dd>{claimableClueIds(directorScene).join(', ') || '(keine)'}</dd>
+			<dd>{questions.clueIds.join(', ') || '(keine)'}</dd>
 			<dt class="text-slate-500">scene cast</dt>
 			<dd>{sceneCast.map((c) => c.displayName).join(', ') || '—'}</dd>
 		</dl>

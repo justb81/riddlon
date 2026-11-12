@@ -38,7 +38,8 @@ export const saveStore = {
 			pendingDelayedEvents: [],
 			clueStates: [],
 			earnedAchievementIds: [],
-			threadReads: {}
+			threadReads: {},
+			reachedGoals: {}
 		};
 		await db.put('saves', record);
 		return record;
@@ -117,6 +118,29 @@ export const saveStore = {
 		const updated: SaveRecord = {
 			...existing,
 			threadReads: { ...existing.threadReads, [threadKey]: at },
+			updatedAt: new Date().toISOString()
+		};
+		await db.put('saves', updated);
+		return updated;
+	},
+
+	/** Adds goal slugs to one scene's reached goals (#54) — a union, never a removal. */
+	async markGoalsReached(
+		saveId: string,
+		sceneId: string,
+		goals: readonly string[]
+	): Promise<SaveRecord | undefined> {
+		if (!browser) return undefined;
+		const db = await getDb();
+		const existing = await db.get('saves', saveId);
+		if (!existing) return undefined;
+		const known = existing.reachedGoals?.[sceneId] ?? [];
+		const updated: SaveRecord = {
+			...existing,
+			reachedGoals: {
+				...existing.reachedGoals,
+				[sceneId]: [...new Set([...known, ...goals])]
+			},
 			updatedAt: new Date().toISOString()
 		};
 		await db.put('saves', updated);

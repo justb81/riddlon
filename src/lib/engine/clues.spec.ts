@@ -54,6 +54,41 @@ describe('recordClueClaim / isClueConflicting', () => {
 		expect(state.clues[CLUE_ID].claims).toHaveLength(1);
 	});
 
+	// #54: claim values are free text from a language model — the same statement comes back in a
+	// different phrasing on every run, and an exact comparison made each of those a contradiction.
+	it.each([
+		['gegen 22 Uhr', 'ca. 22 Uhr'],
+		['die Jacke hing an der Garderobe', 'an der Garderobe'],
+		['jemand mit dunkler Kapuzenjacke', 'dunkle Kapuzenjacke'],
+		['Ein rotes Portmonnaie.', 'rotes portmonnaie']
+	])('does not count "%s" and "%s" as a contradiction', (first, second) => {
+		const state = emptyState();
+		recordClueClaim(state, CLUE_ID, MAX_ID, first);
+		const effects = recordClueClaim(state, CLUE_ID, SABINE_ID, second);
+		expect(isClueConflicting(state, CLUE_ID)).toBe(false);
+		expect(effects.some((e) => e.type === 'clue-conflict-detected')).toBe(false);
+		// Both sources still count — agreeing is how a clue gets confirmed.
+		expect(confirmedSourceCount(state, CLUE_ID)).toBe(2);
+	});
+
+	it.each([
+		['gegen 22 Uhr', 'gegen Mitternacht'],
+		['war nicht an der Garderobe', 'war an der Garderobe'],
+		['an der Bar', 'an der Garderobe']
+	])('still counts "%s" and "%s" as a contradiction', (first, second) => {
+		const state = emptyState();
+		recordClueClaim(state, CLUE_ID, MAX_ID, first);
+		recordClueClaim(state, CLUE_ID, SABINE_ID, second);
+		expect(isClueConflicting(state, CLUE_ID)).toBe(true);
+	});
+
+	it('treats a rephrased repeat by the same source as a no-op', () => {
+		const state = emptyState();
+		recordClueClaim(state, CLUE_ID, MAX_ID, 'gegen 22 Uhr');
+		expect(recordClueClaim(state, CLUE_ID, MAX_ID, 'ungefähr 22 Uhr')).toEqual([]);
+		expect(state.clues[CLUE_ID].claims).toHaveLength(1);
+	});
+
 	it('auto-vivifies a clue not previously in state', () => {
 		const state = emptyState();
 		expect(state.clues[CLUE_ID]).toBeUndefined();

@@ -53,8 +53,9 @@ The group confrontation carries both, each with its own authored closing text:
 | `false-accusation-made` | `flag:false-accusation`   | `setback` | The player names Sabine (or anyone else) instead of following the evidence |
 
 Both are reachable **in the app**, not only from a playtest script: a group scene ships no
-`exitConditions` on purpose, and the director may only set flags the scene declares — so its outcome
-conditions are its settable-flag surface (`llm/director.ts`'s `settableFlags`). The suggestion chip
+`exitConditions` on purpose, and the director may only set flags the scene declares — so it asks
+for the ending as one choice between these two outcomes (`llm/director.ts`'s
+`buildDirectorQuestions`), never for both at once. The suggestion chip
 "Sabine, ich glaube, du warst es." is the authored way into the setback, and the scene's second goal
 `defend-whoever-is-wrongly-accused` is what makes the cast push back instead of playing along.
 

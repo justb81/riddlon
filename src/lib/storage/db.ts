@@ -106,6 +106,10 @@ export interface SaveRecord {
 	/** Thread key → ISO time the player last had that thread open (#51). Keyed by thread, not
 	 *  scene, because a thread folds several scenes. Absent on older records. */
 	threadReads?: Record<string, string>;
+	/** Scene id → goal slugs the director has judged reached (#54). Remembered across turns, so a
+	 *  scene completes once every goal has held at some point, not only when all of them happen to
+	 *  sit in the director's transcript window at once. Absent on older records. */
+	reachedGoals?: Record<string, string[]>;
 }
 
 export interface PlayerProfileRecord extends PlayerProfile {

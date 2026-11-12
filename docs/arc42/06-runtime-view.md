@@ -102,10 +102,11 @@ sequenceDiagram
     S->>Llm: session(threadKey:speaker) with the persona prompt for this scene
     Llm-->>S: streamed reply
     S->>Save: persist the reply
-    S->>Dir: director prompt — scene goals, exit conditions, revealables, transcript
+    S->>Dir: director prompt — open clues, goals, events, endings, transcript
     Dir-->>S: raw answer
-    S->>S: parse + filter every id against what this scene declared
-    S->>Eng: setFlag / recordClueClaim for what survived
+    S->>S: parse + filter every id against what this scene asked
+    S->>Save: remember reached goals
+    S->>Eng: recordClueClaim / setFlag — the exit flag once every goal is reached
     Eng-->>S: EngineEffect[] — scenes unlocked/completed, characters unlocked, conflicts, outcomes
     S->>P: updated thread, clue panels, contact list, celebration overlay
 ```
@@ -120,10 +121,10 @@ config)` returns the existing session but adopts the new config, destroying and 
   story then stopped dead.
 - **The director session is created with `maxHistoryTurns: 0` and destroyed after each call.** It
   must judge this exchange, not accumulate its own past verdicts.
-- **The parser is paranoid.** Every id is checked against what the active scene declared, so a
-  hallucinated answer can only ever mean "nothing happens", never "some other flag got set". Two
-  near-miss shapes a small local model reliably produces — a bare flag id, and a character named by
-  display name instead of UUID — are normalised _before_ the allowlist check, never after.
+- **The parser is paranoid.** Every id is checked against what the active scene asked, and every
+  clue value must be traceable to a line the claimed character said, so a hallucinated answer can
+  only ever mean "nothing happens". The questions and why the exit flag is derived rather than asked
+  are in [§8.4.4](./08-crosscutting-concepts.md#844-the-director-pass).
 - **A broken stream keeps its partial output.** Whatever was generated before the break is persisted
   rather than dropped.
 - **Without a loaded model a thread is empty and says so**, including a scene's opening line, because
