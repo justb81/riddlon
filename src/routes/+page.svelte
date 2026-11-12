@@ -2,19 +2,19 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import RiddlonMark from '$lib/components/icons/RiddlonMark.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { bestSupportedModelId } from '$lib/llm/capabilities.js';
-	import { DEFAULT_MODEL_ID, findModel, type LocalModelId } from '$lib/llm/catalog.js';
-	import { llm } from '$lib/llm/llm.svelte.js';
-	import { storySession } from '$lib/state/story-session.svelte.js';
-	import { hasOnboarded, markOnboarded } from '$lib/state/onboarding.js';
+	import RiddlonMark from '#lib/components/icons/RiddlonMark.svelte';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { bestSupportedModelId } from '#lib/llm/capabilities.js';
+	import { DEFAULT_MODEL_ID, findModel, type LocalModelId } from '#lib/llm/catalog.js';
+	import { llm } from '#lib/llm/llm.svelte.js';
+	import { storySession } from '#lib/state/story-session.svelte.js';
+	import { hasOnboarded, markOnboarded } from '#lib/state/onboarding.js';
 	import {
 		bootStepFor,
 		bootStepSpanMs,
 		warmBootSteps,
 		type BootStep
-	} from '$lib/story/boot-steps.js';
+	} from '#lib/story/boot-steps.js';
 
 	// `hasOnboarded()` is synchronous, so it decides which layout paints first. Whether this really
 	// is a first run is settled a moment later by asking whether the model is on the device: the flag

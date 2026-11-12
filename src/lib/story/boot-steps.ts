@@ -3,15 +3,15 @@
  *
  * This used to be a fixed list of percentages played out by timers. It is now a pure mapping from
  * whatever phase the boot is actually in, so the first-run bar tracks the model download instead of
- * imitating one. The percent bands live in `$lib/llm/progress.ts`; the pacing they produce still
+ * imitating one. The percent bands live in `#lib/llm/progress.ts`; the pacing they produce still
  * matches the design mockup's 0/22/54/81/100 rhythm.
  *
  * Still pure and Node-testable — the scheduler lives in `src/routes/+page.svelte`.
  */
 
-import { PHASE_BUDGET, percentForModelLoad, percentForPhase } from '$lib/llm/progress.js';
-import type { LlmErrorCode } from '$lib/llm/errors.js';
-import { formatSizeLabel, type LlmModelDescriptor } from '$lib/llm/catalog.js';
+import { PHASE_BUDGET, percentForModelLoad, percentForPhase } from '#lib/llm/progress.js';
+import type { LlmErrorCode } from '#lib/llm/errors.js';
+import { formatSizeLabel, type LlmModelDescriptor } from '#lib/llm/catalog.js';
 
 export interface BootStep {
 	percent: number;

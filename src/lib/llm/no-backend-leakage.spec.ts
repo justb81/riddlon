@@ -8,7 +8,7 @@ import { LLM_MODELS } from './catalog.js';
  * Issue #12's first acceptance criterion, as a standing guard rather than a promise.
  *
  * "Swapping the model requires no changes in engine/ or ui/" only stays true while the backend stays
- * behind `$lib/llm`. The moment a route imports `@mlc-ai/web-llm` directly, or a component
+ * behind `#lib/llm`. The moment a route imports `@mlc-ai/web-llm` directly, or a component
  * hardcodes an MLC model id, the abstraction is decorative. This test fails at that moment instead
  * of six months later.
  *
@@ -56,7 +56,7 @@ describe('backend containment', () => {
 		expect(sourceFiles().length).toBeGreaterThan(20);
 	});
 
-	it('only $lib/llm references the inference packages', () => {
+	it('only #lib/llm references the inference packages', () => {
 		const offenders: string[] = [];
 		for (const file of sourceFiles()) {
 			if (isInsideLlmModule(file)) continue;

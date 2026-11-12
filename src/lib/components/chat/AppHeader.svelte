@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { windowChrome } from '$lib/state/windowChrome.svelte.js';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { windowChrome } from '#lib/state/windowChrome.svelte.js';
 
 	/**
 	 * Fixed 60px title row, identical height on every screen — see the "Header

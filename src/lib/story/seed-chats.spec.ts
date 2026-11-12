@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import { buildSeedChatMessages } from './seed-chats.js';
 
 const PKG = '11111111-1111-4111-8111-111111111111';

@@ -14,9 +14,9 @@
  * Framework-free and browser-free, so the Node test project can reach it.
  */
 
-import type { StoryBundle } from '$lib/content/index.js';
-import { parseIsoDurationMs } from '$lib/engine/duration.js';
-import type { SaveChatMessage } from '$lib/storage/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { parseIsoDurationMs } from '#lib/engine/duration.js';
+import type { SaveChatMessage } from '#lib/storage/index.js';
 
 export interface SeedChatOptions {
 	/** Epoch ms the playthrough starts at — seed offsets are measured backwards from here. */

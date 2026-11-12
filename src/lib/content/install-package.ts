@@ -1,12 +1,12 @@
 import { validatePackage, type PackageValidationErrorCode } from './validate-package.js';
 import { unzipPackage, type UnzipErrorCode } from './unzip.js';
-import { installPackageCharacters } from '$lib/characters/index.js';
+import { installPackageCharacters } from '#lib/characters/index.js';
 import {
 	assetKeyForBlob,
 	putAsset,
 	storyRegistry,
 	type InstalledPackageSummary
-} from '$lib/storage/index.js';
+} from '#lib/storage/index.js';
 
 export type ImportErrorCode =
 	| UnzipErrorCode

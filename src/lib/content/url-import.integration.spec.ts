@@ -7,7 +7,7 @@ vi.mock('$app/env', () => ({ browser: true }));
 
 describe('importPackageFromUrl (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {
-		const { resetDbConnectionForTests, DB_NAME } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests, DB_NAME } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests();
 		await new Promise<void>((resolve) => {
 			const req = indexedDB.deleteDatabase(DB_NAME);
@@ -23,7 +23,7 @@ describe('importPackageFromUrl (real IndexedDB via fake-indexeddb)', () => {
 
 	it('downloads once, installs, and never re-fetches afterwards', async () => {
 		const { importPackageFromUrl } = await import('./url-import.js');
-		const { storyRegistry } = await import('$lib/storage/index.js');
+		const { storyRegistry } = await import('#lib/storage/index.js');
 
 		const bytes = zipPackageFiles(buildValidPackageFiles());
 		const fetchMock = vi.fn(

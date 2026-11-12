@@ -1,26 +1,26 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
-	import AppFrame from '$lib/components/chat/AppFrame.svelte';
-	import AppHeader from '$lib/components/chat/AppHeader.svelte';
-	import InfoBand from '$lib/components/chat/InfoBand.svelte';
-	import Avatar from '$lib/components/chat/Avatar.svelte';
-	import { t } from '$lib/i18n/i18n.svelte.js';
-	import { DEFAULT_MODEL_ID, formatSizeLabel, llmModelOptions } from '$lib/llm/catalog.js';
+	import AppFrame from '#lib/components/chat/AppFrame.svelte';
+	import AppHeader from '#lib/components/chat/AppHeader.svelte';
+	import InfoBand from '#lib/components/chat/InfoBand.svelte';
+	import Avatar from '#lib/components/chat/Avatar.svelte';
+	import { t } from '#lib/i18n/i18n.svelte.js';
+	import { DEFAULT_MODEL_ID, formatSizeLabel, llmModelOptions } from '#lib/llm/catalog.js';
 	import {
 		clearEndpointConfig,
 		endpointHostLabel,
 		getEndpointConfig,
 		isLocalEndpoint,
 		setEndpointConfig
-	} from '$lib/llm/endpoint-config.js';
-	import { testEndpoint } from '$lib/llm/openai-compatible.js';
-	import { i18nKeyForLlmError } from '$lib/llm/errors.js';
-	import { llm } from '$lib/llm/llm.svelte.js';
-	import { modelRowStatus, type ModelRowKind, type ModelRowStatus } from '$lib/llm/model-status.js';
-	import { profile } from '$lib/state/profile.svelte.js';
-	import { DISGUISE_MODES, PRONOUN_OPTIONS, addressPreview } from '$lib/state/profile.js';
-	import { resetEverything, resetStoryProgress } from '$lib/state/reset.js';
+	} from '#lib/llm/endpoint-config.js';
+	import { testEndpoint } from '#lib/llm/openai-compatible.js';
+	import { i18nKeyForLlmError } from '#lib/llm/errors.js';
+	import { llm } from '#lib/llm/llm.svelte.js';
+	import { modelRowStatus, type ModelRowKind, type ModelRowStatus } from '#lib/llm/model-status.js';
+	import { profile } from '#lib/state/profile.svelte.js';
+	import { DISGUISE_MODES, PRONOUN_OPTIONS, addressPreview } from '#lib/state/profile.js';
+	import { resetEverything, resetStoryProgress } from '#lib/state/reset.js';
 
 	const preview = $derived(addressPreview(profile.addressAs, profile.nickname));
 

@@ -1,4 +1,4 @@
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import { parseAction } from './actions.js';
 import { evaluateCondition } from './conditions.js';
 import { parseIsoDurationMs } from './duration.js';

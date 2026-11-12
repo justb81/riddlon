@@ -20,7 +20,7 @@
 	 * (see the follow-up issue on director quality).
 	 */
 
-	import { llm } from '$lib/llm/llm.svelte.js';
+	import { llm } from '#lib/llm/llm.svelte.js';
 	import {
 		buildDirectorPrompt,
 		buildDirectorQuestions,
@@ -28,10 +28,10 @@
 		parseDirectorVerdict,
 		type DirectorQuestions,
 		type DirectorVerdict
-	} from '$lib/llm/director.js';
-	import { storyRuntime } from '$lib/state/engine.svelte.js';
-	import { storySession } from '$lib/state/story-session.svelte.js';
-	import { SPEAKER_ME } from '$lib/story/types.js';
+	} from '#lib/llm/director.js';
+	import { storyRuntime } from '#lib/state/engine.svelte.js';
+	import { storySession } from '#lib/state/story-session.svelte.js';
+	import { SPEAKER_ME } from '#lib/story/types.js';
 
 	let flagDraft = $state('flag:');
 

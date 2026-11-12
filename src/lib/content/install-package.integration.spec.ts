@@ -14,7 +14,7 @@ vi.mock('$app/env', () => ({ browser: true }));
 
 describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () => {
 	beforeEach(async () => {
-		const { resetDbConnectionForTests, DB_NAME } = await import('$lib/storage/db.js');
+		const { resetDbConnectionForTests, DB_NAME } = await import('#lib/storage/db.js');
 		await resetDbConnectionForTests();
 		await new Promise<void>((resolve) => {
 			const req = indexedDB.deleteDatabase(DB_NAME);
@@ -26,7 +26,7 @@ describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () =>
 
 	it('installs a valid ZIP: registers the package and links its characters', async () => {
 		const { installPackageFromZipBytes } = await import('./install-package.js');
-		const { storyRegistry, characterLibrary } = await import('$lib/storage/index.js');
+		const { storyRegistry, characterLibrary } = await import('#lib/storage/index.js');
 
 		const bytes = zipPackageFiles(buildValidPackageFiles());
 		const result = await installPackageFromZipBytes(bytes);
@@ -46,7 +46,7 @@ describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () =>
 
 	it('rejects a corrupt ZIP with a distinguishable CORRUPT_ZIP error and installs nothing', async () => {
 		const { installPackageFromZipBytes } = await import('./install-package.js');
-		const { storyRegistry } = await import('$lib/storage/index.js');
+		const { storyRegistry } = await import('#lib/storage/index.js');
 
 		const result = await installPackageFromZipBytes(new Uint8Array([9, 9, 9, 9]));
 
@@ -59,7 +59,7 @@ describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () =>
 
 	it('rejects a package missing a manifest-referenced file with a distinguishable MISSING_FILE error', async () => {
 		const { installPackageFromZipBytes } = await import('./install-package.js');
-		const { storyRegistry } = await import('$lib/storage/index.js');
+		const { storyRegistry } = await import('#lib/storage/index.js');
 
 		const bytes = zipPackageFiles(withMissingCharacterFile(buildValidPackageFiles()));
 		const result = await installPackageFromZipBytes(bytes);
@@ -72,7 +72,7 @@ describe('installPackageFromZipBytes (real IndexedDB via fake-indexeddb)', () =>
 
 	it('rejects a package whose minPlayerVersion exceeds the running player with a distinguishable PLAYER_TOO_OLD error', async () => {
 		const { installPackageFromZipBytes } = await import('./install-package.js');
-		const { storyRegistry } = await import('$lib/storage/index.js');
+		const { storyRegistry } = await import('#lib/storage/index.js');
 
 		const bytes = zipPackageFiles(withIncompatibleMinPlayerVersion(buildValidPackageFiles()));
 		const result = await installPackageFromZipBytes(bytes);

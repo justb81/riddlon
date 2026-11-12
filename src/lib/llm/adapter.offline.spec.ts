@@ -7,7 +7,7 @@ import { createFakeProvider } from './__fixtures__/fake-language-model.js';
  * cached completes an in-story conversation turn".
  *
  * What this can prove: once the model is loaded, *our* code makes no network calls, so nothing in
- * `$lib/llm` is what would break offline. What it cannot prove: that the WebLLM engine itself stays
+ * `#lib/llm` is what would break offline. What it cannot prove: that the WebLLM engine itself stays
  * offline, since it isn't running here (no GPU in CI). That half is a manual check on real hardware.
  */
 

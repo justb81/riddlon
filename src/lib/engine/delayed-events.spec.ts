@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import { createInitialState } from './state.js';
 import { armDueEvents, fireDueEvents } from './delayed-events.js';
 

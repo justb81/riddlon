@@ -8,8 +8,8 @@
  */
 
 import { browser } from '$app/env';
-import { ENDPOINT_STORAGE_KEY } from '$lib/llm/endpoint-config.js';
-import { clearAllStoredData, clearSaves } from '$lib/storage/index.js';
+import { ENDPOINT_STORAGE_KEY } from '#lib/llm/endpoint-config.js';
+import { clearAllStoredData, clearSaves } from '#lib/storage/index.js';
 
 /** Everything this app writes to `localStorage` is namespaced with this. */
 export const APP_STORAGE_PREFIX = 'riddlon:';

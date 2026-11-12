@@ -2,7 +2,7 @@
  * The `llm` singleton the UI reads: load status, real download progress, which backend won, and which
  * models are already on the device.
  *
- * Same shape as the other app-wide stores (`$lib/state/*.svelte.ts`): a plain class with `$state`
+ * Same shape as the other app-wide stores (`#lib/state/*.svelte.ts`): a plain class with `$state`
  * fields, exported as one instance, every method inert outside the browser. The adapter is built
  * lazily inside it so nothing WebGPU-shaped is touched during prerender.
  *

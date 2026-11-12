@@ -18,21 +18,21 @@ import { browser } from '$app/env';
 import {
 	resolveEffectiveCharacterState,
 	type EffectiveCharacterState
-} from '$lib/characters/index.js';
-import { evaluateCondition } from '$lib/engine/conditions.js';
-import { StoryEngine } from '$lib/engine/engine.js';
-import { buildEvaluationContext } from '$lib/engine/state.js';
-import { watchForResume } from '$lib/engine/resume.svelte.js';
-import { saveRecordPatchFromState, stateFromSaveRecord } from '$lib/engine/persistence.js';
-import type { EngineEffect, ProgressSummary } from '$lib/engine/index.js';
-import type { StoryBundle } from '$lib/content/index.js';
+} from '#lib/characters/index.js';
+import { evaluateCondition } from '#lib/engine/conditions.js';
+import { StoryEngine } from '#lib/engine/engine.js';
+import { buildEvaluationContext } from '#lib/engine/state.js';
+import { watchForResume } from '#lib/engine/resume.svelte.js';
+import { saveRecordPatchFromState, stateFromSaveRecord } from '#lib/engine/persistence.js';
+import type { EngineEffect, ProgressSummary } from '#lib/engine/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import {
 	characterLibrary,
 	saveStore,
 	storyRegistry,
 	type InstalledPackageSummary
-} from '$lib/storage/index.js';
-import { buildSeedChatMessages } from '$lib/story/seed-chats.js';
+} from '#lib/storage/index.js';
+import { buildSeedChatMessages } from '#lib/story/seed-chats.js';
 import {
 	achievementDisplays,
 	reachedOutcomes,
@@ -44,7 +44,7 @@ import {
 	type ReachedOutcome,
 	type SceneProgress,
 	type StoryThread
-} from '$lib/story/story-display.js';
+} from '#lib/story/story-display.js';
 import {
 	activationCandidateIds,
 	readActivePackageId,

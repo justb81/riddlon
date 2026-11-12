@@ -2,10 +2,10 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { version as appVersion } from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
-	define: { __APP_VERSION__: JSON.stringify(appVersion) },
+	define: { __APP_VERSION__: JSON.stringify(pkg.version) },
 	plugins: [
 		tailwindcss(),
 		sveltekit({
@@ -15,7 +15,6 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 			adapter: adapter(),
-			alias: { $lib: 'src/lib' },
 			// Register manually instead (see +layout.svelte): dev mode never registers one at
 			// all, so a cache-first worker from a previous build can never mask fresh dev output.
 			serviceWorker: { register: false },

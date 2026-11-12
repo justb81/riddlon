@@ -1,5 +1,5 @@
 import { browser } from '$app/env';
-import type { CharacterIdentity } from '$lib/content/index.js';
+import type { CharacterIdentity } from '#lib/content/index.js';
 import { getDb, type LibraryCharacterRecord } from './db.js';
 
 export type { LibraryCharacterRecord };

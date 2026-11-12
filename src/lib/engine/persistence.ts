@@ -1,4 +1,4 @@
-import type { SaveRecord } from '$lib/storage/index.js';
+import type { SaveRecord } from '#lib/storage/index.js';
 import type { EngineState } from './state.js';
 
 /**

@@ -1,7 +1,7 @@
 /** App-wide player profile & settings singleton — "gilt für alle Geschichten". */
 
 import { browser } from '$app/env';
-import { playerProfileStore } from '$lib/storage/index.js';
+import { playerProfileStore } from '#lib/storage/index.js';
 import type { DisguiseMode, Pronoun } from './profile.js';
 
 const APP_SETTINGS_KEY = 'riddlon:app-settings';
@@ -12,7 +12,7 @@ const APP_SETTINGS_KEY = 'riddlon:app-settings';
  *
  *  There is deliberately no model choice here: which local model runs is entirely the app's
  *  decision (native Prompt API first, else the best WebLLM model this device can hold — see
- *  `$lib/llm/capabilities.ts`'s `bestSupportedModelId`), not something the player picks. */
+ *  `#lib/llm/capabilities.ts`'s `bestSupportedModelId`), not something the player picks. */
 interface StoredAppSettings {
 	disguise: DisguiseMode;
 	notify: boolean;

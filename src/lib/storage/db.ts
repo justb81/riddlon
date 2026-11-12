@@ -8,7 +8,7 @@ import type {
 	Secret,
 	Story,
 	StoryGraph
-} from '$lib/content/index.js';
+} from '#lib/content/index.js';
 
 /** The parsed, schema-valid package content `validatePackage` already produced at import
  *  time — persisted alongside the manifest so the engine can be reconstructed on a later
@@ -132,7 +132,7 @@ let dbPromise: Promise<IDBPDatabase<RiddlonDBSchema>> | undefined;
 /**
  * Opens (and memoizes) the app's IndexedDB database. Assumes it's called from browser
  * context — callers (the repository modules) are responsible for the `browser` SSR guard,
- * matching the per-call-site convention already used by `$lib/state/onboarding.ts`.
+ * matching the per-call-site convention already used by `#lib/state/onboarding.ts`.
  */
 export function getDb(): Promise<IDBPDatabase<RiddlonDBSchema>> {
 	if (!dbPromise) {

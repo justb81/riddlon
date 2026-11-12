@@ -13,10 +13,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { EffectiveCharacterState } from '$lib/characters/index.js';
-import { resolveEffectiveCharacterState } from '$lib/characters/index.js';
-import type { StoryBundle } from '$lib/content/index.js';
-import { loadStoryBundle } from '$lib/content/load-package.js';
+import type { EffectiveCharacterState } from '#lib/characters/index.js';
+import { resolveEffectiveCharacterState } from '#lib/characters/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
+import { loadStoryBundle } from '#lib/content/load-package.js';
 import {
 	LUCY_ID,
 	MAX_ID,
@@ -27,7 +27,7 @@ import {
 	SCENE_UNKNOWN_CONTACT,
 	WALKTHROUGH_PACKAGE_DIR,
 	readStoryPackageFiles
-} from '$lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
+} from '#lib/content/__fixtures__/lucys-portmonnaie-walkthrough.js';
 import { buildScenePersonaPrompt, type PersonaContext } from './persona-input.js';
 
 const bundle = loadStoryBundle(readStoryPackageFiles(WALKTHROUGH_PACKAGE_DIR)).bundle!;

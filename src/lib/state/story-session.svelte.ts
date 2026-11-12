@@ -5,14 +5,14 @@
  * This replaces `game.svelte.ts`, which was a scripted timer sequence over hardcoded German
  * dialogue for one built-in demo story. Nothing here knows a character, a scene or a package —
  * personas, goals, facts and secrets all come from the installed package via `storyRuntime`,
- * replies come from `$lib/llm`, and progress comes from the director pass (`llm/director.ts`)
+ * replies come from `#lib/llm`, and progress comes from the director pass (`llm/director.ts`)
  * feeding the engine.
  *
  * A singleton (like `toast.svelte.ts`) so a conversation survives navigating between screens.
  */
 
 import { browser } from '$app/env';
-import { llm } from '$lib/llm/llm.svelte.js';
+import { llm } from '#lib/llm/llm.svelte.js';
 import {
 	buildDirectorPrompt,
 	buildDirectorQuestions,
@@ -21,21 +21,21 @@ import {
 	hasDirectorQuestions,
 	parseDirectorVerdict,
 	type DirectorVerdict
-} from '$lib/llm/director.js';
-import { isLlmError } from '$lib/llm/errors.js';
-import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
-import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
-import { countUnread } from '$lib/story/unread.js';
-import { formatMessageTimestamp } from '$lib/story/message-time.js';
-import { t } from '$lib/i18n/i18n.svelte.js';
-import { saveStore, type SaveChatMessage } from '$lib/storage/index.js';
+} from '#lib/llm/director.js';
+import { isLlmError } from '#lib/llm/errors.js';
+import { buildOpeningInstruction, pickResponder } from '#lib/llm/persona.js';
+import { buildScenePersonaPrompt } from '#lib/story/persona-input.js';
+import { countUnread } from '#lib/story/unread.js';
+import { formatMessageTimestamp } from '#lib/story/message-time.js';
+import { t } from '#lib/i18n/i18n.svelte.js';
+import { saveStore, type SaveChatMessage } from '#lib/storage/index.js';
 import {
 	isCharacterSpeaker,
 	SPEAKER_ME,
 	type ChatMessage,
 	type SpeakerId
-} from '$lib/story/types.js';
-import type { StoryThread } from '$lib/story/story-display.js';
+} from '#lib/story/types.js';
+import type { StoryThread } from '#lib/story/story-display.js';
 import { storyRuntime } from './engine.svelte.js';
 import { profile } from './profile.svelte.js';
 

@@ -3,6 +3,9 @@
 	"private": true,
 	"version": "0.12.1",
 	"type": "module",
+	"imports": {
+		"#lib/*": "./src/lib/*"
+	},
 	"scripts": {
 		"predev": "npm run stories:bundle",
 		"dev": "vite dev",

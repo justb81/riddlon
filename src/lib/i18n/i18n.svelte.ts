@@ -4,7 +4,7 @@
  * one line in `dictionaries` is the entire cost of adding a language later.
  *
  * Story content (character dialogue, clue text, achievement titles) is deliberately NOT
- * routed through this dictionary — it lives in `$lib/story/*` as mock installed-package
+ * routed through this dictionary — it lives in `#lib/story/*` as mock installed-package
  * data, mirroring how a real story package would ship its own localized content.
  */
 

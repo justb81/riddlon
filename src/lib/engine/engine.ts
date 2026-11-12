@@ -1,4 +1,4 @@
-import type { StoryBundle } from '$lib/content/index.js';
+import type { StoryBundle } from '#lib/content/index.js';
 import type { EngineAction } from './actions.js';
 import * as clues from './clues.js';
 import { armDueEvents, fireDueEvents } from './delayed-events.js';

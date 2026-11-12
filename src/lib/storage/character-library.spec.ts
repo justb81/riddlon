@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mergeCharacterLink } from './character-library.js';
-import type { CharacterIdentity } from '$lib/content/index.js';
-import { LUCY_ID } from '$lib/content/__fixtures__/lucys-portmonnaie.js';
-import { secondPackageLucyCharacterFile } from '$lib/content/__fixtures__/second-package.js';
+import type { CharacterIdentity } from '#lib/content/index.js';
+import { LUCY_ID } from '#lib/content/__fixtures__/lucys-portmonnaie.js';
+import { secondPackageLucyCharacterFile } from '#lib/content/__fixtures__/second-package.js';
 
 const originalLucy: CharacterIdentity = {
 	id: LUCY_ID,

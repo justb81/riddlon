@@ -5,7 +5,7 @@
  * vocabulary of our own: `engine/` and `ui/` code against `LlmAdapter`/`LlmSession`, and all three
  * concrete providers (a player-configured OpenAI-compatible endpoint, the browser's built-in
  * `LanguageModel`, or a direct WebLLM engine) arrive as the same `LanguageModelLike` shape.
- * Swapping either the model or the provider therefore touches nothing outside `$lib/llm` — see
+ * Swapping either the model or the provider therefore touches nothing outside `#lib/llm` — see
  * `no-backend-leakage.spec.ts`, which enforces that.
  *
  * The Prompt API types below are structural on purpose (no `declare global`): that's what lets the
