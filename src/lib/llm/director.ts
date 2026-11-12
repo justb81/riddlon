@@ -188,6 +188,11 @@ export function buildDirectorPrompt(input: {
 	clues: readonly DirectorClue[];
 	characters: readonly DirectorCharacter[];
 	turns: readonly DirectorTurn[];
+	/**
+	 * The player's last line and what followed it. Events are judged on this alone: asked over the
+	 * whole window, Nano answered "false-accusation" yes to an innocent "did you see anyone?" (#54).
+	 */
+	lastExchange?: readonly DirectorTurn[];
 }): string {
 	const { questions } = input;
 	const transcript = input.turns.map((turn) => `${turn.who}: ${turn.text}`).join('\n');
@@ -227,10 +232,15 @@ export function buildDirectorPrompt(input: {
 
 	if (questions.events.length > 0) {
 		const ids = questions.events.map(bareId);
+		const exchange = (input.lastExchange ?? input.turns).map((t) => `${t.who}: ${t.text}`);
 		sections.push(
 			[
-				'Ereignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im Gespräch tatsächlich',
-				'eingetreten ist, sonst mit false.',
+				'Letzter Wortwechsel:',
+				...(exchange.length > 0 ? exchange : ['(leer)']),
+				'',
+				'Ereignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel',
+				'(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,',
+				'sonst mit false.',
 				...ids.map((id) => `- ${id}`)
 			].join('\n')
 		);

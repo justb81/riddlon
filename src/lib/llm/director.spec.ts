@@ -169,6 +169,23 @@ describe('buildDirectorPrompt', () => {
 		expect(prompt).not.toContain('scene-completed:');
 	});
 
+	it('judges events on the last exchange only', () => {
+		const prompt = buildDirectorPrompt({
+			questions: witnessQuestions,
+			clues: [],
+			characters,
+			turns: [
+				{ who: 'Ich', text: 'Du warst es doch!' },
+				{ who: 'Max', text: 'Nein.' },
+				{ who: 'Ich', text: 'Hast du jemanden gesehen?' }
+			],
+			lastExchange: [{ who: 'Ich', text: 'Hast du jemanden gesehen?' }]
+		});
+		const events = prompt.slice(prompt.indexOf('Letzter Wortwechsel:'));
+		expect(events).toContain('Letzter Wortwechsel:\nIch: Hast du jemanden gesehen?');
+		expect(events).not.toContain('Du warst es doch');
+	});
+
 	it('asks for clues before goals, so the evidence is written down first', () => {
 		const prompt = buildDirectorPrompt({
 			questions: witnessQuestions,
