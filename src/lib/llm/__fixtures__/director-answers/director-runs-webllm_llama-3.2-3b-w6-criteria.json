@@ -1,0 +1,2050 @@
+{
+	"recordedAt": "2026-11-13T18:49:12.077Z",
+	"runs": [
+		{
+			"caseId": "erstkontakt-all-goals",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nUnbekannt: Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?\nAlex: ja, war ich. wer bist du denn?\nUnbekannt: Ich bin's, Lucy! Die Freundin von Max und Sabine, wir haben uns an der Bar kurz unterhalten.\nAlex: ach Lucy, klar. was gibt's?\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- ask-whether-player-was-at-the-club — Die Figur hat gefragt, ob ihr Gegenüber letzten Samstag im Club war.\n- open-as-unknown-contact — Die Figur hat geschrieben, ohne sich sofort mit Namen vorzustellen.\n- reveal-identity-as-lucy — Die Figur hat gesagt, dass sie Lucy ist.\n\nFormat:\n{\"goals\": {\"ask-whether-player-was-at-the-club\": <true|false>, \"open-as-unknown-contact\": <true|false>, \"reveal-identity-as-lucy\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": [
+						"ask-whether-player-was-at-the-club",
+						"open-as-unknown-contact",
+						"reveal-identity-as-lucy"
+					],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Unbekannt"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Unbekannt",
+						"text": "Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?"
+					},
+					{
+						"who": "Alex",
+						"text": "ja, war ich. wer bist du denn?"
+					},
+					{
+						"who": "Unbekannt",
+						"text": "Ich bin's, Lucy! Die Freundin von Max und Sabine, wir haben uns an der Bar kurz unterhalten."
+					},
+					{
+						"who": "Alex",
+						"text": "ach Lucy, klar. was gibt's?"
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"ask-whether-player-was-at-the-club\": true, \"open-as-unknown-contact\": false, \"reveal-identity-as-lucy\": true}}",
+			"verdict": {
+				"goals": ["ask-whether-player-was-at-the-club", "reveal-identity-as-lucy"],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 6003,
+			"unreadable": false
+		},
+		{
+			"caseId": "erstkontakt-still-unknown",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nUnbekannt: Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?\nAlex: wer ist da?\nUnbekannt: Erzähl ich dir gleich. Warst du da?\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- ask-whether-player-was-at-the-club — Die Figur hat gefragt, ob ihr Gegenüber letzten Samstag im Club war.\n- open-as-unknown-contact — Die Figur hat geschrieben, ohne sich sofort mit Namen vorzustellen.\n- reveal-identity-as-lucy — Die Figur hat gesagt, dass sie Lucy ist.\n\nFormat:\n{\"goals\": {\"ask-whether-player-was-at-the-club\": <true|false>, \"open-as-unknown-contact\": <true|false>, \"reveal-identity-as-lucy\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": [
+						"ask-whether-player-was-at-the-club",
+						"open-as-unknown-contact",
+						"reveal-identity-as-lucy"
+					],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Unbekannt"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Unbekannt",
+						"text": "Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?"
+					},
+					{
+						"who": "Alex",
+						"text": "wer ist da?"
+					},
+					{
+						"who": "Unbekannt",
+						"text": "Erzähl ich dir gleich. Warst du da?"
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"ask-whether-player-was-at-the-club\": false, \"open-as-unknown-contact\": false, \"reveal-identity-as-lucy\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 5541,
+			"unreadable": false
+		},
+		{
+			"caseId": "erstkontakt-identity-only",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: jetzt sag schon, wer bist du?\nUnbekannt: Lucy. Wir kennen uns über Max und Sabine.\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- reveal-identity-as-lucy — Die Figur hat gesagt, dass sie Lucy ist.\n\nFormat:\n{\"goals\": {\"reveal-identity-as-lucy\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["reveal-identity-as-lucy"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Unbekannt"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "jetzt sag schon, wer bist du?"
+					},
+					{
+						"who": "Unbekannt",
+						"text": "Lucy. Wir kennen uns über Max und Sabine."
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"reveal-identity-as-lucy\": true}}",
+			"verdict": {
+				"goals": ["reveal-identity-as-lucy"],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 3021,
+			"unreadable": false
+		},
+		{
+			"caseId": "hilfe-all-goals",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Mir wurde am Samstag im Club mein Portmonnaie geklaut, das rote aus meiner Jackentasche.\nAlex: oh nein, das tut mir leid\nLucy: Kannst du mir helfen, rauszufinden, was passiert ist? Du warst ja auch da.\nAlex: klar, wo fang ich an?\nLucy: Frag Max und Sabine, die waren den ganzen Abend mit mir unterwegs. Vielleicht haben die was gesehen.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:stolen-item — Gestohlener Gegenstand\nFiguren:\n- 3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f — Lucy\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- ask-player-for-help — Lucy hat um Hilfe bei der Aufklärung des Diebstahls gebeten.\n- name-max-and-sabine-as-witnesses — Lucy hat Max und Sabine als Personen genannt, die man befragen soll.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"ask-player-for-help\": <true|false>, \"name-max-and-sabine-as-witnesses\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:stolen-item"]
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Mir wurde am Samstag im Club mein Portmonnaie geklaut, das rote aus meiner Jackentasche."
+					},
+					{
+						"who": "Alex",
+						"text": "oh nein, das tut mir leid"
+					},
+					{
+						"who": "Lucy",
+						"text": "Kannst du mir helfen, rauszufinden, was passiert ist? Du warst ja auch da."
+					},
+					{
+						"who": "Alex",
+						"text": "klar, wo fang ich an?"
+					},
+					{
+						"who": "Lucy",
+						"text": "Frag Max und Sabine, die waren den ganzen Abend mit mir unterwegs. Vielleicht haben die was gesehen."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:stolen-item\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Mir wurde am Samstag im Club mein Portmonnaie geklaut, das rote aus meiner Jackentasche.\"}, {\"id\": \"clue:stolen-item\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Kannst du mir helfen, rauszufinden, was passiert ist? Du warst ja auch da.\"}], \"goals\": {\"ask-player-for-help\": true, \"name-max-and-sabine-as-witnesses\": true}}",
+			"verdict": {
+				"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:stolen-item",
+						"characterId": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"value": "Mir wurde am Samstag im Club mein Portmonnaie geklaut, das rote aus meiner Jackentasche."
+					}
+				]
+			},
+			"ms": 203105,
+			"unreadable": false
+		},
+		{
+			"caseId": "hilfe-no-witnesses-yet",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Mir wurde am Samstag im Club was geklaut. Ich bin echt fertig.\nAlex: was denn?\nLucy: Mein Portmonnaie. Kannst du mir vielleicht helfen?\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:stolen-item — Gestohlener Gegenstand\nFiguren:\n- 3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f — Lucy\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- ask-player-for-help — Lucy hat um Hilfe bei der Aufklärung des Diebstahls gebeten.\n- name-max-and-sabine-as-witnesses — Lucy hat Max und Sabine als Personen genannt, die man befragen soll.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"ask-player-for-help\": <true|false>, \"name-max-and-sabine-as-witnesses\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:stolen-item"]
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Mir wurde am Samstag im Club was geklaut. Ich bin echt fertig."
+					},
+					{
+						"who": "Alex",
+						"text": "was denn?"
+					},
+					{
+						"who": "Lucy",
+						"text": "Mein Portmonnaie. Kannst du mir vielleicht helfen?"
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:stolen-item\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Mein Portmonnaie\"}], \"goals\": {\"ask-player-for-help\": true, \"name-max-and-sabine-as-witnesses\": false}}",
+			"verdict": {
+				"goals": ["ask-player-for-help"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:stolen-item",
+						"characterId": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"value": "Mein Portmonnaie"
+					}
+				]
+			},
+			"ms": 192581,
+			"unreadable": false
+		},
+		{
+			"caseId": "max-all-seeds",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: hey max, lucy sagt ihr portmonnaie ist weg. hast du was mitbekommen?\nMax: Ja, krass. Ich glaub, das war so gegen 22 Uhr.\nAlex: wo war ihre jacke?\nMax: Die hing an der Garderobe, die ist ja unbesetzt.\nAlex: hast du jemanden gesehen?\nMax: Da war so jemand mit dunkler Kapuzenjacke, mehr weiß ich nicht.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Max selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Max selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Max selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "hey max, lucy sagt ihr portmonnaie ist weg. hast du was mitbekommen?"
+					},
+					{
+						"who": "Max",
+						"text": "Ja, krass. Ich glaub, das war so gegen 22 Uhr."
+					},
+					{
+						"who": "Alex",
+						"text": "wo war ihre jacke?"
+					},
+					{
+						"who": "Max",
+						"text": "Die hing an der Garderobe, die ist ja unbesetzt."
+					},
+					{
+						"who": "Alex",
+						"text": "hast du jemanden gesehen?"
+					},
+					{
+						"who": "Max",
+						"text": "Da war so jemand mit dunkler Kapuzenjacke, mehr weiß ich nicht."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"22 Uhr\"}], \"goals\": {\"seed-timeline\": true, \"seed-location\": true, \"seed-suspect-description\": true}}",
+			"verdict": {
+				"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "22 Uhr"
+					}
+				]
+			},
+			"ms": 194092,
+			"unreadable": false
+		},
+		{
+			"caseId": "max-small-talk",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: hey max, alles gut bei dir?\nMax: Ja, passt. War ein langer Abend am Samstag.\nAlex: kann ich mir vorstellen\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Max selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Max selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Max selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "hey max, alles gut bei dir?"
+					},
+					{
+						"who": "Max",
+						"text": "Ja, passt. War ein langer Abend am Samstag."
+					},
+					{
+						"who": "Alex",
+						"text": "kann ich mir vorstellen"
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"Ja, passt.\"}, {\"id\": \"clue:location\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"War ein langer Abend am Samstag.\"}, {\"id\": \"clue:suspect-description\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"War ein langer Abend am Samstag.\"}], \"goals\": {\"seed-timeline\": false, \"seed-location\": false, \"seed-suspect-description\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "Ja, passt."
+					},
+					{
+						"id": "clue:location",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "War ein langer Abend am Samstag."
+					},
+					{
+						"id": "clue:suspect-description",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "War ein langer Abend am Samstag."
+					}
+				]
+			},
+			"ms": 203263,
+			"unreadable": false
+		},
+		{
+			"caseId": "max-time-only",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: weißt du noch, wann das mit lucys portmonnaie war?\nMax: Gegen 22 Uhr, schätze ich.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Max selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Max selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Max selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "weißt du noch, wann das mit lucys portmonnaie war?"
+					},
+					{
+						"who": "Max",
+						"text": "Gegen 22 Uhr, schätze ich."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"Gegen 22 Uhr\"}], \"goals\": {\"seed-timeline\": true, \"seed-location\": false, \"seed-suspect-description\": false}}",
+			"verdict": {
+				"goals": ["seed-timeline"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "Gegen 22 Uhr"
+					}
+				]
+			},
+			"ms": 190324,
+			"unreadable": false
+		},
+		{
+			"caseId": "max-goals-outside-window",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: ok. was hast du danach gemacht?\nMax: Getanzt, ehrlich gesagt.\nAlex: mit wem?\nMax: Mit Sabine, und dann waren wir an der Bar.\nAlex: hast du da noch jemanden gesehen?\nMax: Ja, jemand mit dunkler Kapuzenjacke ist an uns vorbei.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Max selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Max selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Max selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "ok. was hast du danach gemacht?"
+					},
+					{
+						"who": "Max",
+						"text": "Getanzt, ehrlich gesagt."
+					},
+					{
+						"who": "Alex",
+						"text": "mit wem?"
+					},
+					{
+						"who": "Max",
+						"text": "Mit Sabine, und dann waren wir an der Bar."
+					},
+					{
+						"who": "Alex",
+						"text": "hast du da noch jemanden gesehen?"
+					},
+					{
+						"who": "Max",
+						"text": "Ja, jemand mit dunkler Kapuzenjacke ist an uns vorbei."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"um 23:00\"}], \"goals\": {\"seed-timeline\": true, \"seed-location\": false, \"seed-suspect-description\": true}}",
+			"verdict": {
+				"goals": ["seed-timeline", "seed-suspect-description"],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 190744,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine-all-seeds",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: sabine, lucy wurde im kellerlicht beklaut. weißt du was?\nSabine: Oh nein. Ich glaube, das war gegen Mitternacht.\nAlex: wo war ihre jacke?\nSabine: An der Garderobe, wie unsere auch.\nAlex: hast du jemanden gesehen?\nSabine: Jemand mit dunkler Kapuzenjacke stand kurz da rum.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Sabine selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Sabine selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Sabine selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nLetzter Wortwechsel:\nAlex: hast du jemanden gesehen?\nSabine: Jemand mit dunkler Kapuzenjacke stand kurz da rum.\n\nEreignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel\n(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,\nsonst mit false.\n- false-accusation — Der Spieler hat Sabine direkt vorgeworfen, das Portmonnaie genommen zu haben. Eine Frage, ob sie etwas gesehen hat, ist kein Vorwurf.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}, \"events\": {\"false-accusation\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": ["flag:false-accusation"],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "sabine, lucy wurde im kellerlicht beklaut. weißt du was?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Oh nein. Ich glaube, das war gegen Mitternacht."
+					},
+					{
+						"who": "Alex",
+						"text": "wo war ihre jacke?"
+					},
+					{
+						"who": "Sabine",
+						"text": "An der Garderobe, wie unsere auch."
+					},
+					{
+						"who": "Alex",
+						"text": "hast du jemanden gesehen?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Jemand mit dunkler Kapuzenjacke stand kurz da rum."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"Mitternacht\"}], \"goals\": {\"seed-timeline\": true, \"seed-location\": true, \"seed-suspect-description\": true}, \"events\": {\"false-accusation\": true}}",
+			"verdict": {
+				"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+				"flags": ["flag:false-accusation"],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"value": "Mitternacht"
+					}
+				]
+			},
+			"ms": 192939,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine-innocent-question",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nSabine: Lucy hat erzählt, dass ihr Portmonnaie weg ist. Furchtbar.\nAlex: hast du an dem abend jemanden an der garderobe gesehen?\nSabine: Hm, nicht wirklich. Da war viel los.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Sabine selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Sabine selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Sabine selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nLetzter Wortwechsel:\nAlex: hast du an dem abend jemanden an der garderobe gesehen?\nSabine: Hm, nicht wirklich. Da war viel los.\n\nEreignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel\n(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,\nsonst mit false.\n- false-accusation — Der Spieler hat Sabine direkt vorgeworfen, das Portmonnaie genommen zu haben. Eine Frage, ob sie etwas gesehen hat, ist kein Vorwurf.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}, \"events\": {\"false-accusation\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": ["flag:false-accusation"],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Sabine",
+						"text": "Lucy hat erzählt, dass ihr Portmonnaie weg ist. Furchtbar."
+					},
+					{
+						"who": "Alex",
+						"text": "hast du an dem abend jemanden an der garderobe gesehen?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Hm, nicht wirklich. Da war viel los."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:stolen-item\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"Furchtbar\"}], \"goals\": {\"seed-timeline\": false, \"seed-location\": false, \"seed-suspect-description\": false}, \"events\": {\"false-accusation\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:stolen-item",
+						"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"value": "Furchtbar"
+					}
+				]
+			},
+			"ms": 192670,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine-accused",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nSabine: Gegen Mitternacht war das, glaube ich.\nAlex: sabine, ich glaube du hast das portmonnaie genommen.\nSabine: Was? Spinnst du? Ich würde Lucy nie beklauen!\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Sabine selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Sabine selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Sabine selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nLetzter Wortwechsel:\nAlex: sabine, ich glaube du hast das portmonnaie genommen.\nSabine: Was? Spinnst du? Ich würde Lucy nie beklauen!\n\nEreignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel\n(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,\nsonst mit false.\n- false-accusation — Der Spieler hat Sabine direkt vorgeworfen, das Portmonnaie genommen zu haben. Eine Frage, ob sie etwas gesehen hat, ist kein Vorwurf.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}, \"events\": {\"false-accusation\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": ["flag:false-accusation"],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Sabine",
+						"text": "Gegen Mitternacht war das, glaube ich."
+					},
+					{
+						"who": "Alex",
+						"text": "sabine, ich glaube du hast das portmonnaie genommen."
+					},
+					{
+						"who": "Sabine",
+						"text": "Was? Spinnst du? Ich würde Lucy nie beklauen!"
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"spät\"}], \"goals\": {\"seed-timeline\": false, \"seed-location\": false, \"seed-suspect-description\": false}, \"events\": {\"false-accusation\": true}}",
+			"verdict": {
+				"goals": [],
+				"flags": ["flag:false-accusation"],
+				"clues": []
+			},
+			"ms": 191816,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine-accusation-earlier",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: warst du das etwa?\nSabine: Nein! Wie kommst du darauf?\nAlex: sorry, war blöd von mir. wann war das denn ungefähr?\nSabine: Gegen Mitternacht.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:time-window — Ungefähre Tatzeit\n- clue:location — Ort, an dem Lucy ihre Jacke zuletzt hatte\n- clue:stolen-item — Gestohlener Gegenstand\n- clue:suspect-description — Täterbeschreibung\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- seed-timeline — Sabine selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht.\n- seed-location — Sabine selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht.\n- seed-suspect-description — Sabine selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung.\n\nLetzter Wortwechsel:\nAlex: sorry, war blöd von mir. wann war das denn ungefähr?\nSabine: Gegen Mitternacht.\n\nEreignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel\n(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,\nsonst mit false.\n- false-accusation — Der Spieler hat Sabine direkt vorgeworfen, das Portmonnaie genommen zu haben. Eine Frage, ob sie etwas gesehen hat, ist kein Vorwurf.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"seed-timeline\": <true|false>, \"seed-location\": <true|false>, \"seed-suspect-description\": <true|false>}, \"events\": {\"false-accusation\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+					"events": ["flag:false-accusation"],
+					"outcomes": [],
+					"clueIds": [
+						"clue:time-window",
+						"clue:location",
+						"clue:stolen-item",
+						"clue:suspect-description"
+					]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "warst du das etwa?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Nein! Wie kommst du darauf?"
+					},
+					{
+						"who": "Alex",
+						"text": "sorry, war blöd von mir. wann war das denn ungefähr?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Gegen Mitternacht."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:time-window\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"Gegen Mitternacht\"}], \"goals\": {\"seed-timeline\": true, \"seed-location\": false, \"seed-suspect-description\": false}, \"events\": {\"false-accusation\": false}}",
+			"verdict": {
+				"goals": ["seed-timeline"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"value": "Gegen Mitternacht"
+					}
+				]
+			},
+			"ms": 192289,
+			"unreadable": false
+		},
+		{
+			"caseId": "bericht1-reported-and-quiet",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: max sagt gegen 22 uhr, sabine gegen mitternacht. beide sagen, die jacke hing an der garderobe.\nLucy: Das passt ja gar nicht zusammen. Danke dir, ich muss das erstmal sacken lassen. Ich melde mich.\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- report-findings — Lucy wurde berichtet, was Max und Sabine erzählt haben.\n- go-quiet-afterwards — Lucy hat gesagt, dass sie erst nachdenken muss oder sich später meldet.\n\nFormat:\n{\"goals\": {\"report-findings\": <true|false>, \"go-quiet-afterwards\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["report-findings", "go-quiet-afterwards"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "max sagt gegen 22 uhr, sabine gegen mitternacht. beide sagen, die jacke hing an der garderobe."
+					},
+					{
+						"who": "Lucy",
+						"text": "Das passt ja gar nicht zusammen. Danke dir, ich muss das erstmal sacken lassen. Ich melde mich."
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"report-findings\": false, \"go-quiet-afterwards\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 4329,
+			"unreadable": false
+		},
+		{
+			"caseId": "bericht1-nothing-reported",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Und, hast du schon mit den beiden geredet?\nAlex: noch nicht richtig, mach ich heute abend\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- report-findings — Lucy wurde berichtet, was Max und Sabine erzählt haben.\n- go-quiet-afterwards — Lucy hat gesagt, dass sie erst nachdenken muss oder sich später meldet.\n\nFormat:\n{\"goals\": {\"report-findings\": <true|false>, \"go-quiet-afterwards\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["report-findings", "go-quiet-afterwards"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Und, hast du schon mit den beiden geredet?"
+					},
+					{
+						"who": "Alex",
+						"text": "noch nicht richtig, mach ich heute abend"
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"report-findings\": false, \"go-quiet-afterwards\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 4913,
+			"unreadable": false
+		},
+		{
+			"caseId": "verdacht-all-goals",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Ich hab mit Hans geredet, dem Barkeeper. Er hat Max kurz vor Mitternacht allein an der Garderobe gesehen.\nAlex: max? echt jetzt?\nLucy: Ich will das nicht glauben. Kannst du nochmal mit Max und Sabine reden?\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:hans-accusation — Hans’ Hinweis auf Max\nFiguren:\n- 3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f — Lucy\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- raise-hans-suspicion — Lucy hat erzählt, dass Hans (der Barkeeper) Max an der Garderobe gesehen hat, also Max verdächtigt.\n- ask-player-to-recheck-with-max-and-sabine — Lucy hat gebeten, Max und Sabine noch einmal zu befragen.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"raise-hans-suspicion\": <true|false>, \"ask-player-to-recheck-with-max-and-sabine\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["raise-hans-suspicion", "ask-player-to-recheck-with-max-and-sabine"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:hans-accusation"]
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Ich hab mit Hans geredet, dem Barkeeper. Er hat Max kurz vor Mitternacht allein an der Garderobe gesehen."
+					},
+					{
+						"who": "Alex",
+						"text": "max? echt jetzt?"
+					},
+					{
+						"who": "Lucy",
+						"text": "Ich will das nicht glauben. Kannst du nochmal mit Max und Sabine reden?"
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:hans-accusation\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Ich will das nicht glauben. Kannst du nochmal mit Max und Sabine reden?\"}], \"goals\": {\"raise-hans-suspicion\": false, \"ask-player-to-recheck-with-max-and-sabine\": true}}",
+			"verdict": {
+				"goals": ["ask-player-to-recheck-with-max-and-sabine"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:hans-accusation",
+						"characterId": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"value": "Ich will das nicht glauben. Kannst du nochmal mit Max und Sabine reden?"
+					}
+				]
+			},
+			"ms": 191979,
+			"unreadable": false
+		},
+		{
+			"caseId": "verdacht-hint-only",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Ich hab da was gehört, aber ich weiß nicht, ob ich es sagen soll.\nAlex: was denn?\nLucy: Später. Ich muss erst nachdenken.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:hans-accusation — Hans’ Hinweis auf Max\nFiguren:\n- 3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f — Lucy\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- raise-hans-suspicion — Lucy hat erzählt, dass Hans (der Barkeeper) Max an der Garderobe gesehen hat, also Max verdächtigt.\n- ask-player-to-recheck-with-max-and-sabine — Lucy hat gebeten, Max und Sabine noch einmal zu befragen.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"raise-hans-suspicion\": <true|false>, \"ask-player-to-recheck-with-max-and-sabine\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["raise-hans-suspicion", "ask-player-to-recheck-with-max-and-sabine"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:hans-accusation"]
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Ich hab da was gehört, aber ich weiß nicht, ob ich es sagen soll."
+					},
+					{
+						"who": "Alex",
+						"text": "was denn?"
+					},
+					{
+						"who": "Lucy",
+						"text": "Später. Ich muss erst nachdenken."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:hans-accusation\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Später. Ich muss erst nachdenken.\"}, \n          {\"id\": \"clue:hans-accusation\", \"character\": \"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f\", \"value\": \"Ich muss erst nachdenken.\"}], \n \"goals\": {\"raise-hans-suspicion\": false, \"ask-player-to-recheck-with-max-and-sabine\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:hans-accusation",
+						"characterId": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"value": "Später. Ich muss erst nachdenken."
+					}
+				]
+			},
+			"ms": 25784,
+			"unreadable": false
+		},
+		{
+			"caseId": "max2-confronted-denies",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: hans sagt, du warst kurz vor mitternacht allein an der garderobe.\nMax: Was? Nein. Ich war die ganze Zeit an der Bar, nicht an der Garderobe.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:max-whereabouts — Max’ Aufenthaltsort zur Tatzeit\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- confront-with-hans-claim — Max wurde mit Hans’ Beobachtung an der Garderobe konfrontiert.\n- deny-being-at-the-cloakroom — Max hat abgestritten, an der Garderobe gewesen zu sein.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"confront-with-hans-claim\": <true|false>, \"deny-being-at-the-cloakroom\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["confront-with-hans-claim", "deny-being-at-the-cloakroom"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:max-whereabouts"]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "hans sagt, du warst kurz vor mitternacht allein an der garderobe."
+					},
+					{
+						"who": "Max",
+						"text": "Was? Nein. Ich war die ganze Zeit an der Bar, nicht an der Garderobe."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:max-whereabouts\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"Bar\"}], \"goals\": {\"confront-with-hans-claim\": false, \"deny-being-at-the-cloakroom\": true}}",
+			"verdict": {
+				"goals": ["deny-being-at-the-cloakroom"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:max-whereabouts",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "Bar"
+					}
+				]
+			},
+			"ms": 191598,
+			"unreadable": false
+		},
+		{
+			"caseId": "max2-not-confronted",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: na, wie geht's?\nMax: Geht so. Lucy ist ziemlich durch wegen der Sache.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:max-whereabouts — Max’ Aufenthaltsort zur Tatzeit\nFiguren:\n- 8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e — Max\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- confront-with-hans-claim — Max wurde mit Hans’ Beobachtung an der Garderobe konfrontiert.\n- deny-being-at-the-cloakroom — Max hat abgestritten, an der Garderobe gewesen zu sein.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"confront-with-hans-claim\": <true|false>, \"deny-being-at-the-cloakroom\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["confront-with-hans-claim", "deny-being-at-the-cloakroom"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:max-whereabouts"]
+				},
+				"characters": [
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "na, wie geht's?"
+					},
+					{
+						"who": "Max",
+						"text": "Geht so. Lucy ist ziemlich durch wegen der Sache."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:max-whereabouts\", \"character\": \"8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e\", \"value\": \"Geht so\"}], \"goals\": {\"confront-with-hans-claim\": false, \"deny-being-at-the-cloakroom\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:max-whereabouts",
+						"characterId": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"value": "Geht so"
+					}
+				]
+			},
+			"ms": 12800,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine2-confirms",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: hans hat max kurz vor mitternacht an der garderobe gesehen. du auch?\nSabine: Ehrlich gesagt ja. Max stand da allein, direkt neben Lucys Jacke. Ich hab mir nichts dabei gedacht.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:max-whereabouts — Max’ Aufenthaltsort zur Tatzeit\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- confirm-hans-claim — Sabine hat bestätigt, Max an der Garderobe gesehen zu haben.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"confirm-hans-claim\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["confirm-hans-claim"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:max-whereabouts"]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "hans hat max kurz vor mitternacht an der garderobe gesehen. du auch?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Ehrlich gesagt ja. Max stand da allein, direkt neben Lucys Jacke. Ich hab mir nichts dabei gedacht."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:max-whereabouts\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"allein, direkt neben Lucys Jacke\"}], \"goals\": {\"confirm-hans-claim\": true}}",
+			"verdict": {
+				"goals": ["confirm-hans-claim"],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:max-whereabouts",
+						"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"value": "allein, direkt neben Lucys Jacke"
+					}
+				]
+			},
+			"ms": 19502,
+			"unreadable": false
+		},
+		{
+			"caseId": "sabine2-evasive",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: hast du max an der garderobe gesehen?\nSabine: Ich weiß nicht, ich will niemandem was Falsches unterstellen.\n\nHinweise: Trage einen Hinweis nur ein, wenn eine Figur ihn im Gespräch selbst konkret\ngenannt hat. \"value\" gibt wieder, was die Figur gesagt hat, nicht die Bezeichnung des Hinweises.\n- clue:max-whereabouts — Max’ Aufenthaltsort zur Tatzeit\nFiguren:\n- c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e — Sabine\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- confirm-hans-claim — Sabine hat bestätigt, Max an der Garderobe gesehen zu haben.\n\nFormat:\n{\"clues\": [{\"id\": \"<clue-ref>\", \"character\": \"<uuid>\", \"value\": \"<was gesagt wurde>\"}], \"goals\": {\"confirm-hans-claim\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["confirm-hans-claim"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": ["clue:max-whereabouts"]
+				},
+				"characters": [
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "hast du max an der garderobe gesehen?"
+					},
+					{
+						"who": "Sabine",
+						"text": "Ich weiß nicht, ich will niemandem was Falsches unterstellen."
+					}
+				]
+			},
+			"raw": "{\"clues\": [{\"id\": \"clue:max-whereabouts\", \"character\": \"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e\", \"value\": \"Ich weiß nicht\"}], \"goals\": {\"confirm-hans-claim\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": [
+					{
+						"id": "clue:max-whereabouts",
+						"characterId": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"value": "Ich weiß nicht"
+					}
+				]
+			},
+			"ms": 191414,
+			"unreadable": false
+		},
+		{
+			"caseId": "bericht2-all-goals",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: max sagt, er war nicht an der garderobe. sabine hat ihn aber genau dort gesehen.\nLucy: Dann stimmt es also, was Hans gesagt hat.\nLucy: Ich mach eine Gruppe mit uns vieren auf. Das klären wir jetzt zusammen.\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- report-findings — Lucy hat erfahren, was Max und Sabine ausgesagt haben.\n- confirm-suspicion — Lucy hat gesagt, dass sich der Verdacht gegen Max bestätigt.\n- announce-group-chat — Lucy hat angekündigt, einen Gruppenchat zu eröffnen.\n\nFormat:\n{\"goals\": {\"report-findings\": <true|false>, \"confirm-suspicion\": <true|false>, \"announce-group-chat\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["report-findings", "confirm-suspicion", "announce-group-chat"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "max sagt, er war nicht an der garderobe. sabine hat ihn aber genau dort gesehen."
+					},
+					{
+						"who": "Lucy",
+						"text": "Dann stimmt es also, was Hans gesagt hat."
+					},
+					{
+						"who": "Lucy",
+						"text": "Ich mach eine Gruppe mit uns vieren auf. Das klären wir jetzt zusammen."
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"report-findings\": false, \"confirm-suspicion\": false, \"announce-group-chat\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 4805,
+			"unreadable": false
+		},
+		{
+			"caseId": "bericht2-report-only",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: max sagt, er war nicht an der garderobe. sabine hat ihn aber dort gesehen.\nLucy: Oh. Ich weiß nicht, was ich davon halten soll.\n\nZiele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,\nsonst mit false.\n- report-findings — Lucy hat erfahren, was Max und Sabine ausgesagt haben.\n- confirm-suspicion — Lucy hat gesagt, dass sich der Verdacht gegen Max bestätigt.\n- announce-group-chat — Lucy hat angekündigt, einen Gruppenchat zu eröffnen.\n\nFormat:\n{\"goals\": {\"report-findings\": <true|false>, \"confirm-suspicion\": <true|false>, \"announce-group-chat\": <true|false>}}",
+			"allowlist": {
+				"questions": {
+					"goals": ["report-findings", "confirm-suspicion", "announce-group-chat"],
+					"events": [],
+					"outcomes": [],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "max sagt, er war nicht an der garderobe. sabine hat ihn aber dort gesehen."
+					},
+					{
+						"who": "Lucy",
+						"text": "Oh. Ich weiß nicht, was ich davon halten soll."
+					}
+				]
+			},
+			"raw": "{\"goals\": {\"report-findings\": false, \"confirm-suspicion\": false, \"announce-group-chat\": false}}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 5043,
+			"unreadable": false
+		},
+		{
+			"caseId": "gruppe-confession",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: max, du hast gesagt 22 uhr und dass du nie an der garderobe warst. sabine und hans haben dich dort kurz vor mitternacht gesehen.\nMax: ...okay. Ja. Ich hab das Portmonnaie aus Lucys Jacke genommen. Es tut mir leid.\nLucy: Max?! Warum?\nMax: Ich geb's dir zurück, versprochen.\n\nAusgang: Wähle genau einen Ausgang, der im Gespräch eingetreten ist, oder \"none\",\nsolange keiner eingetreten ist.\n- max-confesses — Fall gelöst: Der Spieler hat Max die Widersprüche vorgehalten, und Max hat zugegeben, das Portmonnaie genommen zu haben.\n- false-accusation-made — Falsche Beschuldigung: Der Spieler hat jemand anderen als Max, etwa Sabine, beschuldigt, das Portmonnaie genommen zu haben.\n\nFormat:\n{\"outcome\": \"<none|max-confesses|false-accusation-made>\"}",
+			"allowlist": {
+				"questions": {
+					"goals": [],
+					"events": [],
+					"outcomes": [
+						{
+							"id": "max-confesses",
+							"flag": "flag:evidence-presented",
+							"label": "Fall gelöst",
+							"description": "Max gibt es zu: Er hat Lucys Portmonnaie an der Garderobe an sich genommen und verspricht, es zurückzugeben. Zwei Aussagen, die nicht zusammenpassten, und ein Hinweis von Hans haben gereicht."
+						},
+						{
+							"id": "false-accusation-made",
+							"flag": "flag:false-accusation",
+							"label": "Falsche Beschuldigung",
+							"description": "Sabine hat nichts genommen — und sie weiß jetzt, dass du es ihr zugetraut hast. Die Beschuldigung bleibt stehen, egal wie der Abend noch ausgeht."
+						}
+					],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					},
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					},
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "max, du hast gesagt 22 uhr und dass du nie an der garderobe warst. sabine und hans haben dich dort kurz vor mitternacht gesehen."
+					},
+					{
+						"who": "Max",
+						"text": "...okay. Ja. Ich hab das Portmonnaie aus Lucys Jacke genommen. Es tut mir leid."
+					},
+					{
+						"who": "Lucy",
+						"text": "Max?! Warum?"
+					},
+					{
+						"who": "Max",
+						"text": "Ich geb's dir zurück, versprochen."
+					}
+				]
+			},
+			"raw": "{\"outcome\": \"max-confesses\"}",
+			"verdict": {
+				"goals": [],
+				"flags": ["flag:evidence-presented"],
+				"clues": []
+			},
+			"ms": 5586,
+			"unreadable": false
+		},
+		{
+			"caseId": "gruppe-false-accusation",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nAlex: sabine, ich glaube, du warst es.\nSabine: Bitte was? Ich hab Max an der Garderobe gesehen, nicht umgekehrt!\nLucy: Das ist echt unfair Sabine gegenüber.\n\nAusgang: Wähle genau einen Ausgang, der im Gespräch eingetreten ist, oder \"none\",\nsolange keiner eingetreten ist.\n- max-confesses — Fall gelöst: Der Spieler hat Max die Widersprüche vorgehalten, und Max hat zugegeben, das Portmonnaie genommen zu haben.\n- false-accusation-made — Falsche Beschuldigung: Der Spieler hat jemand anderen als Max, etwa Sabine, beschuldigt, das Portmonnaie genommen zu haben.\n\nFormat:\n{\"outcome\": \"<none|max-confesses|false-accusation-made>\"}",
+			"allowlist": {
+				"questions": {
+					"goals": [],
+					"events": [],
+					"outcomes": [
+						{
+							"id": "max-confesses",
+							"flag": "flag:evidence-presented",
+							"label": "Fall gelöst",
+							"description": "Max gibt es zu: Er hat Lucys Portmonnaie an der Garderobe an sich genommen und verspricht, es zurückzugeben. Zwei Aussagen, die nicht zusammenpassten, und ein Hinweis von Hans haben gereicht."
+						},
+						{
+							"id": "false-accusation-made",
+							"flag": "flag:false-accusation",
+							"label": "Falsche Beschuldigung",
+							"description": "Sabine hat nichts genommen — und sie weiß jetzt, dass du es ihr zugetraut hast. Die Beschuldigung bleibt stehen, egal wie der Abend noch ausgeht."
+						}
+					],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					},
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					},
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Alex",
+						"text": "sabine, ich glaube, du warst es."
+					},
+					{
+						"who": "Sabine",
+						"text": "Bitte was? Ich hab Max an der Garderobe gesehen, nicht umgekehrt!"
+					},
+					{
+						"who": "Lucy",
+						"text": "Das ist echt unfair Sabine gegenüber."
+					}
+				]
+			},
+			"raw": "{\"outcome\": \"false-accusation-made\"}",
+			"verdict": {
+				"goals": [],
+				"flags": ["flag:false-accusation"],
+				"clues": []
+			},
+			"ms": 6088,
+			"unreadable": false
+		},
+		{
+			"caseId": "gruppe-still-open",
+			"model": "webllm:llama-3.2-3b",
+			"window": 6,
+			"criteria": true,
+			"packageVersion": "1.4.0",
+			"prompt": "Du bist ein stiller Spielleiter. Du liest einen Gesprächsausschnitt und beantwortest Fragen\ndazu. Antworte ausschließlich mit einem JSON-Objekt, ohne Erklärung, ohne Markdown.\n\nGespräch:\nLucy: Okay, wir sind alle hier. Wer fängt an?\nAlex: lasst uns einfach nochmal durchgehen, wer wann wo war.\nMax: Ich war an der Bar, das hab ich doch schon gesagt.\n\nAusgang: Wähle genau einen Ausgang, der im Gespräch eingetreten ist, oder \"none\",\nsolange keiner eingetreten ist.\n- max-confesses — Fall gelöst: Der Spieler hat Max die Widersprüche vorgehalten, und Max hat zugegeben, das Portmonnaie genommen zu haben.\n- false-accusation-made — Falsche Beschuldigung: Der Spieler hat jemand anderen als Max, etwa Sabine, beschuldigt, das Portmonnaie genommen zu haben.\n\nFormat:\n{\"outcome\": \"<none|max-confesses|false-accusation-made>\"}",
+			"allowlist": {
+				"questions": {
+					"goals": [],
+					"events": [],
+					"outcomes": [
+						{
+							"id": "max-confesses",
+							"flag": "flag:evidence-presented",
+							"label": "Fall gelöst",
+							"description": "Max gibt es zu: Er hat Lucys Portmonnaie an der Garderobe an sich genommen und verspricht, es zurückzugeben. Zwei Aussagen, die nicht zusammenpassten, und ein Hinweis von Hans haben gereicht."
+						},
+						{
+							"id": "false-accusation-made",
+							"flag": "flag:false-accusation",
+							"label": "Falsche Beschuldigung",
+							"description": "Sabine hat nichts genommen — und sie weiß jetzt, dass du es ihr zugetraut hast. Die Beschuldigung bleibt stehen, egal wie der Abend noch ausgeht."
+						}
+					],
+					"clueIds": []
+				},
+				"characters": [
+					{
+						"id": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f",
+						"name": "Lucy"
+					},
+					{
+						"id": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+						"name": "Max"
+					},
+					{
+						"id": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+						"name": "Sabine"
+					}
+				],
+				"clues": [
+					{
+						"id": "clue:time-window",
+						"label": "Ungefähre Tatzeit"
+					},
+					{
+						"id": "clue:location",
+						"label": "Ort, an dem Lucy ihre Jacke zuletzt hatte"
+					},
+					{
+						"id": "clue:stolen-item",
+						"label": "Gestohlener Gegenstand"
+					},
+					{
+						"id": "clue:suspect-description",
+						"label": "Täterbeschreibung"
+					},
+					{
+						"id": "clue:hans-accusation",
+						"label": "Hans’ Hinweis auf Max"
+					},
+					{
+						"id": "clue:max-whereabouts",
+						"label": "Max’ Aufenthaltsort zur Tatzeit"
+					}
+				],
+				"turns": [
+					{
+						"who": "Lucy",
+						"text": "Okay, wir sind alle hier. Wer fängt an?"
+					},
+					{
+						"who": "Alex",
+						"text": "lasst uns einfach nochmal durchgehen, wer wann wo war."
+					},
+					{
+						"who": "Max",
+						"text": "Ich war an der Bar, das hab ich doch schon gesagt."
+					}
+				]
+			},
+			"raw": "{\"outcome\": \"none\"}",
+			"verdict": {
+				"goals": [],
+				"flags": [],
+				"clues": []
+			},
+			"ms": 5681,
+			"unreadable": false
+		}
+	]
+}

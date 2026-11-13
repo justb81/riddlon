@@ -37,6 +37,21 @@ describe('force-WebLLM override (issue #69 step 1 harness)', () => {
 		expect(provider.kind).toBe('webllm');
 	});
 
+	it('falls back to WebLLM when the native availability() never answers', async () => {
+		vi.useFakeTimers();
+		try {
+			(globalThis as { window?: unknown }).window = {
+				LanguageModel: { availability: vi.fn(() => new Promise(() => {})) }
+			};
+			const { resolveProvider, NATIVE_AVAILABILITY_TIMEOUT_MS } = await import('./provider.js');
+			const pending = resolveProvider(DEFAULT_MODEL_ID);
+			await vi.advanceTimersByTimeAsync(NATIVE_AVAILABILITY_TIMEOUT_MS);
+			expect((await pending).kind).toBe('webllm');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it('resumes resolving native once un-forced', async () => {
 		const { resolveProvider, resetProvider, setForceWebLlm } = await import('./provider.js');
 		setForceWebLlm(true);

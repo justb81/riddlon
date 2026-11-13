@@ -146,3 +146,52 @@ rather than trying to make a Node test cover what only a browser can.
   `node_modules/fflate/esm/index.mjs` (the plain `fflate` subpath does not resolve outside a bundler).
 - Always finish by checking the page's `'console'` and `'pageerror'` events — a route can render its
   shell while a promise inside it silently rejects.
+
+## Real inference on a GPU dev machine
+
+The Linux sandbox above has no GPU. A developer machine with one (verified on Windows 11 with an
+RTX 3050 4 GB laptop GPU next to Intel Iris Xe) runs WebLLM for real under Playwright, headless
+included. Use this for anything that needs a model: the director cases in `/dev/story` (protocol in
+[`stories/README.md`](./stories/README.md#measuring-the-director)), `/dev/llm`, a real chat turn.
+
+```js
+import { chromium } from 'playwright'; // not a project dependency: npm i playwright in a scratch dir
+const context = await chromium.launchPersistentContext(
+	process.env.LOCALAPPDATA + '/riddlon-playwright-gpu-profile', // dedicated, reused across runs
+	{
+		executablePath:
+			process.env.LOCALAPPDATA + '/ms-playwright/chromium-<rev>/chrome-win64/chrome.exe',
+		args: ['--force_high_performance_gpu'],
+		acceptDownloads: true
+	}
+);
+```
+
+- **`--force_high_performance_gpu` is the one flag that matters.** WebGPU itself needs none, but
+  Chrome on Windows ignores `requestAdapter({ powerPreference })` and hands out the integrated GPU.
+  With the flag the adapter reports `nvidia ampere`. Check with
+  `(await navigator.gpu.requestAdapter()).info` on an `http://localhost` page; `navigator.gpu` is
+  `undefined` on `about:blank`, which is not a secure context.
+- **Use a persistent, dedicated profile.** The first `llama-3.2-3b` load downloads ~1.9 GB into the
+  profile's Cache Storage (about 11 minutes here); later runs start from the cache. Never point it
+  at a real Chrome profile and never link Chrome's own model folders into it.
+- **Start the server with `npm run dev`, not a bare `vite dev`.** Only `predev` bundles the current
+  story packages into `static/stories/`; otherwise the app installs a stale package.
+  `/dev/story`'s Director cases line shows the installed package version.
+- **Which backend wins.** Playwright's Chromium ships a `LanguageModel` global without a model, so
+  the app waits out its native probe (`NATIVE_AVAILABILITY_TIMEOUT_MS`,
+  [§8.4.1](./docs/arc42/08-crosscutting-concepts.md#841-the-provider-chain)) and then picks WebLLM.
+  `/dev/llm`'s "WebLLM erzwingen" skips that wait; it holds only until the next full page load, so
+  navigate on client-side from there. An OpenAI-compatible endpoint (for example a local Ollama)
+  is set by writing `riddlon:llm:endpoint` to `localStorage` and wins over both.
+- **Wait for `llm ready`, not for the boot screen.** `/` moves on to `/chats` before WebLLM has
+  finished loading; poll `/dev/story`'s "Active package" panel until its `llm` line reads `ready`
+  before starting anything.
+- **Expect long, frozen calls with a JSON schema.** WebLLM compiles a grammar per distinct
+  `responseSchema` on the main thread: about 3 minutes for a director schema with clue claims on an
+  RTX 3050, during which Playwright cannot even read the page
+  ([#140](https://github.com/justb81/riddlon/issues/140)). Give such runs hours, not minutes, and
+  kill leftover `ms-playwright` Chrome processes before the next run: one still holding the model
+  blocks the profile and competes for the GPU's memory.
+- Chrome's built-in Gemini Nano is **not** reachable this way: it needs installed Google Chrome with
+  the on-device model downloaded into its own profile.

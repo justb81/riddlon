@@ -31,6 +31,14 @@ declare global {
 	}
 }
 
+/**
+ * How long the native Prompt API may take to say whether it is usable. A Chromium build can ship
+ * `LanguageModel` whose `availability()` never settles (Playwright's bundled Chromium does, with no
+ * on-device model component), and an unbounded await left the boot screen on "Gerät wird geprüft"
+ * forever. A real answer comes back in milliseconds; silence counts as unavailable.
+ */
+export const NATIVE_AVAILABILITY_TIMEOUT_MS = 5000;
+
 /** Memoized per model id: switching models resolves a fresh `ResolvedProvider`. */
 let cached: { modelId: LocalModelId; provider: ResolvedProvider } | undefined;
 let inFlight: { modelId: LocalModelId; promise: Promise<ResolvedProvider> } | undefined;
@@ -90,10 +98,16 @@ async function resolveNative(): Promise<ResolvedProvider | undefined> {
 	if (!candidate || candidate.__isPolyfill) return undefined;
 
 	try {
-		const availability = await candidate.availability({
-			expectedInputs: [{ type: 'text' }],
-			expectedOutputs: [{ type: 'text' }]
-		});
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const availability = await Promise.race([
+			candidate.availability({
+				expectedInputs: [{ type: 'text' }],
+				expectedOutputs: [{ type: 'text' }]
+			}),
+			new Promise<'unavailable'>((resolve) => {
+				timer = setTimeout(() => resolve('unavailable'), NATIVE_AVAILABILITY_TIMEOUT_MS);
+			})
+		]).finally(() => clearTimeout(timer));
 		if (availability === 'unavailable') return undefined;
 	} catch {
 		// A built-in API that throws on a plain text probe is not one we can use.

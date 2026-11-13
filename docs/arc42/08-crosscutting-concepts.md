@@ -550,6 +550,13 @@ LM Studio, llama.cpp — so it is usually a stronger model than the 3B catalog e
 compromise, and a player who went to the trouble of entering one meant to use it. It is opt-in and
 empty by default, so an untouched install is entirely local.
 
+**The native probe has a deadline.** A browser can expose `LanguageModel` whose `availability()`
+never settles — Playwright's bundled Chromium does, with no on-device model behind it — and an
+unbounded wait left the boot screen on "Gerät wird geprüft" for good. `resolveNative` therefore
+treats no answer within `NATIVE_AVAILABILITY_TIMEOUT_MS` (5 s) as unavailable and falls through to
+WebLLM. A real implementation answers in milliseconds, so the deadline costs nothing where native
+works.
+
 `create()` and `availability()` never touch the network — only `prompt()` and `promptStreaming()`
 do — so resolving the provider and holding the adapter's warm-up handle cost nothing. Response codes
 map onto the shared `LlmErrorCode` vocabulary: 401 and 403 become `invalid-api-key`, 429 becomes
@@ -884,17 +891,17 @@ It comes from the installed package and carries the package's own `language`.
 
 ## 8.10 Testing Strategy
 
-| Layer                                 | How it is covered                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Pure logic                            | Vitest `server` (Node) project over `src/**/*.{test,spec}.{js,ts}`. `requireAssertions` is on — every test must assert.  |
-| IndexedDB code paths                  | `fake-indexeddb` in `*.integration.spec.ts` (`import 'fake-indexeddb/auto'` plus a `$app/environment` mock).             |
-| The engine, end to end                | `engine.spec.ts` plays the reference story's fifteen steps through the **shipped** package read off disk.                |
-| Shipped content                       | `story-packages.spec.ts` validates every package under `stories/` on a plain `npm test`.                                 |
-| Graph reachability                    | `npm run story:playtest` replays a scripted walkthrough through the real engine — no LLM, no browser.                    |
-| Director cases                        | `director-cases.spec.ts` checks every `stories/*/director-cases.json` against its own graph, so a renamed goal fails CI. |
-| Director parser on real answers       | `director-recorded.spec.ts` re-parses answers recorded in `llm/__fixtures__/director-answers/` and compares verdicts.    |
-| Module boundaries                     | `no-llm-dependency.spec.ts` and `no-backend-leakage.spec.ts`.                                                            |
-| Cache Storage, WebGPU, real inference | **Not automatable here** — no Node polyfill for Cache Storage, and neither CI nor the dev sandbox has a GPU.             |
+| Layer                                 | How it is covered                                                                                                                                                                                                             |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic                            | Vitest `server` (Node) project over `src/**/*.{test,spec}.{js,ts}`. `requireAssertions` is on — every test must assert.                                                                                                       |
+| IndexedDB code paths                  | `fake-indexeddb` in `*.integration.spec.ts` (`import 'fake-indexeddb/auto'` plus a `$app/environment` mock).                                                                                                                  |
+| The engine, end to end                | `engine.spec.ts` plays the reference story's fifteen steps through the **shipped** package read off disk.                                                                                                                     |
+| Shipped content                       | `story-packages.spec.ts` validates every package under `stories/` on a plain `npm test`.                                                                                                                                      |
+| Graph reachability                    | `npm run story:playtest` replays a scripted walkthrough through the real engine — no LLM, no browser.                                                                                                                         |
+| Director cases                        | `director-cases.spec.ts` checks every `stories/*/director-cases.json` against its own graph, so a renamed goal fails CI.                                                                                                      |
+| Director parser on real answers       | `director-recorded.spec.ts` re-parses answers recorded in `llm/__fixtures__/director-answers/` and compares verdicts.                                                                                                         |
+| Module boundaries                     | `no-llm-dependency.spec.ts` and `no-backend-leakage.spec.ts`.                                                                                                                                                                 |
+| Cache Storage, WebGPU, real inference | **Not automatable in CI or the sandbox**: no Node polyfill for Cache Storage, and neither has a GPU. A dev machine with one runs real WebLLM inference under Playwright (`CLAUDE.md`, "Real inference on a GPU dev machine"). |
 
 The shipped package is the engine's acceptance fixture, not a copy of it:
 `__fixtures__/lucys-portmonnaie-walkthrough.ts` reads `stories/lucys-portmonnaie/` off disk (Node
