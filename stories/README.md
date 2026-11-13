@@ -68,6 +68,15 @@ Two traps worth knowing before you start:
      ([§8.4.4](../docs/arc42/08-crosscutting-concepts.md#844-the-director-pass)). A goal that only
      describes how a character behaves afterwards ("go quiet") gives the director nothing to see,
      and the scene may never end.
+   - **Give every goal its two texts** in the scene's `goalDetails`, in the story's language:
+     `intent` says what the character pursues ("Sag, wann es ungefähr passiert ist"), and
+     `reachedWhen` says what the director should see in the chat ("Max hat eine ungefähre Uhrzeit
+     genannt"). Without them the model gets the bare English slug. Name the character in
+     `reachedWhen`, unless the scene masks them, and keep it something a transcript can show.
+     The same goes for every flag the director may set, an event or a group scene's ending: give it a
+     `reachedWhen` in `flagDetails`, and say what does _not_ count ("Eine Frage, ob sie etwas
+     gesehen hat, ist kein Vorwurf"). The why is in
+     [ADR 19](../docs/arc42/09-architecture-decisions.md#adr-19-goal-text-as-a-separate-per-scene-map-in-two-parts).
    - An empty `entryConditions` list unlocks the scene at story start. If a scene must only be
      reachable through a delayed event, give it a sentinel condition nothing else sets.
 4. **Validate**: `npm run stories:validate`, until clean.
@@ -126,6 +135,65 @@ covering all fifteen steps of the reference story, and
 [`walkthrough-false-accusation.json`](./lucys-portmonnaie/walkthrough-false-accusation.json) for the
 branch where the player accuses the wrong person — the run that proves the "Ohne Falschbeschuldigung
 gelöst" achievement can actually be missed.
+
+## Measuring the director
+
+A playtest proves the graph _can_ advance. Whether it does in play depends on the director pass
+reading free conversation correctly
+([§8.4.4](../docs/arc42/08-crosscutting-concepts.md#844-the-director-pass)), and CI cannot run a
+model. `director-cases.json` next to the package is the repeatable measurement for that. Like the
+walkthroughs, it is authoring-only and never packed.
+
+### Writing cases
+
+Each case is one scene, one fixed transcript and the answer every question should get:
+
+```jsonc
+{
+	"id": "sabine-accused", // unique, names the row in the results
+	"scene": "8e888a69-…", // graph node id
+	"reachedGoals": [], // goals already held before this transcript
+	"names": { "<uuid>": "Unbekannt" }, // only for a masked character
+	"transcript": ["Sabine: …", "Du: …", "Sabine: …"], // "Du" becomes the player's nickname
+	"expect": {
+		"goals": { "seed-timeline": true, "seed-location": false }, // every open goal
+		"events": { "flag:false-accusation": true }, // every settable flag
+		"outcome": "none", // group scenes only
+		"clues": { "clue:time-window": "<uuid>" } // claims the transcript does contain
+	}
+}
+```
+
+Write at least one case per scene where every goal holds, and one where they don't hold yet. For
+each event, add an innocent near miss as well as the real thing. A case must name exactly the
+questions its scene asks. `npm test` checks every case file against its graph, so a renamed goal
+fails CI instead of quietly skewing the next measurement.
+
+### Running a measurement
+
+1. `npm run dev`, then install and start the story under `/chat/riddlon`, and load the model you are
+   measuring under `/`.
+2. Open `/dev/story` and go to **Director cases**. The red list under the buttons must be empty.
+3. Leave **authored criteria** on; switch it off once to measure what the criteria are worth
+   against the bare slugs. Keep the file's `runs` (3; Chrome's built-in model is not deterministic) and the window at 6
+   unless the window itself is what you are measuring. Then press **Run cases**.
+4. When it finishes, copy the **total** row and press **Download runs**. _unreadable_ counts
+   answers with no JSON in them; they are kept out of every other column, so a model that answers
+   in prose cannot look careful by "saying no" to everything.
+
+Measure every model the app offers as a default, one after another, each on a fresh page load:
+Chrome's built-in model, then WebLLM's `llama-3.2-3b`, plus `llama-3.1-8b` where the device fits it.
+
+### Recording the numbers
+
+- **Post the total row per model** as a comment on the director's tracking issue, with the date,
+  commit, model and window. Keep the form "_a_ of _b_", never a bare percentage.
+- **Update [§11.2](../docs/arc42/11-risks-and-technical-debt.md)** when a number changes what is
+  known about a risk.
+- **Keep the raw answers.** Put the downloaded file in `src/lib/llm/__fixtures__/director-answers/`
+  under its downloaded name. `director-recorded.spec.ts` then re-parses every answer against the
+  verdict recorded with it, which pins the parser against what models actually produce. If a
+  deliberate parser change alters a verdict, update that file's `verdict` in the same commit.
 
 ## Releasing
 

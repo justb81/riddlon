@@ -26,6 +26,33 @@
  * bad answer is "nothing happens", never "something else happened".
  */
 
+import type { LlmSessionConfig } from './types.js';
+
+/** How much conversation the director sees. Enough for a claim to be in view, short enough that
+ *  a 3B model still answers with JSON. Not measured yet: `/dev/story`'s director cases take it as a
+ *  parameter so it can be (docs/arc42 §8.4.4). */
+export const DIRECTOR_WINDOW = 6;
+
+/**
+ * The director's session config, shared by the live pass and `/dev/story` so a measurement runs
+ * exactly what a player's turn runs. Historyless: the director must judge this exchange, not
+ * accumulate its own past verdicts. Chrome's built-in model ignores `temperature` on web pages, so
+ * its verdict varies between runs (measured in #54) — one reason the questions are kept small.
+ */
+export const DIRECTOR_SESSION_CONFIG: Readonly<LlmSessionConfig> = {
+	systemPrompt: 'Du antwortest ausschließlich mit JSON.',
+	temperature: 0,
+	maxHistoryTurns: 0
+};
+
+/**
+ * The player's last line and every reply after it — what events are judged on (#54). With no
+ * player line at all, the whole input counts as the exchange.
+ */
+export function lastExchangeOf<T>(turns: readonly T[], isPlayer: (turn: T) => boolean): T[] {
+	return turns.slice(Math.max(turns.findLastIndex(isPlayer), 0));
+}
+
 /** The parts of a scene-graph node the director reads — structurally a subset of both node types. */
 export interface DirectorSceneNode {
 	goals: readonly string[];
@@ -193,6 +220,18 @@ export function buildDirectorPrompt(input: {
 	 * whole window, Nano answered "false-accusation" yes to an innocent "did you see anyone?" (#54).
 	 */
 	lastExchange?: readonly DirectorTurn[];
+	/**
+	 * The scene's authored `goalDetails` (docs/arc42 §8.1.4). Only `reachedWhen` is shown, next to
+	 * the slug, never `intent`: "the character wants X" is not "X happened", and offering it as a
+	 * criterion would push the answer to yes early.
+	 */
+	goalDetails?: Readonly<Record<string, { reachedWhen?: string }>>;
+	/**
+	 * The scene's authored `flagDetails` (docs/arc42 §8.1.4), keyed by `flag:` ref: what must have
+	 * happened for an event — or for an ending's condition — to count. An ending's criterion takes
+	 * the place of its closing text, which describes the aftermath rather than the moment itself.
+	 */
+	flagDetails?: Readonly<Record<string, { reachedWhen?: string }>>;
 }): string {
 	const { questions } = input;
 	const transcript = input.turns.map((turn) => `${turn.who}: ${turn.text}`).join('\n');
@@ -224,7 +263,10 @@ export function buildDirectorPrompt(input: {
 			[
 				'Ziele: Beantworte jedes Ziel einzeln mit true, wenn es im Gespräch erreicht wurde,',
 				'sonst mit false.',
-				...questions.goals.map((goal) => `- ${goal}`)
+				...questions.goals.map((goal) => {
+					const when = input.goalDetails?.[goal]?.reachedWhen;
+					return when ? `- ${goal} — ${when}` : `- ${goal}`;
+				})
 			].join('\n')
 		);
 		format.push(`"goals": {${questions.goals.map((g) => `"${g}": <true|false>`).join(', ')}}`);
@@ -241,7 +283,10 @@ export function buildDirectorPrompt(input: {
 				'Ereignisse: Beantworte jedes Ereignis einzeln mit true, wenn es im letzten Wortwechsel',
 				'(nur dieser Ausschnitt zählt, nicht das Gespräch davor) tatsächlich eingetreten ist,',
 				'sonst mit false.',
-				...ids.map((id) => `- ${id}`)
+				...questions.events.map((ref) => {
+					const when = input.flagDetails?.[ref]?.reachedWhen;
+					return when ? `- ${bareId(ref)} — ${when}` : `- ${bareId(ref)}`;
+				})
 			].join('\n')
 		);
 		format.push(`"events": {${ids.map((id) => `"${id}": <true|false>`).join(', ')}}`);
@@ -249,7 +294,8 @@ export function buildDirectorPrompt(input: {
 
 	if (questions.outcomes.length > 0) {
 		const lines = questions.outcomes.map((outcome) => {
-			const text = [outcome.label, outcome.description].filter(Boolean).join(': ');
+			const when = input.flagDetails?.[outcome.flag]?.reachedWhen;
+			const text = [outcome.label, when ?? outcome.description].filter(Boolean).join(': ');
 			return text ? `- ${outcome.id} — ${text}` : `- ${outcome.id}`;
 		});
 		sections.push(
@@ -445,6 +491,22 @@ function isClaimSupported(
  * for anything unparseable — a director that can't be understood must not be able to move the
  * story.
  */
+/**
+ * Whether an answer contained a JSON object at all. `parseDirectorVerdict` turns an unreadable
+ * answer into the empty verdict on purpose — but a measurement must not count that as the model
+ * saying "no" to everything.
+ */
+export function isReadableDirectorAnswer(raw: string): boolean {
+	const json = firstJsonObject(raw ?? '');
+	if (!json) return false;
+	try {
+		const parsed: unknown = JSON.parse(json);
+		return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
+	} catch {
+		return false;
+	}
+}
+
 export function parseDirectorVerdict(raw: string, allowed: DirectorAllowlist): DirectorVerdict {
 	const json = firstJsonObject(raw ?? '');
 	if (!json) return EMPTY_VERDICT;

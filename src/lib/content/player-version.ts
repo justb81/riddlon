@@ -7,8 +7,12 @@
  * alone would not keep it out of an older player — the compatibility gate below only compares the
  * major version, so a 1.1.0 package would install on a 1.0.0-era player and then silently never
  * award its achievements.
+ *
+ * 0.3.0 is format 1.2.0 support: a scene's `goalDetails`. A package using them need not raise its
+ * `minPlayerVersion`: an older player strips the field and falls back to the bare goal slugs,
+ * which is exactly how every package behaved before it.
  */
-export const CURRENT_PLAYER_VERSION = '0.2.0';
+export const CURRENT_PLAYER_VERSION = '0.3.0';
 
 /** Accepts manifest.json `formatVersion` values whose major version matches this. */
 export const SUPPORTED_FORMAT_MAJOR = 1;

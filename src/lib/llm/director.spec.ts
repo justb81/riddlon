@@ -5,6 +5,8 @@ import {
 	buildDirectorSchema,
 	exitFlagsReached,
 	hasDirectorQuestions,
+	isReadableDirectorAnswer,
+	lastExchangeOf,
 	parseDirectorVerdict,
 	type DirectorAllowlist,
 	type DirectorQuestions,
@@ -148,6 +150,36 @@ describe('exitFlagsReached', () => {
 	});
 });
 
+describe('isReadableDirectorAnswer', () => {
+	it('tells an answer with a JSON object from one without', () => {
+		expect(isReadableDirectorAnswer('Klar! {"goals": {"a": false}} Fertig.')).toBe(true);
+		expect(isReadableDirectorAnswer('{}')).toBe(true);
+		expect(isReadableDirectorAnswer('Alle Ziele sind erreicht.')).toBe(false);
+		expect(isReadableDirectorAnswer('{goals: nein}')).toBe(false);
+		expect(isReadableDirectorAnswer('')).toBe(false);
+	});
+});
+
+describe('lastExchangeOf', () => {
+	const isPlayer = (t: { who: string }) => t.who === 'Du';
+
+	it('starts at the last player line and keeps every reply after it', () => {
+		const turns = [
+			{ who: 'Du', text: 'a' },
+			{ who: 'Max', text: 'b' },
+			{ who: 'Du', text: 'c' },
+			{ who: 'Max', text: 'd' },
+			{ who: 'Max', text: 'e' }
+		];
+		expect(lastExchangeOf(turns, isPlayer).map((t) => t.text)).toEqual(['c', 'd', 'e']);
+	});
+
+	it('treats a window with no player line as one exchange', () => {
+		const turns = [{ who: 'Max', text: 'a' }];
+		expect(lastExchangeOf(turns, isPlayer)).toEqual(turns);
+	});
+});
+
 describe('buildDirectorPrompt', () => {
 	it('shows only what this scene asks, with clue labels and the transcript', () => {
 		const prompt = buildDirectorPrompt({
@@ -167,6 +199,53 @@ describe('buildDirectorPrompt', () => {
 		// The exit flag is derived from the goals — the model is never asked for it.
 		expect(prompt).not.toContain('max-questioned');
 		expect(prompt).not.toContain('scene-completed:');
+	});
+
+	it("shows a goal's reachedWhen next to its slug, never its intent", () => {
+		const prompt = buildDirectorPrompt({
+			questions: witnessQuestions,
+			clues: [],
+			characters,
+			turns,
+			goalDetails: {
+				'seed-timeline': {
+					reachedWhen: 'Max hat eine ungefähre Uhrzeit genannt.',
+					// @ts-expect-error -- intent exists on the package field, the director must ignore it
+					intent: 'Sag, wann es war.'
+				}
+			}
+		});
+		expect(prompt).toContain('- seed-timeline — Max hat eine ungefähre Uhrzeit genannt.');
+		expect(prompt).not.toContain('Sag, wann es war.');
+		// The answer keys stay the slugs.
+		expect(prompt).toContain('"seed-timeline": <true|false>');
+	});
+
+	it("shows an event's and an ending's reachedWhen, the latter in place of its closing text", () => {
+		const flagDetails = {
+			'flag:lied': { reachedWhen: 'Max hat nachweislich gelogen.' },
+			'flag:evidence-presented': { reachedWhen: 'Max hat gestanden.' }
+		};
+		const witness = buildDirectorPrompt({
+			questions: witnessQuestions,
+			clues: [],
+			characters,
+			turns,
+			flagDetails
+		});
+		expect(witness).toContain('- lied — Max hat nachweislich gelogen.');
+		expect(witness).toContain('"lied": <true|false>');
+
+		const group = buildDirectorPrompt({
+			questions: buildDirectorQuestions(groupScene, nothingYet),
+			clues: [],
+			characters,
+			turns,
+			flagDetails
+		});
+		expect(group).toContain('- max-confesses — Fall gelöst: Max hat gestanden.');
+		expect(group).not.toContain('Max gibt es zu.');
+		expect(group).toContain('- false-accusation-made — Falsch beschuldigt');
 	});
 
 	it('judges events on the last exchange only', () => {

@@ -52,6 +52,18 @@ export interface PersonaRelationship {
 	relation: string;
 }
 
+/**
+ * What a character pursues, in authored words: each goal's `intent` from the scene's
+ * `goalDetails` (docs/arc42 §8.1.4), or the slug where a package gives none. A small model reads
+ * German prose far better than an English slug inside a German prompt.
+ */
+export function goalIntents(
+	goals: readonly string[],
+	details?: Readonly<Record<string, { intent?: string }>>
+): string[] {
+	return goals.map((goal) => details?.[goal]?.intent ?? goal);
+}
+
 function section(heading: string, lines: readonly string[]): string[] {
 	if (lines.length === 0) return [];
 	return ['', heading, ...lines.map((line) => `- ${line}`)];

@@ -16,8 +16,11 @@
 	 * §1.3 walkthrough sets `flag:lucy-identified` / `flag:witnesses-named` by hand and asserts the
 	 * contacts appear), so anything that still doesn't advance is between the model and the parser.
 	 *
-	 * Not linked from anywhere in the app. Delete it once the director pass has real coverage
-	 * (see the follow-up issue on director quality).
+	 * "Director cases" below turns the probe into a measurement (#54): it runs a story's
+	 * `director-cases.json` — fixed transcripts with known answers — several times each against the
+	 * loaded model and tallies the verdicts. The protocol is in `stories/README.md`.
+	 *
+	 * Not linked from anywhere in the app.
 	 */
 
 	import { llm } from '$lib/llm/llm.svelte.js';
@@ -25,11 +28,28 @@
 		buildDirectorPrompt,
 		buildDirectorQuestions,
 		buildDirectorSchema,
+		DIRECTOR_SESSION_CONFIG,
+		DIRECTOR_WINDOW,
+		lastExchangeOf,
+		isReadableDirectorAnswer,
 		parseDirectorVerdict,
 		type DirectorQuestions,
 		type DirectorVerdict
 	} from '$lib/llm/director.js';
+	import {
+		caseQuestions,
+		caseTurns,
+		checkCase,
+		ratio,
+		scoreCase,
+		tally,
+		type CaseRun,
+		type CaseScore,
+		type DirectorCaseFile
+	} from './director-cases.js';
 	import { storyRuntime } from '$lib/state/engine.svelte.js';
+	import { getEndpointConfig } from '$lib/llm/endpoint-config.js';
+	import { profile } from '$lib/state/profile.svelte.js';
 	import { storySession } from '$lib/state/story-session.svelte.js';
 	import { SPEAKER_ME } from '$lib/story/types.js';
 
@@ -56,6 +76,7 @@
 	let probeVerdict = $state<DirectorVerdict | null>(null);
 	let probeError = $state('');
 	let probing = $state(false);
+	let probeMs = $state<number | null>(null);
 
 	const thread = $derived(storyRuntime.threadFor(threadKey));
 	/** The graph node, not the display projection — only it carries exitConditions/revealables. */
@@ -122,11 +143,17 @@
 	}
 
 	function buildPrompt(): string {
+		const turns = parseTranscript(transcript);
 		probePrompt = buildDirectorPrompt({
 			questions,
 			clues: clueLabels,
 			characters: sceneCharacters,
-			turns: parseTranscript(transcript)
+			turns,
+			// The same cut the live pass makes — without it, events would be judged on the whole
+			// window again, which is exactly what #135 stopped.
+			lastExchange: lastExchangeOf(turns, (t) => t.who === 'Du'),
+			goalDetails: node?.goalDetails,
+			flagDetails: node?.flagDetails
 		});
 		return probePrompt;
 	}
@@ -151,14 +178,12 @@
 			// each key gets its own backend handle (see adapter.ts). Probe right after a page reload
 			// to see the director answer with a clean context, then again after a few chat turns to
 			// see what accumulated history does to it.
-			const session = await llm.session('director-probe', {
-				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
-				temperature: 0,
-				maxHistoryTurns: 0
-			});
+			const session = await llm.session('director-probe', DIRECTOR_SESSION_CONFIG);
+			const started = performance.now();
 			probeRaw = await session.prompt(prompt, {
 				responseSchema: buildDirectorSchema({ questions, characters: sceneCharacters })
 			});
+			probeMs = Math.round(performance.now() - started);
 			await session.destroy();
 			probeVerdict = parseDirectorVerdict(probeRaw, {
 				questions,
@@ -176,6 +201,162 @@
 	/** Applies exactly what the app would have applied — goals remembered, exit flag derived. */
 	function applyVerdict(): void {
 		if (probeVerdict && node) void storySession.applyDirectorVerdict(node.id, probeVerdict);
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Director cases                                                         */
+	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * Loaded lazily and only in dev: the case files quote story dialogue, and a production build
+	 * must not carry story content outside the packages themselves.
+	 */
+	const caseLoaders: Record<string, () => Promise<DirectorCaseFile>> = import.meta.env.DEV
+		? import.meta.glob<DirectorCaseFile>('/stories/*/director-cases.json', { import: 'default' })
+		: {};
+	const caseFileKeys = Object.keys(caseLoaders);
+
+	let caseFileKey = $state(caseFileKeys[0] ?? '');
+	let caseFile = $state<DirectorCaseFile | null>(null);
+	let caseRunsEach = $state(3);
+	let caseWindow = $state(DIRECTOR_WINDOW);
+	/** Off measures the bare slugs, as a package without `goalDetails`/`flagDetails` would be asked. */
+	let caseCriteria = $state(true);
+	let caseResults = $state<{ run: CaseRun; score: CaseScore | null }[]>([]);
+	let caseProgress = $state('');
+	let caseRunning = $state(false);
+	let caseStop = false;
+
+	$effect(() => {
+		const key = caseFileKey;
+		if (!key) return;
+		void caseLoaders[key]().then((file) => {
+			caseFile = file;
+			caseRunsEach = file.runs;
+		});
+	});
+
+	const graphNodes = $derived(storyRuntime.bundle?.graph.nodes ?? []);
+	const caseNode = (sceneId: string) => {
+		const n = graphNodes.find((x) => x.id === sceneId);
+		return n && { ...n, outcomes: n.type === 'group-chat-scene' ? n.outcomes : [] };
+	};
+	const caseProblems = $derived.by(() => {
+		if (!caseFile) return [];
+		if (!storyRuntime.bundle)
+			return ['no story package active — install and start one via / first'];
+		return caseFile.cases.flatMap((c) => {
+			const n = caseNode(c.scene);
+			return checkCase(c, n, n?.participants ?? []);
+		});
+	});
+
+	/**
+	 * Which model actually answered. `activeModelId` is the local catalog's id, which an endpoint
+	 * or Chrome's built-in model only borrows — two endpoint models would otherwise look like one.
+	 */
+	function modelLabel(): string {
+		if (llm.backend === 'openai') return `openai:${getEndpointConfig()?.model ?? '?'}`;
+		if (llm.backend === 'native') return 'native:chrome-built-in';
+		return `${llm.backend ?? '?'}:${llm.activeModelId ?? '?'}`;
+	}
+
+	async function runCases(): Promise<void> {
+		if (!caseFile || caseRunning) return;
+		if (!llm.ready) {
+			caseProgress = `no model loaded (llm.status = ${llm.status}) — boot via / first`;
+			return;
+		}
+		caseRunning = true;
+		caseStop = false;
+		caseResults = [];
+		const model = modelLabel();
+		const total = caseFile.cases.length * caseRunsEach;
+		try {
+			// Case-major, runs inner: a stopped measurement still covers whole cases.
+			for (const testCase of caseFile.cases) {
+				const n = caseNode(testCase.scene);
+				if (!n) continue;
+				const questions = caseQuestions(n, testCase);
+				const characters = storyRuntime.cast
+					.filter((c) => n.participants.includes(c.id))
+					.map((c) => ({ id: c.id, name: testCase.names?.[c.id] ?? c.displayName }));
+				const { turns, lastExchange } = caseTurns(testCase, caseWindow, profile.nickname);
+				const prompt = buildDirectorPrompt({
+					questions,
+					clues: clueLabels,
+					characters,
+					turns,
+					lastExchange,
+					goalDetails: caseCriteria ? n.goalDetails : undefined,
+					flagDetails: caseCriteria ? n.flagDetails : undefined
+				});
+				const allowlist = { questions, characters, clues: clueLabels, turns };
+				for (let i = 0; i < caseRunsEach; i++) {
+					if (caseStop) return;
+					caseProgress = `${caseResults.length + 1} / ${total} · ${testCase.id}`;
+					const run: CaseRun = {
+						caseId: testCase.id,
+						model,
+						window: caseWindow,
+						criteria: caseCriteria,
+						prompt,
+						allowlist,
+						raw: '',
+						verdict: { goals: [], flags: [], clues: [] },
+						ms: 0
+					};
+					try {
+						const session = await llm.session('director-cases', DIRECTOR_SESSION_CONFIG);
+						const started = performance.now();
+						run.raw = await session.prompt(prompt, {
+							responseSchema: buildDirectorSchema({ questions, characters })
+						});
+						run.ms = Math.round(performance.now() - started);
+						await session.destroy();
+						run.verdict = parseDirectorVerdict(run.raw, allowlist);
+						run.unreadable = !isReadableDirectorAnswer(run.raw);
+						caseResults.push({
+							run,
+							score: run.unreadable ? null : scoreCase(testCase, questions, run.verdict)
+						});
+					} catch (error) {
+						run.error = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+						caseResults.push({ run, score: null });
+					}
+				}
+			}
+		} finally {
+			caseRunning = false;
+			caseProgress = `${caseResults.length} / ${total} done`;
+		}
+	}
+
+	const caseTotal = $derived(tally(caseResults));
+	const perCase = $derived(
+		(caseFile?.cases ?? []).map((c) => ({
+			id: c.id,
+			t: tally(caseResults.filter((r) => r.run.caseId === c.id))
+		}))
+	);
+
+	/** Every run with its raw answer — what `src/lib/llm/__fixtures__/director-answers/` keeps. */
+	function downloadRuns(): void {
+		const blob = new Blob(
+			[
+				JSON.stringify(
+					{ recordedAt: new Date().toISOString(), runs: caseResults.map((r) => r.run) },
+					null,
+					'\t'
+				)
+			],
+			{ type: 'application/json' }
+		);
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = `director-runs-${caseResults[0]?.run.model.replace(/[^\w.-]+/g, '_') ?? 'none'}-w${caseWindow}${caseCriteria ? '' : '-bare'}.json`;
+		a.click();
+		URL.revokeObjectURL(a.href);
 	}
 </script>
 
@@ -400,7 +581,7 @@
 				class="mt-3 max-h-72 overflow-auto rounded-control border border-line bg-slate-100/5 p-2 font-mono text-[10.5px] whitespace-pre-wrap text-slate-400">{probePrompt}</pre>
 		{/if}
 		{#if probeRaw}
-			<h3 class="mt-3 text-label text-slate-400">raw answer</h3>
+			<h3 class="mt-3 text-label text-slate-400">raw answer · {probeMs ?? '—'} ms</h3>
 			<pre
 				class="mt-1 overflow-x-auto font-mono text-[10.5px] whitespace-pre-wrap text-slate-200">{probeRaw}</pre>
 		{/if}
@@ -411,6 +592,132 @@
 					null,
 					1
 				)}</pre>
+		{/if}
+	</section>
+
+	<section class="rounded-panel border border-line bg-surface-raised p-4">
+		<h2 class="text-h2">Director cases</h2>
+		<p class="mt-1 text-label text-slate-400">
+			Runs a story's <code>director-cases.json</code> against the loaded model — every case
+			{caseRunsEach}× — and tallies the verdicts against what the case expects. Independent of the
+			save: each case starts with no flag set. Protocol in <code>stories/README.md</code>.
+		</p>
+
+		<div class="mt-3 flex flex-wrap items-end gap-2">
+			<label class="flex flex-col gap-1 text-label text-slate-400">
+				case file
+				<select
+					bind:value={caseFileKey}
+					class="rounded-control border border-line-strong bg-slate-100/5 px-2 py-1.5 font-mono text-[11px]"
+				>
+					{#each caseFileKeys as key (key)}
+						<option value={key}>{key}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="flex flex-col gap-1 text-label text-slate-400">
+				runs each
+				<input
+					type="number"
+					min="1"
+					bind:value={caseRunsEach}
+					class="w-16 rounded-control border border-line-strong bg-slate-100/5 px-2 py-1.5 font-mono text-[11px]"
+				/>
+			</label>
+			<label class="flex flex-col gap-1 text-label text-slate-400">
+				window
+				<input
+					type="number"
+					min="1"
+					bind:value={caseWindow}
+					class="w-16 rounded-control border border-line-strong bg-slate-100/5 px-2 py-1.5 font-mono text-[11px]"
+				/>
+			</label>
+			<label class="flex items-center gap-1.5 self-center text-label text-slate-400">
+				<input type="checkbox" bind:checked={caseCriteria} />
+				authored criteria
+			</label>
+			<button
+				type="button"
+				onclick={runCases}
+				disabled={caseRunning || !caseFile || caseProblems.length > 0}
+				class="rounded-control border border-accent/50 bg-accent/15 px-3 py-2 text-label disabled:opacity-50"
+				>{caseRunning ? 'Running…' : 'Run cases'}</button
+			>
+			<button
+				type="button"
+				onclick={() => (caseStop = true)}
+				disabled={!caseRunning}
+				class="rounded-control border border-line-strong px-3 py-2 text-label disabled:opacity-50"
+				>Stop</button
+			>
+			<button
+				type="button"
+				onclick={downloadRuns}
+				disabled={caseRunning || caseResults.length === 0}
+				class="rounded-control border border-line-strong px-3 py-2 text-label disabled:opacity-50"
+				>Download runs</button
+			>
+		</div>
+
+		<p class="mt-2 font-mono text-[11px] text-slate-400">
+			model {modelLabel()} · {caseProgress || 'idle'}
+		</p>
+		{#each caseProblems as problem (problem)}
+			<p class="font-mono text-[10.5px] text-danger">{problem}</p>
+		{/each}
+
+		{#if caseResults.length > 0}
+			<table class="mt-3 w-full font-mono text-[10.5px]">
+				<thead class="text-left text-slate-500">
+					<tr>
+						<th>case</th>
+						<th>goals hit</th>
+						<th>goals early</th>
+						<th>events hit</th>
+						<th>events false</th>
+						<th>ending right</th>
+						<th>clues</th>
+						<th>err</th>
+						<th>unreadable</th>
+						<th>median ms</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each [...perCase.filter((p) => p.t.runs > 0), { id: 'total', t: caseTotal }] as row (row.id)}
+						<tr class={row.id === 'total' ? 'border-t border-line text-accent' : ''}>
+							<td>{row.id}</td>
+							<td>{ratio(row.t.goals.hit, row.t.goals.hit + row.t.goals.miss)}</td>
+							<td
+								>{ratio(
+									row.t.goals.falsePositive,
+									row.t.goals.falsePositive + row.t.goals.correctNo
+								)}</td
+							>
+							<td>{ratio(row.t.events.hit, row.t.events.hit + row.t.events.miss)}</td>
+							<td
+								>{ratio(
+									row.t.events.falsePositive,
+									row.t.events.falsePositive + row.t.events.correctNo
+								)}</td
+							>
+							<td
+								>{ratio(
+									row.t.outcomes.right,
+									row.t.outcomes.right +
+										row.t.outcomes.missed +
+										row.t.outcomes.false +
+										row.t.outcomes.wrong
+								)}</td
+							>
+							<td>{ratio(row.t.cluesFound, row.t.cluesExpected)} +{row.t.cluesExtra}</td>
+							<td>{row.t.errors}</td>
+							<td>{row.t.unreadable}</td>
+							<td>{row.t.medianMs ?? '—'}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
 		{/if}
 	</section>
 </div>

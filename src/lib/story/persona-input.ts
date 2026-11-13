@@ -11,7 +11,7 @@
 
 import type { EffectiveCharacterState } from '$lib/characters/index.js';
 import type { StoryBundle } from '$lib/content/index.js';
-import { buildPersonaPrompt } from '$lib/llm/persona.js';
+import { buildPersonaPrompt, goalIntents } from '$lib/llm/persona.js';
 import type { ThreadKind } from './story-display.js';
 
 export interface PersonaContext {
@@ -68,11 +68,11 @@ export function buildScenePersonaPrompt(
 		},
 		storyTitle: ctx.storyTitle,
 		scene: {
-			goals: idle ? [] : (scene?.goals ?? []),
+			goals: idle ? [] : goalIntents(scene?.goals ?? [], scene?.goalDetails),
 			// Idle mode: this scene is already resolved — its goals are known-accomplished, not
 			// dropped, so the character can still refer back to them (e.g. thank the player for
 			// the help) instead of pretending nothing happened.
-			resolvedGoals: idle ? (scene?.goals ?? []) : undefined,
+			resolvedGoals: idle ? goalIntents(scene?.goals ?? [], scene?.goalDetails) : undefined,
 			playerRole: !idle && scene?.type === 'group-chat-scene' ? scene.playerRole : undefined,
 			isGroup: thread.kind === 'group',
 			otherParticipants: thread.participantIds

@@ -396,6 +396,29 @@ export function validatePackage(
 					});
 				}
 			});
+			for (const slug of Object.keys(node.goalDetails ?? {})) {
+				if (!node.goals.includes(slug)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${manifest.entryGraph}#/nodes/${index}/goalDetails/${slug}`,
+						message: `goalDetails key "${slug}" is not one of this scene's goals`
+					});
+				}
+			}
+			const askable = new Set([
+				...node.settableFlags,
+				...node.exitConditions,
+				...(node.type === 'group-chat-scene' ? node.outcomes.map((o) => o.condition) : [])
+			]);
+			for (const ref of Object.keys(node.flagDetails ?? {})) {
+				if (!askable.has(ref)) {
+					errors.push({
+						code: 'DANGLING_REFERENCE',
+						path: `${manifest.entryGraph}#/nodes/${index}/flagDetails/${ref}`,
+						message: `flagDetails key "${ref}" is not a settable, exit or outcome flag of this scene`
+					});
+				}
+			}
 			if (node.type === 'chat-scene') {
 				node.next.forEach((transition, transitionIndex) => {
 					if (!sceneIds.has(transition.target)) {

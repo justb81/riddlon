@@ -138,6 +138,41 @@ describe('validatePackage', () => {
 		);
 	});
 
+	it('accepts goalDetails for its own goals and rejects a key that is no goal', () => {
+		const files = buildValidPackageFiles();
+		const node = (files['story/graph.json'] as StoryGraph).nodes[0];
+		node.goalDetails = {
+			[node.goals[0]]: { intent: 'Frag nach.', reachedWhen: 'Es wurde gefragt.' }
+		};
+		expect(validatePackage(files).valid).toBe(true);
+
+		node.goalDetails = { 'not-a-goal': { intent: 'x' } };
+		const result = validatePackage(files);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({
+				code: 'DANGLING_REFERENCE',
+				path: expect.stringContaining('goalDetails/not-a-goal')
+			})
+		);
+	});
+
+	it('accepts flagDetails only for flags the scene can actually ask', () => {
+		const files = buildValidPackageFiles();
+		const node = (files['story/graph.json'] as StoryGraph).nodes[0];
+		node.flagDetails = { [node.exitConditions[0]]: { reachedWhen: 'Es ist passiert.' } };
+		expect(validatePackage(files).valid).toBe(true);
+
+		node.flagDetails = { 'flag:nowhere': { reachedWhen: 'x' } };
+		const result = validatePackage(files);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({
+				code: 'DANGLING_REFERENCE',
+				path: expect.stringContaining('flagDetails/flag:nowhere')
+			})
+		);
+	});
+
 	it('detects duplicate fact ids', () => {
 		const files = withFactsAndSecrets(buildValidPackageFiles());
 		const facts = files['world/facts.json'] as { id: string }[];

@@ -1,0 +1,466 @@
+{
+	"runs": 3,
+	"cases": [
+		{
+			"id": "erstkontakt-all-goals",
+			"scene": "ce658bbf-33df-48d6-a2f6-e1568566fb8e",
+			"names": {
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f": "Unbekannt"
+			},
+			"transcript": [
+				"Unbekannt: Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?",
+				"Du: ja, war ich. wer bist du denn?",
+				"Unbekannt: Ich bin's, Lucy! Die Freundin von Max und Sabine, wir haben uns an der Bar kurz unterhalten.",
+				"Du: ach Lucy, klar. was gibt's?"
+			],
+			"expect": {
+				"goals": {
+					"ask-whether-player-was-at-the-club": true,
+					"open-as-unknown-contact": true,
+					"reveal-identity-as-lucy": true
+				}
+			}
+		},
+		{
+			"id": "erstkontakt-still-unknown",
+			"scene": "ce658bbf-33df-48d6-a2f6-e1568566fb8e",
+			"names": {
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f": "Unbekannt"
+			},
+			"transcript": [
+				"Unbekannt: Hey, sorry für die fremde Nummer. Warst du letzten Samstag im Kellerlicht?",
+				"Du: wer ist da?",
+				"Unbekannt: Erzähl ich dir gleich. Warst du da?"
+			],
+			"expect": {
+				"goals": {
+					"ask-whether-player-was-at-the-club": true,
+					"open-as-unknown-contact": true,
+					"reveal-identity-as-lucy": false
+				}
+			}
+		},
+		{
+			"id": "erstkontakt-identity-only",
+			"scene": "ce658bbf-33df-48d6-a2f6-e1568566fb8e",
+			"reachedGoals": ["ask-whether-player-was-at-the-club", "open-as-unknown-contact"],
+			"names": {
+				"3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f": "Unbekannt"
+			},
+			"transcript": [
+				"Du: jetzt sag schon, wer bist du?",
+				"Unbekannt: Lucy. Wir kennen uns über Max und Sabine."
+			],
+			"expect": {
+				"goals": {
+					"reveal-identity-as-lucy": true
+				}
+			}
+		},
+		{
+			"id": "hilfe-all-goals",
+			"scene": "32e477b0-6721-47cb-867e-cc181ed7c72f",
+			"transcript": [
+				"Lucy: Mir wurde am Samstag im Club mein Portmonnaie geklaut, das rote aus meiner Jackentasche.",
+				"Du: oh nein, das tut mir leid",
+				"Lucy: Kannst du mir helfen, rauszufinden, was passiert ist? Du warst ja auch da.",
+				"Du: klar, wo fang ich an?",
+				"Lucy: Frag Max und Sabine, die waren den ganzen Abend mit mir unterwegs. Vielleicht haben die was gesehen."
+			],
+			"expect": {
+				"goals": {
+					"ask-player-for-help": true,
+					"name-max-and-sabine-as-witnesses": true
+				},
+				"clues": {
+					"clue:stolen-item": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"
+				}
+			}
+		},
+		{
+			"id": "hilfe-no-witnesses-yet",
+			"scene": "32e477b0-6721-47cb-867e-cc181ed7c72f",
+			"transcript": [
+				"Lucy: Mir wurde am Samstag im Club was geklaut. Ich bin echt fertig.",
+				"Du: was denn?",
+				"Lucy: Mein Portmonnaie. Kannst du mir vielleicht helfen?"
+			],
+			"expect": {
+				"goals": {
+					"ask-player-for-help": true,
+					"name-max-and-sabine-as-witnesses": false
+				},
+				"clues": {
+					"clue:stolen-item": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"
+				}
+			}
+		},
+		{
+			"id": "max-all-seeds",
+			"scene": "0974a346-476c-4222-976e-ee43854fc709",
+			"transcript": [
+				"Du: hey max, lucy sagt ihr portmonnaie ist weg. hast du was mitbekommen?",
+				"Max: Ja, krass. Ich glaub, das war so gegen 22 Uhr.",
+				"Du: wo war ihre jacke?",
+				"Max: Die hing an der Garderobe, die ist ja unbesetzt.",
+				"Du: hast du jemanden gesehen?",
+				"Max: Da war so jemand mit dunkler Kapuzenjacke, mehr weiß ich nicht."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": true,
+					"seed-suspect-description": true
+				},
+				"clues": {
+					"clue:time-window": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+					"clue:location": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e",
+					"clue:suspect-description": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"
+				}
+			}
+		},
+		{
+			"id": "max-small-talk",
+			"scene": "0974a346-476c-4222-976e-ee43854fc709",
+			"transcript": [
+				"Du: hey max, alles gut bei dir?",
+				"Max: Ja, passt. War ein langer Abend am Samstag.",
+				"Du: kann ich mir vorstellen"
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": false,
+					"seed-location": false,
+					"seed-suspect-description": false
+				}
+			}
+		},
+		{
+			"id": "max-time-only",
+			"scene": "0974a346-476c-4222-976e-ee43854fc709",
+			"transcript": [
+				"Du: weißt du noch, wann das mit lucys portmonnaie war?",
+				"Max: Gegen 22 Uhr, schätze ich."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": false,
+					"seed-suspect-description": false
+				},
+				"clues": {
+					"clue:time-window": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"
+				}
+			}
+		},
+		{
+			"id": "max-goals-outside-window",
+			"scene": "0974a346-476c-4222-976e-ee43854fc709",
+			"transcript": [
+				"Du: wann war das ungefähr?",
+				"Max: Gegen 22 Uhr.",
+				"Du: und wo hing die jacke?",
+				"Max: An der Garderobe.",
+				"Du: ok. was hast du danach gemacht?",
+				"Max: Getanzt, ehrlich gesagt.",
+				"Du: mit wem?",
+				"Max: Mit Sabine, und dann waren wir an der Bar.",
+				"Du: hast du da noch jemanden gesehen?",
+				"Max: Ja, jemand mit dunkler Kapuzenjacke ist an uns vorbei."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": true,
+					"seed-suspect-description": true
+				},
+				"clues": {
+					"clue:suspect-description": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"
+				}
+			}
+		},
+		{
+			"id": "sabine-all-seeds",
+			"scene": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"transcript": [
+				"Du: sabine, lucy wurde im kellerlicht beklaut. weißt du was?",
+				"Sabine: Oh nein. Ich glaube, das war gegen Mitternacht.",
+				"Du: wo war ihre jacke?",
+				"Sabine: An der Garderobe, wie unsere auch.",
+				"Du: hast du jemanden gesehen?",
+				"Sabine: Jemand mit dunkler Kapuzenjacke stand kurz da rum."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": true,
+					"seed-suspect-description": true
+				},
+				"events": {
+					"flag:false-accusation": false
+				},
+				"clues": {
+					"clue:time-window": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+					"clue:location": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e",
+					"clue:suspect-description": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+				}
+			}
+		},
+		{
+			"id": "sabine-innocent-question",
+			"scene": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"transcript": [
+				"Sabine: Lucy hat erzählt, dass ihr Portmonnaie weg ist. Furchtbar.",
+				"Du: hast du an dem abend jemanden an der garderobe gesehen?",
+				"Sabine: Hm, nicht wirklich. Da war viel los."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": false,
+					"seed-location": false,
+					"seed-suspect-description": false
+				},
+				"events": {
+					"flag:false-accusation": false
+				},
+				"clues": {
+					"clue:stolen-item": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+				}
+			}
+		},
+		{
+			"id": "sabine-accused",
+			"scene": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"transcript": [
+				"Sabine: Gegen Mitternacht war das, glaube ich.",
+				"Du: sabine, ich glaube du hast das portmonnaie genommen.",
+				"Sabine: Was? Spinnst du? Ich würde Lucy nie beklauen!"
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": false,
+					"seed-suspect-description": false
+				},
+				"events": {
+					"flag:false-accusation": true
+				},
+				"clues": {
+					"clue:time-window": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+				}
+			}
+		},
+		{
+			"id": "sabine-accusation-earlier",
+			"scene": "8e888a69-8631-40d8-af8d-a397d544ad20",
+			"transcript": [
+				"Du: warst du das etwa?",
+				"Sabine: Nein! Wie kommst du darauf?",
+				"Du: sorry, war blöd von mir. wann war das denn ungefähr?",
+				"Sabine: Gegen Mitternacht."
+			],
+			"expect": {
+				"goals": {
+					"seed-timeline": true,
+					"seed-location": false,
+					"seed-suspect-description": false
+				},
+				"events": {
+					"flag:false-accusation": false
+				},
+				"clues": {
+					"clue:time-window": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+				}
+			}
+		},
+		{
+			"id": "bericht1-reported-and-quiet",
+			"scene": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
+			"transcript": [
+				"Du: max sagt gegen 22 uhr, sabine gegen mitternacht. beide sagen, die jacke hing an der garderobe.",
+				"Lucy: Das passt ja gar nicht zusammen. Danke dir, ich muss das erstmal sacken lassen. Ich melde mich."
+			],
+			"expect": {
+				"goals": {
+					"report-findings": true,
+					"go-quiet-afterwards": true
+				}
+			}
+		},
+		{
+			"id": "bericht1-nothing-reported",
+			"scene": "45fd7837-17ae-4ebe-b6fe-407779be1d79",
+			"transcript": [
+				"Lucy: Und, hast du schon mit den beiden geredet?",
+				"Du: noch nicht richtig, mach ich heute abend"
+			],
+			"expect": {
+				"goals": {
+					"report-findings": false,
+					"go-quiet-afterwards": false
+				}
+			}
+		},
+		{
+			"id": "verdacht-all-goals",
+			"scene": "b35e409f-d012-41ae-a655-8693901c086d",
+			"transcript": [
+				"Lucy: Ich hab mit Hans geredet, dem Barkeeper. Er hat Max kurz vor Mitternacht allein an der Garderobe gesehen.",
+				"Du: max? echt jetzt?",
+				"Lucy: Ich will das nicht glauben. Kannst du nochmal mit Max und Sabine reden?"
+			],
+			"expect": {
+				"goals": {
+					"raise-hans-suspicion": true,
+					"ask-player-to-recheck-with-max-and-sabine": true
+				},
+				"clues": {
+					"clue:hans-accusation": "3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"
+				}
+			}
+		},
+		{
+			"id": "verdacht-hint-only",
+			"scene": "b35e409f-d012-41ae-a655-8693901c086d",
+			"transcript": [
+				"Lucy: Ich hab da was gehört, aber ich weiß nicht, ob ich es sagen soll.",
+				"Du: was denn?",
+				"Lucy: Später. Ich muss erst nachdenken."
+			],
+			"expect": {
+				"goals": {
+					"raise-hans-suspicion": false,
+					"ask-player-to-recheck-with-max-and-sabine": false
+				}
+			}
+		},
+		{
+			"id": "max2-confronted-denies",
+			"scene": "725e3554-0a53-49fa-9bb5-f80929dc685b",
+			"transcript": [
+				"Du: hans sagt, du warst kurz vor mitternacht allein an der garderobe.",
+				"Max: Was? Nein. Ich war die ganze Zeit an der Bar, nicht an der Garderobe."
+			],
+			"expect": {
+				"goals": {
+					"confront-with-hans-claim": true,
+					"deny-being-at-the-cloakroom": true
+				},
+				"clues": {
+					"clue:max-whereabouts": "8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"
+				}
+			}
+		},
+		{
+			"id": "max2-not-confronted",
+			"scene": "725e3554-0a53-49fa-9bb5-f80929dc685b",
+			"transcript": [
+				"Du: na, wie geht's?",
+				"Max: Geht so. Lucy ist ziemlich durch wegen der Sache."
+			],
+			"expect": {
+				"goals": {
+					"confront-with-hans-claim": false,
+					"deny-being-at-the-cloakroom": false
+				}
+			}
+		},
+		{
+			"id": "sabine2-confirms",
+			"scene": "107ad6e6-72d9-4039-a2c1-34e79113d7f5",
+			"transcript": [
+				"Du: hans hat max kurz vor mitternacht an der garderobe gesehen. du auch?",
+				"Sabine: Ehrlich gesagt ja. Max stand da allein, direkt neben Lucys Jacke. Ich hab mir nichts dabei gedacht."
+			],
+			"expect": {
+				"goals": {
+					"confirm-hans-claim": true
+				},
+				"clues": {
+					"clue:max-whereabouts": "c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
+				}
+			}
+		},
+		{
+			"id": "sabine2-evasive",
+			"scene": "107ad6e6-72d9-4039-a2c1-34e79113d7f5",
+			"transcript": [
+				"Du: hast du max an der garderobe gesehen?",
+				"Sabine: Ich weiß nicht, ich will niemandem was Falsches unterstellen."
+			],
+			"expect": {
+				"goals": {
+					"confirm-hans-claim": false
+				}
+			}
+		},
+		{
+			"id": "bericht2-all-goals",
+			"scene": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
+			"transcript": [
+				"Du: max sagt, er war nicht an der garderobe. sabine hat ihn aber genau dort gesehen.",
+				"Lucy: Dann stimmt es also, was Hans gesagt hat.",
+				"Lucy: Ich mach eine Gruppe mit uns vieren auf. Das klären wir jetzt zusammen."
+			],
+			"expect": {
+				"goals": {
+					"report-findings": true,
+					"confirm-suspicion": true,
+					"announce-group-chat": true
+				}
+			}
+		},
+		{
+			"id": "bericht2-report-only",
+			"scene": "8bc89ff8-3769-421f-8737-a80a2525c2c0",
+			"transcript": [
+				"Du: max sagt, er war nicht an der garderobe. sabine hat ihn aber dort gesehen.",
+				"Lucy: Oh. Ich weiß nicht, was ich davon halten soll."
+			],
+			"expect": {
+				"goals": {
+					"report-findings": true,
+					"confirm-suspicion": false,
+					"announce-group-chat": false
+				}
+			}
+		},
+		{
+			"id": "gruppe-confession",
+			"scene": "2c608d80-cbf4-44cc-bc62-d3f449616ccd",
+			"transcript": [
+				"Du: max, du hast gesagt 22 uhr und dass du nie an der garderobe warst. sabine und hans haben dich dort kurz vor mitternacht gesehen.",
+				"Max: ...okay. Ja. Ich hab das Portmonnaie aus Lucys Jacke genommen. Es tut mir leid.",
+				"Lucy: Max?! Warum?",
+				"Max: Ich geb's dir zurück, versprochen."
+			],
+			"expect": {
+				"outcome": "max-confesses"
+			}
+		},
+		{
+			"id": "gruppe-false-accusation",
+			"scene": "2c608d80-cbf4-44cc-bc62-d3f449616ccd",
+			"transcript": [
+				"Du: sabine, ich glaube, du warst es.",
+				"Sabine: Bitte was? Ich hab Max an der Garderobe gesehen, nicht umgekehrt!",
+				"Lucy: Das ist echt unfair Sabine gegenüber."
+			],
+			"expect": {
+				"outcome": "false-accusation-made"
+			}
+		},
+		{
+			"id": "gruppe-still-open",
+			"scene": "2c608d80-cbf4-44cc-bc62-d3f449616ccd",
+			"transcript": [
+				"Lucy: Okay, wir sind alle hier. Wer fängt an?",
+				"Du: lasst uns einfach nochmal durchgehen, wer wann wo war.",
+				"Max: Ich war an der Bar, das hab ich doch schon gesagt."
+			],
+			"expect": {
+				"outcome": "none"
+			}
+		}
+	]
+}

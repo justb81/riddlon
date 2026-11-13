@@ -17,13 +17,16 @@ import {
 	buildDirectorPrompt,
 	buildDirectorQuestions,
 	buildDirectorSchema,
+	DIRECTOR_SESSION_CONFIG,
+	DIRECTOR_WINDOW,
 	exitFlagsReached,
 	hasDirectorQuestions,
+	lastExchangeOf,
 	parseDirectorVerdict,
 	type DirectorVerdict
 } from '$lib/llm/director.js';
 import { isLlmError } from '$lib/llm/errors.js';
-import { buildOpeningInstruction, pickResponder } from '$lib/llm/persona.js';
+import { buildOpeningInstruction, goalIntents, pickResponder } from '$lib/llm/persona.js';
 import { buildScenePersonaPrompt } from '$lib/story/persona-input.js';
 import { countUnread } from '$lib/story/unread.js';
 import { formatMessageTimestamp } from '$lib/story/message-time.js';
@@ -38,10 +41,6 @@ import {
 import type { StoryThread } from '$lib/story/story-display.js';
 import { storyRuntime } from './engine.svelte.js';
 import { profile } from './profile.svelte.js';
-
-/** How much conversation the director sees. Enough for a claim to be in view, short enough that
- *  a 3B model still answers with JSON. */
-const DIRECTOR_WINDOW = 6;
 
 function toChatMessage(message: SaveChatMessage): ChatMessage {
 	return {
@@ -236,7 +235,8 @@ class StorySession {
 			const session = await llm.session(`${threadKey}:${speakerId}`, {
 				systemPrompt: this.#personaPromptFor(speakerId, sceneId, thread)
 			});
-			const goals = storyRuntime.sceneById(sceneId)?.goals ?? [];
+			const node = this.#sceneNode(sceneId);
+			const goals = goalIntents(node?.goals ?? [], node?.goalDetails);
 			const text = (await session.prompt(buildOpeningInstruction(profile.nickname, goals))).trim();
 			if (!text) return;
 			this.#openedScenes.add(sceneId);
@@ -352,9 +352,7 @@ class StorySession {
 			text: m.text
 		});
 		const turns = sceneMessages.slice(-DIRECTOR_WINDOW).map(toTurn);
-		// The player's last line and the replies after it — what events are judged on.
-		const lastPlayer = sceneMessages.findLastIndex((m) => m.from === SPEAKER_ME);
-		const lastExchange = sceneMessages.slice(Math.max(lastPlayer, 0)).map(toTurn);
+		const lastExchange = lastExchangeOf(sceneMessages, (m) => m.from === SPEAKER_ME).map(toTurn);
 		// The same names the transcript uses — a masked character is "Unbekannt" in both, or a claim
 		// could never be traced back to their lines.
 		const characters = cast.map((c) => ({ id: c.id, name: storyRuntime.displayNameFor(c.id) }));
@@ -362,18 +360,19 @@ class StorySession {
 
 		let raw: string;
 		try {
-			// A fresh, historyless session each time: the director must judge this exchange, not
-			// accumulate its own past verdicts. Every session gets its own real backend handle
+			// A fresh, historyless session each time. Every session gets its own real backend handle
 			// (see adapter.ts), so this costs a decode pass but no model reload.
-			const session = await llm.session('director', {
-				systemPrompt: 'Du antwortest ausschließlich mit JSON.',
-				// Chrome's built-in model ignores this on web pages, so its verdict varies between runs
-				// (measured in #54) — one reason the questions are kept small. Other providers: unmeasured.
-				temperature: 0,
-				maxHistoryTurns: 0
-			});
+			const session = await llm.session('director', DIRECTOR_SESSION_CONFIG);
 			raw = await session.prompt(
-				buildDirectorPrompt({ questions, clues, characters, turns, lastExchange }),
+				buildDirectorPrompt({
+					questions,
+					clues,
+					characters,
+					turns,
+					lastExchange,
+					goalDetails: node.goalDetails,
+					flagDetails: node.flagDetails
+				}),
 				{
 					responseSchema: buildDirectorSchema({ questions, characters })
 				}

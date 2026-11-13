@@ -5,6 +5,29 @@ const baseSceneFields = {
 	id: uuidV4Schema,
 	participants: z.array(uuidV4Schema),
 	goals: z.array(z.string()).default([]),
+	/**
+	 * Authored text per goal, keyed by its slug (docs/arc42 §8.1.4). Two texts because a goal is
+	 * read twice: `intent` is what the character pursues, in its persona prompt; `reachedWhen` is
+	 * what the director looks for in the transcript. Kept apart from `goals` rather than turning
+	 * goals into objects, so slugs stay the identity everywhere (saves, the director's schema keys)
+	 * and bundles installed before this field need no migration. Optional: a goal without an
+	 * entry falls back to its slug.
+	 */
+	goalDetails: z
+		.record(
+			z.string(),
+			z.object({
+				intent: z.string().min(1).optional(),
+				reachedWhen: z.string().min(1).optional()
+			})
+		)
+		.optional(),
+	/**
+	 * When a flag the director may set counts as happened, keyed by its `flag:` ref
+	 * (docs/arc42 §8.1.4): for `settableFlags`, for exit flags a goal-less scene asks directly, and
+	 * for a group scene's outcome conditions. Optional, same fallback as `goalDetails`: the bare ref.
+	 */
+	flagDetails: z.record(z.string(), z.object({ reachedWhen: z.string().min(1) })).optional(),
 	/** Whether this scene proactively sends an opening message once unlocked, or stays silent
 	 *  until the player writes first. Defaults to `true` (today's behavior). */
 	autoOpen: z.boolean().default(true),

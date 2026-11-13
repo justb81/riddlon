@@ -9,6 +9,20 @@
 				"open-as-unknown-contact",
 				"reveal-identity-as-lucy"
 			],
+			"goalDetails": {
+				"ask-whether-player-was-at-the-club": {
+					"intent": "Frag, ob die Person, mit der du chattest, letzten Samstag im Kellerlicht war.",
+					"reachedWhen": "Die Figur hat gefragt, ob ihr Gegenüber letzten Samstag im Club war."
+				},
+				"open-as-unknown-contact": {
+					"intent": "Schreib als unbekannte Nummer und nenn deinen Namen nicht gleich.",
+					"reachedWhen": "Die Figur hat geschrieben, ohne sich sofort mit Namen vorzustellen."
+				},
+				"reveal-identity-as-lucy": {
+					"intent": "Gib dich als Lucy zu erkennen, sobald jemand nachfragt.",
+					"reachedWhen": "Die Figur hat gesagt, dass sie Lucy ist."
+				}
+			},
 			"suggestedReplies": ["Ja, war ich.", "Wer bist du eigentlich?", "Wieso fragst du?"],
 			"entryConditions": [],
 			"exitConditions": ["flag:lucy-identified"],
@@ -27,6 +41,16 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["ask-player-for-help", "name-max-and-sabine-as-witnesses"],
+			"goalDetails": {
+				"ask-player-for-help": {
+					"intent": "Erzähl, dass dir im Club dein Portmonnaie gestohlen wurde, und bitte um Hilfe.",
+					"reachedWhen": "Lucy hat um Hilfe bei der Aufklärung des Diebstahls gebeten."
+				},
+				"name-max-and-sabine-as-witnesses": {
+					"intent": "Nenn Max und Sabine als die beiden, die man fragen sollte.",
+					"reachedWhen": "Lucy hat Max und Sabine als Personen genannt, die man befragen soll."
+				}
+			},
 			"suggestedReplies": [
 				"Klar, ich helfe dir.",
 				"Max und Sabine waren auch da.",
@@ -53,6 +77,20 @@
 			"type": "chat-scene",
 			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"goalDetails": {
+				"seed-timeline": {
+					"intent": "Sag, wann es ungefähr passiert ist, wenn du danach gefragt wirst.",
+					"reachedWhen": "Max selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht."
+				},
+				"seed-location": {
+					"intent": "Erzähl, wo Lucys Jacke hing.",
+					"reachedWhen": "Max selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht."
+				},
+				"seed-suspect-description": {
+					"intent": "Beschreib die Person, die dir an dem Abend verdächtig vorkam.",
+					"reachedWhen": "Max selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung."
+				}
+			},
 			"suggestedReplies": [
 				"Wo warst du gestern Abend?",
 				"Kennst du Lucys Portmonnaie?",
@@ -81,6 +119,20 @@
 			"type": "chat-scene",
 			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
 			"goals": ["seed-timeline", "seed-location", "seed-suspect-description"],
+			"goalDetails": {
+				"seed-timeline": {
+					"intent": "Sag, wann es ungefähr passiert ist, wenn du danach gefragt wirst.",
+					"reachedWhen": "Sabine selbst hat eine Uhrzeit genannt, zu der es passiert ist. Ein Wochentag oder „spät“ allein reicht nicht."
+				},
+				"seed-location": {
+					"intent": "Erzähl, wo Lucys Jacke hing.",
+					"reachedWhen": "Sabine selbst hat gesagt, wo Lucys Jacke hing. Eine Frage des Spielers, in der der Ort vorkommt, zählt nicht."
+				},
+				"seed-suspect-description": {
+					"intent": "Beschreib die Person, die dir an dem Abend verdächtig vorkam.",
+					"reachedWhen": "Sabine selbst hat beschrieben, wie eine verdächtige Person aussah, etwa ihre Kleidung."
+				}
+			},
 			"suggestedReplies": [
 				"Wo warst du gestern Abend?",
 				"Hast du etwas Verdächtiges gesehen?",
@@ -90,6 +142,11 @@
 			"entryConditions": ["flag:witnesses-named"],
 			"exitConditions": ["flag:sabine-questioned"],
 			"settableFlags": ["flag:false-accusation"],
+			"flagDetails": {
+				"flag:false-accusation": {
+					"reachedWhen": "Der Spieler hat Sabine direkt vorgeworfen, das Portmonnaie genommen zu haben. Eine Frage, ob sie etwas gesehen hat, ist kein Vorwurf."
+				}
+			},
 			"revealables": [
 				"clue:time-window",
 				"clue:location",
@@ -110,6 +167,16 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["report-findings", "go-quiet-afterwards"],
+			"goalDetails": {
+				"report-findings": {
+					"intent": "Lass dir erzählen, was Max und Sabine gesagt haben.",
+					"reachedWhen": "Lucy wurde berichtet, was Max und Sabine erzählt haben."
+				},
+				"go-quiet-afterwards": {
+					"intent": "Danach zieh dich zurück: bedank dich und sag, dass du das erst sacken lassen musst.",
+					"reachedWhen": "Lucy hat gesagt, dass sie erst nachdenken muss oder sich später meldet."
+				}
+			},
 			"suggestedReplies": [
 				"Ich habe mit Max und Sabine gesprochen.",
 				"Die Zeiten passen nicht zusammen.",
@@ -131,6 +198,16 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["raise-hans-suspicion", "ask-player-to-recheck-with-max-and-sabine"],
+			"goalDetails": {
+				"raise-hans-suspicion": {
+					"intent": "Erzähl, dass Hans, der Barkeeper, Max kurz vor Mitternacht allein an der Garderobe gesehen hat.",
+					"reachedWhen": "Lucy hat erzählt, dass Hans (der Barkeeper) Max an der Garderobe gesehen hat, also Max verdächtigt."
+				},
+				"ask-player-to-recheck-with-max-and-sabine": {
+					"intent": "Bitte darum, noch einmal mit Max und Sabine zu reden.",
+					"reachedWhen": "Lucy hat gebeten, Max und Sabine noch einmal zu befragen."
+				}
+			},
 			"suggestedReplies": [
 				"Was hat Hans gesagt?",
 				"Das überrascht mich.",
@@ -157,6 +234,16 @@
 			"type": "chat-scene",
 			"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 			"goals": ["confront-with-hans-claim", "deny-being-at-the-cloakroom"],
+			"goalDetails": {
+				"confront-with-hans-claim": {
+					"intent": "Du wirst gleich mit dem konfrontiert, was Hans gesehen haben will.",
+					"reachedWhen": "Max wurde mit Hans’ Beobachtung an der Garderobe konfrontiert."
+				},
+				"deny-being-at-the-cloakroom": {
+					"intent": "Streite ab, an der Garderobe gewesen zu sein.",
+					"reachedWhen": "Max hat abgestritten, an der Garderobe gewesen zu sein."
+				}
+			},
 			"suggestedReplies": [
 				"Hans sagt, du warst an der Garderobe.",
 				"Stimmt das?",
@@ -179,6 +266,12 @@
 			"type": "chat-scene",
 			"participants": ["c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"],
 			"goals": ["confirm-hans-claim"],
+			"goalDetails": {
+				"confirm-hans-claim": {
+					"intent": "Bestätige auf Nachfrage, dass du Max kurz vor Mitternacht allein an der Garderobe gesehen hast.",
+					"reachedWhen": "Sabine hat bestätigt, Max an der Garderobe gesehen zu haben."
+				}
+			},
 			"suggestedReplies": [
 				"Hast du Max an der Garderobe gesehen?",
 				"Kannst du Hans' Aussage bestätigen?"
@@ -200,6 +293,20 @@
 			"type": "chat-scene",
 			"participants": ["3f2a1c9e-7b41-4e3a-9c2d-1a2b3c4d5e6f"],
 			"goals": ["report-findings", "confirm-suspicion", "announce-group-chat"],
+			"goalDetails": {
+				"report-findings": {
+					"intent": "Lass dir erzählen, was Max und Sabine diesmal gesagt haben.",
+					"reachedWhen": "Lucy wurde berichtet, was Max und Sabine zu Hans’ Beobachtung gesagt haben."
+				},
+				"confirm-suspicion": {
+					"intent": "Zieh den Schluss, dass Hans recht hatte.",
+					"reachedWhen": "Lucy hat gesagt, dass sich der Verdacht gegen Max bestätigt."
+				},
+				"announce-group-chat": {
+					"intent": "Kündige an, dass du eine Gruppe mit allen aufmachst, um es gemeinsam zu klären.",
+					"reachedWhen": "Lucy hat angekündigt, einen Gruppenchat zu eröffnen."
+				}
+			},
 			"suggestedReplies": [
 				"Ich glaube, wir sollten alle zusammen reden.",
 				"Lass uns einen Gruppenchat starten."
@@ -220,6 +327,22 @@
 				"c1a4e7f2-9d3b-4f6a-8e1c-5b7d9f0a2c4e"
 			],
 			"goals": ["resolve-case", "defend-whoever-is-wrongly-accused"],
+			"goalDetails": {
+				"resolve-case": {
+					"intent": "Klärt gemeinsam, wer das Portmonnaie genommen hat."
+				},
+				"defend-whoever-is-wrongly-accused": {
+					"intent": "Verteidige jeden, der zu Unrecht beschuldigt wird."
+				}
+			},
+			"flagDetails": {
+				"flag:evidence-presented": {
+					"reachedWhen": "Der Spieler hat Max die Widersprüche vorgehalten, und Max hat zugegeben, das Portmonnaie genommen zu haben."
+				},
+				"flag:false-accusation": {
+					"reachedWhen": "Der Spieler hat jemand anderen als Max, etwa Sabine, beschuldigt, das Portmonnaie genommen zu haben."
+				}
+			},
 			"suggestedReplies": [
 				"Max, du hattest die Handtasche.",
 				"Wer war wirklich an der Garderobe?",

@@ -172,7 +172,11 @@ under `assetsBase`, must resolve to a file you actually wrote), `voiceStyle`,
 
 **`story/graph.json`**: `{ "nodes": [...] }`. Each node: `id` (uuid), `type`
 (`"chat-scene"` | `"group-chat-scene"`), `participants` (character uuids), `goals` (strings —
-**order matters**: put the line that should open the scene first), `autoOpen` (bool,
+**order matters**: put the line that should open the scene first), `goalDetails` (per goal
+slug `{ "intent": "...", "reachedWhen": "..." }` in the story's language: `intent` is what the
+character pursues, `reachedWhen` what must visibly happen in the chat; always write both, keys
+must be this scene's goals; see docs/arc42 §8.1.4), `flagDetails` (per settable, exit or
+outcome flag ref `{ "reachedWhen": "..." }`: what must have happened, and what does not count), `autoOpen` (bool,
 default `true` — set `false` if the character should wait for the player to write first),
 `suggestedReplies` (player-facing reply chips, default `[]`), `entryConditions`/
 `exitConditions` (symbolic refs, default `[]`; entry conditions may also be

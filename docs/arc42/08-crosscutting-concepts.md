@@ -51,7 +51,8 @@ Two rules about this layout are load-bearing:
   vacuously.
 
 Under `stories/<slug>/` a package additionally carries a `README.md` (authoring notes) and an
-optional `walkthrough.json` (playtest script). Neither is packed into the released zip.
+optional `walkthrough.json` (playtest script) and `director-cases.json` (director measurement set,
+[§8.10](#810-testing-strategy)). None of them is packed into the released zip.
 
 ### 8.1.1 Identifier Conventions
 
@@ -79,7 +80,7 @@ file name matches the identity inside.
 ```json
 {
 	"format": "chatstory-package",
-	"formatVersion": "1.1.0",
+	"formatVersion": "1.2.0",
 	"id": "7e9c1a2b-3d4e-4f5a-8b6c-9d0e1f2a3b4c",
 	"title": "Lucys Portmonnaie",
 	"version": "1.3.0",
@@ -108,7 +109,9 @@ to assert about a package.
 only the major version, so a package using a field added in a format minor still installs on an older
 player, which would then ignore it silently — an achievement that never awards, a seed chat that
 never appears. A package that depends on a minor's fields therefore raises `minPlayerVersion`
-(`content/player-version.ts` holds the current player version; `0.2.0` is format 1.1.0 support).
+(`content/player-version.ts` holds the current player version; `0.2.0` is format 1.1.0 support, `0.3.0` format 1.2.0). The exception is `goalDetails` and `flagDetails`
+(1.2.0): an older player strips them and falls back to the bare slugs and refs, which is how every package behaved
+before, so a package using them need not raise `minPlayerVersion`.
 
 ### 8.1.3 Characters — Identity and Cast Binding
 
@@ -182,6 +185,12 @@ The story is a **state graph**, not a prompt chain. `story/graph.json` is a flat
 	"type": "chat-scene",
 	"participants": ["8b6d2f10-4c3a-4a91-9e2b-2f4a6b8c1d3e"],
 	"goals": ["seed-timeline", "seed-suspect-description"],
+	"goalDetails": {
+		"seed-timeline": {
+			"intent": "Sag, wann es ungefähr passiert ist, wenn du danach gefragt wirst.",
+			"reachedWhen": "Max hat eine ungefähre Uhrzeit für den Diebstahl genannt."
+		}
+	},
 	"suggestedReplies": ["Wo warst du gestern Abend?"],
 	"autoOpen": true,
 	"entryConditions": ["flag:max-contact-unlocked"],
@@ -193,18 +202,20 @@ The story is a **state graph**, not a prompt chain. `story/graph.json` is a flat
 }
 ```
 
-| Field                                   | Default | Meaning                                                                                                                                                                                                                                                                        |
-| --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `participants`                          | —       | Character UUIDs in this scene                                                                                                                                                                                                                                                  |
-| `goals`                                 | `[]`    | What the characters want to achieve here. **Goal order is prompt order**: the opening instruction repeats the _first_ goal, because an unanchored "write the first message" reliably produces filler.                                                                          |
-| `autoOpen`                              | `true`  | Whether the character proactively sends an opening message on unlock, or stays silent until the player writes first. Goals apply either way — they decide _what_ is said, not _when_.                                                                                          |
-| `suggestedReplies`                      | `[]`    | Pre-written player utterances shown as chips above the composer. Unlike `goals` these are things the _player_ might say. Shown only at the most game-like disguise level (an app setting, not a package field).                                                                |
-| `entryConditions`                       | `[]`    | All must hold for the scene to unlock. An empty list unlocks at story start                                                                                                                                                                                                    |
-| `exitConditions`                        | `[]`    | All must hold for the scene to complete                                                                                                                                                                                                                                        |
-| `settableFlags`                         | `[]`    | `flag:` refs the director may set in this scene _without_ completing it — an accusation, a lie, a promise a later beat can read while this one goes on. Never evaluated for completion; negated refs are never settable.                                                       |
-| `revealables`                           | `[]`    | The clue / fact refs this scene may reveal — the director's allowlist                                                                                                                                                                                                          |
-| `relevantFactIds` / `relevantSecretIds` | _unset_ | Narrow which world entries reach the model for this scene, on top of what the character knows at all. A small model stays more rule-compliant with fewer, on-topic statements. Omitting either falls back to "everything the character knows", so older packages keep working. |
-| `next`                                  | `[]`    | Conditional transitions, `chat-scene` only                                                                                                                                                                                                                                     |
+| Field                                   | Default | Meaning                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `participants`                          | —       | Character UUIDs in this scene                                                                                                                                                                                                                                                                                                                                |
+| `goals`                                 | `[]`    | What the characters want to achieve here. **Goal order is prompt order**: the opening instruction repeats the _first_ goal, because an unanchored "write the first message" reliably produces filler.                                                                                                                                                        |
+| `goalDetails`                           | _unset_ | Authored text per goal, keyed by slug, both parts optional. `intent` is what the character pursues; it replaces the slug in the persona prompt and the opening instruction. `reachedWhen` is what the director looks for; it is shown next to the slug in the goal question. A key that is not one of the scene's goals fails validation. Rationale: ADR 19. |
+| `flagDetails`                           | _unset_ | `{ <flag ref>: { reachedWhen } }`: when a flag the director may set counts as happened. Keys must be the scene's `settableFlags`, `exitConditions` or a group scene's outcome conditions. Shown next to the event; for an ending it replaces the closing text, which describes the aftermath, not the moment. Rationale: ADR 19.                             |
+| `autoOpen`                              | `true`  | Whether the character proactively sends an opening message on unlock, or stays silent until the player writes first. Goals apply either way — they decide _what_ is said, not _when_.                                                                                                                                                                        |
+| `suggestedReplies`                      | `[]`    | Pre-written player utterances shown as chips above the composer. Unlike `goals` these are things the _player_ might say. Shown only at the most game-like disguise level (an app setting, not a package field).                                                                                                                                              |
+| `entryConditions`                       | `[]`    | All must hold for the scene to unlock. An empty list unlocks at story start                                                                                                                                                                                                                                                                                  |
+| `exitConditions`                        | `[]`    | All must hold for the scene to complete                                                                                                                                                                                                                                                                                                                      |
+| `settableFlags`                         | `[]`    | `flag:` refs the director may set in this scene _without_ completing it — an accusation, a lie, a promise a later beat can read while this one goes on. Never evaluated for completion; negated refs are never settable.                                                                                                                                     |
+| `revealables`                           | `[]`    | The clue / fact refs this scene may reveal — the director's allowlist                                                                                                                                                                                                                                                                                        |
+| `relevantFactIds` / `relevantSecretIds` | _unset_ | Narrow which world entries reach the model for this scene, on top of what the character knows at all. A small model stays more rule-compliant with fewer, on-topic statements. Omitting either falls back to "everything the character knows", so older packages keep working.                                                                               |
+| `next`                                  | `[]`    | Conditional transitions, `chat-scene` only                                                                                                                                                                                                                                                                                                                   |
 
 ### 8.1.5 Clues, Secrets, Facts
 
@@ -610,12 +621,12 @@ graph.**
 After each character reply, a second, short model call answers the active scene's **open questions**
 — not one verdict. `buildDirectorQuestions` derives them from the scene node and the current state:
 
-| Question | Asked as                            | From                                                          | Applied as                                                 |
-| -------- | ----------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| Clues    | an array of claims, written first   | `revealables` a cast member has not claimed yet               | `recordClueClaim`                                          |
-| Goals    | one `true`/`false` per goal         | `goals` not yet reached, while an exit flag is open           | remembered; the exit flag is set once **every** goal holds |
-| Events   | one `true`/`false` per flag         | `settableFlags`; a scene's exit flags if it declares no goals | `setFlag`                                                  |
-| Ending   | one choice: `none` or an outcome id | a group scene's flag-conditioned `outcomes`, label and text   | `setFlag` on that one outcome's condition                  |
+| Question | Asked as                                            | From                                                          | Applied as                                                 |
+| -------- | --------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| Clues    | an array of claims, written first                   | `revealables` a cast member has not claimed yet               | `recordClueClaim`                                          |
+| Goals    | one `true`/`false` per goal, with its `reachedWhen` | `goals` not yet reached, while an exit flag is open           | remembered; the exit flag is set once **every** goal holds |
+| Events   | one `true`/`false` per flag                         | `settableFlags`; a scene's exit flags if it declares no goals | `setFlag`                                                  |
+| Ending   | one choice: `none` or an outcome id                 | a group scene's flag-conditioned `outcomes`, label and text   | `setFlag` on that one outcome's condition                  |
 
 **The model never decides a scene's exit flag.** Measured against Chrome's built-in model (#54), a
 single "are all goals met?" verdict set the exit flag in about half the runs where the goal had been
@@ -626,6 +637,12 @@ answers yes/no per goal, `storySession` remembers reached goals per scene across
 flag once all of them have held at some point. That also removes a structural gap: the director only
 sees the last six messages, so a scene whose goals were spread over a longer conversation could never
 show all of them in one window.
+
+**Every question is asked with its criterion.** Where the scene's `goalDetails` give a `reachedWhen`,
+the goal question shows it next to the slug, the same way a clue shows its label; `flagDetails` do
+the same for events, and for an ending they replace its closing text. Slugs and refs stay the answer
+keys. `intent` is never shown to the director: it describes what the character wants, not what
+happened ([ADR 19](./09-architecture-decisions.md#adr-19-goal-text-as-a-separate-per-scene-map-in-two-parts)).
 
 **Endings are one choice.** Asked as flags, the model set "Fall gelöst" and "Falsche Beschuldigung"
 for the same confession in 3 of 4 runs; the parser now voids any answer naming two endings, in either
@@ -867,15 +884,17 @@ It comes from the installed package and carries the package's own `language`.
 
 ## 8.10 Testing Strategy
 
-| Layer                                 | How it is covered                                                                                                       |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Pure logic                            | Vitest `server` (Node) project over `src/**/*.{test,spec}.{js,ts}`. `requireAssertions` is on — every test must assert. |
-| IndexedDB code paths                  | `fake-indexeddb` in `*.integration.spec.ts` (`import 'fake-indexeddb/auto'` plus a `$app/environment` mock).            |
-| The engine, end to end                | `engine.spec.ts` plays the reference story's fifteen steps through the **shipped** package read off disk.               |
-| Shipped content                       | `story-packages.spec.ts` validates every package under `stories/` on a plain `npm test`.                                |
-| Graph reachability                    | `npm run story:playtest` replays a scripted walkthrough through the real engine — no LLM, no browser.                   |
-| Module boundaries                     | `no-llm-dependency.spec.ts` and `no-backend-leakage.spec.ts`.                                                           |
-| Cache Storage, WebGPU, real inference | **Not automatable here** — no Node polyfill for Cache Storage, and neither CI nor the dev sandbox has a GPU.            |
+| Layer                                 | How it is covered                                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Pure logic                            | Vitest `server` (Node) project over `src/**/*.{test,spec}.{js,ts}`. `requireAssertions` is on — every test must assert.  |
+| IndexedDB code paths                  | `fake-indexeddb` in `*.integration.spec.ts` (`import 'fake-indexeddb/auto'` plus a `$app/environment` mock).             |
+| The engine, end to end                | `engine.spec.ts` plays the reference story's fifteen steps through the **shipped** package read off disk.                |
+| Shipped content                       | `story-packages.spec.ts` validates every package under `stories/` on a plain `npm test`.                                 |
+| Graph reachability                    | `npm run story:playtest` replays a scripted walkthrough through the real engine — no LLM, no browser.                    |
+| Director cases                        | `director-cases.spec.ts` checks every `stories/*/director-cases.json` against its own graph, so a renamed goal fails CI. |
+| Director parser on real answers       | `director-recorded.spec.ts` re-parses answers recorded in `llm/__fixtures__/director-answers/` and compares verdicts.    |
+| Module boundaries                     | `no-llm-dependency.spec.ts` and `no-backend-leakage.spec.ts`.                                                            |
+| Cache Storage, WebGPU, real inference | **Not automatable here** — no Node polyfill for Cache Storage, and neither CI nor the dev sandbox has a GPU.             |
 
 The shipped package is the engine's acceptance fixture, not a copy of it:
 `__fixtures__/lucys-portmonnaie-walkthrough.ts` reads `stories/lucys-portmonnaie/` off disk (Node
@@ -894,6 +913,14 @@ with why it exists and when to delete it:
 The director probe exists because a verdict that silently sets nothing is otherwise invisible — the
 story just stops advancing — and it is how you tell a model problem from a story problem, since the
 story's own flag chain is already asserted in Node.
+
+**Director cases** turn the probe into a measurement (#54). A story's `director-cases.json` holds
+fixed transcripts per scene, each with the answer every question should get. `/dev/story` runs each
+case several times against the loaded model, from a clean state rather than the save, and prompts
+exactly as a live pass does: the same `DIRECTOR_SESSION_CONFIG`, window and last-exchange cut, with
+the window adjustable. It tallies hits, early goals, false events, endings, clue claims and the
+median call time, and exports every raw answer. The exported answers are the fixtures above. How to
+run a measurement and where the numbers go: `stories/README.md`, "Measuring the director".
 
 Add a new `/dev/<name>` route rather than trying to make a Node test cover what only a browser can.
 

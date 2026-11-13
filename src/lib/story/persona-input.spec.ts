@@ -70,7 +70,9 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 			SCENE_LUCY_INTRO,
 			soloWith(LUCY_ID)
 		);
-		expect(prompt).toContain('name-max-and-sabine-as-witnesses');
+		expect(prompt).toContain('Nenn Max und Sabine als die beiden, die man fragen sollte.');
+		// The authored intent replaces the English slug (goalDetails, docs/arc42 §8.1.4).
+		expect(prompt).not.toContain('name-max-and-sabine-as-witnesses');
 		expect(prompt).toContain('Diese Leute kennst du');
 		expect(prompt).toContain('Max (friend)');
 		expect(prompt).toContain('Sabine (friend)');
@@ -147,7 +149,7 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 			soloWith(LUCY_ID)
 		);
 		expect(active).toContain('Worauf du in diesem Gespräch hinauswillst');
-		expect(active).toContain('name-max-and-sabine-as-witnesses');
+		expect(active).toContain('Nenn Max und Sabine als die beiden, die man fragen sollte.');
 		expect(active).not.toContain('Das ist zwischen euch bereits geklärt');
 
 		const idle = buildScenePersonaPrompt(
@@ -159,7 +161,7 @@ describe('buildScenePersonaPrompt against the shipped Lucys Portmonnaie package'
 		);
 		expect(idle).not.toContain('Worauf du in diesem Gespräch hinauswillst');
 		expect(idle).toContain('Das ist zwischen euch bereits geklärt');
-		expect(idle).toContain('name-max-and-sabine-as-witnesses');
+		expect(idle).toContain('Nenn Max und Sabine als die beiden, die man fragen sollte.');
 	});
 
 	it('drops a group scene’s playerRole once idle, without losing canon facts', () => {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildOpeningInstruction, buildPersonaPrompt, pickResponder } from './persona.js';
+import {
+	buildOpeningInstruction,
+	buildPersonaPrompt,
+	goalIntents,
+	pickResponder
+} from './persona.js';
 
 const base = {
 	character: {
@@ -116,6 +121,17 @@ describe('buildOpeningInstruction', () => {
 
 	it('still works for a scene that declares no goals', () => {
 		expect(buildOpeningInstruction('Bastian', [])).not.toContain('erstes Ziel');
+	});
+});
+
+describe('goalIntents', () => {
+	it('uses the authored intent and falls back to the slug where there is none', () => {
+		expect(
+			goalIntents(['seed-timeline', 'seed-location'], {
+				'seed-timeline': { intent: 'Sag, wann es war.' }
+			})
+		).toEqual(['Sag, wann es war.', 'seed-location']);
+		expect(goalIntents(['seed-timeline'])).toEqual(['seed-timeline']);
 	});
 });
 

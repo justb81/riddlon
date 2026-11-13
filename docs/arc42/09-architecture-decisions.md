@@ -292,3 +292,29 @@ TypeScript 6 but lose the `eslint-plugin-svelte` rules, so it was rejected.
 TypeScript 6 parser. Dependabot ignores major bumps of `typescript` so it does not propose the
 unsupported upgrade again. The pin is temporary debt, see
 [§11.2](./11-risks-and-technical-debt.md#112-technical-risks).
+
+## ADR 19: Goal text as a separate per-scene map, in two parts
+
+**Context.** Scene `goals` were bare English slugs. The character got "seed-timeline" as a goal in a
+German prompt, and the director had to guess when a slug like `go-quiet-afterwards` holds (#54). A
+goal is read twice, for different jobs: the persona prompt needs what the character _pursues_, the
+director needs what it should _see_ in the transcript. Slugs are also identities: saves remember
+reached goals by slug, the director's answer schema uses them as keys, and the same slug can occur
+in two scenes with different meaning (`seed-timeline` for Max and for Sabine).
+
+**Decision.** Keep `goals` as slugs and add an optional per-scene map
+`goalDetails: { <slug>: { intent?, reachedWhen? } }` ([§8.1.4](./08-crosscutting-concepts.md#814-scenes-and-the-story-graph)).
+`intent` replaces the slug in the persona prompt and the opening instruction. `reachedWhen` appears
+next to the slug in the director's goal question. The director never sees `intent`, because "the
+character wants X" is not "X happened" and would push yes-answers early. Turning `goals` itself into
+`string | { id, … }` was considered: it keeps the text beside its id. It was rejected because
+installed bundles are stored parsed and would need normalising on every read, and because an older
+player would reject such a package outright, while it simply ignores an unknown map.
+
+**Consequences.** Nothing that keys on slugs changes: saves, the answer schema and director cases stay
+as they were. A key that names no goal of its scene fails validation (`DANGLING_REFERENCE`); a goal
+without an entry falls back to its slug. Text and id live in two lists an author has to keep
+together. Every `reachedWhen` lengthens the director prompt; whether that helps a small model is
+measured with the director cases ([§11.2](./11-risks-and-technical-debt.md#112-technical-risks)).
+The same shape covers flags: `flagDetails: { <flag ref>: { reachedWhen } }` gives events and a group
+scene's endings a criterion. A flag has no `intent`, because no character pursues it.

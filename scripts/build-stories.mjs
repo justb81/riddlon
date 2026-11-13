@@ -30,14 +30,16 @@ const STORIES_DIR = path.join(ROOT, 'stories');
  * authoring-only, same as `README.md`, and read straight off disk rather than through the
  * manifest, so it never needs a `manifest.world` entry. The prefix match covers the per-branch
  * walkthroughs a branching story needs (`walkthrough-false-accusation.json`), which must not end
- * up in the shipped zip either.
+ * up in the shipped zip either. A `director-cases*.json` is `/dev/story`'s measurement set for the
+ * director pass (see `stories/README.md`) — authoring-only for the same reason.
  */
 const NOT_PACKAGE_CONTENT = new Set(['README.md', '.DS_Store']);
 
 function isPackageContent(relativePath) {
 	const name = path.basename(relativePath);
 	if (NOT_PACKAGE_CONTENT.has(name)) return false;
-	return !(name.startsWith('walkthrough') && name.endsWith('.json'));
+	if (!name.endsWith('.json')) return true;
+	return !name.startsWith('walkthrough') && !name.startsWith('director-cases');
 }
 
 /** Generated per build (see `checksums()`), so a stale copy on disk is never shipped. */
