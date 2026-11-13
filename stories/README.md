@@ -171,7 +171,9 @@ fails CI instead of quietly skewing the next measurement.
 
 ### Running a measurement
 
-1. `npm run dev`, then install and start the story under `/chat/riddlon`, and load the model you are
+1. `npm run dev` (not a bare `vite dev`: only `npm run dev` bundles the current packages into
+   `static/stories/`, and the line under the buttons shows which package version is installed), then
+   install and start the story under `/chat/riddlon`, and load the model you are
    measuring under `/`.
 2. Open `/dev/story` and go to **Director cases**. The red list under the buttons must be empty.
 3. Leave **authored criteria** on; switch it off once to measure what the criteria are worth

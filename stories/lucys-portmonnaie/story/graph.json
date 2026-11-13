@@ -296,7 +296,7 @@
 			"goalDetails": {
 				"report-findings": {
 					"intent": "Lass dir erzählen, was Max und Sabine diesmal gesagt haben.",
-					"reachedWhen": "Lucy wurde berichtet, was Max und Sabine zu Hans’ Beobachtung gesagt haben."
+					"reachedWhen": "Lucy hat erfahren, was Max und Sabine ausgesagt haben."
 				},
 				"confirm-suspicion": {
 					"intent": "Zieh den Schluss, dass Hans recht hatte.",

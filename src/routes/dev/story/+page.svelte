@@ -300,6 +300,7 @@
 						model,
 						window: caseWindow,
 						criteria: caseCriteria,
+						packageVersion: storyRuntime.bundle?.manifest.version,
 						prompt,
 						allowlist,
 						raw: '',
@@ -661,7 +662,8 @@
 		</div>
 
 		<p class="mt-2 font-mono text-[11px] text-slate-400">
-			model {modelLabel()} · {caseProgress || 'idle'}
+			model {modelLabel()} · package v{storyRuntime.bundle?.manifest.version ?? '—'} ·
+			{caseProgress || 'idle'}
 		</p>
 		{#each caseProblems as problem (problem)}
 			<p class="font-mono text-[10.5px] text-danger">{problem}</p>

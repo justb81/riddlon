@@ -198,6 +198,11 @@ export interface CaseRun {
 	window: number;
 	/** Whether the scene's `goalDetails`/`flagDetails` were in the prompt. Absent in older files. */
 	criteria?: boolean;
+	/**
+	 * The installed package version the run was asked against. `vite dev` without `npm run dev`
+	 * skips `stories:bundle`, so the app may still run an older package than the repo holds.
+	 */
+	packageVersion?: string;
 	prompt: string;
 	/** Everything the parser was given, so a recorded answer can be parsed again in Node. */
 	allowlist: Required<DirectorAllowlist>;
