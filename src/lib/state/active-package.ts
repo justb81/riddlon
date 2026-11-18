@@ -49,8 +49,8 @@ export function activationCandidateIds(
 	preferredId: string | null,
 	packages: readonly { id: string; installedAt: string }[]
 ): string[] {
-	const byRecency = [...packages]
-		.sort((a, b) => b.installedAt.localeCompare(a.installedAt))
+	const byRecency = packages
+		.toSorted((a, b) => b.installedAt.localeCompare(a.installedAt))
 		.map((pkg) => pkg.id);
 	const preferred = preferredId !== null && byRecency.includes(preferredId) ? [preferredId] : [];
 	return [...preferred, ...byRecency.filter((id) => id !== preferredId)];

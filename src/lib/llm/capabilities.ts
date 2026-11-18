@@ -102,9 +102,9 @@ export function unsupportedModelReason(
  * whenever it fits; `MODEL_ORDER` is smallest-first, so this walks it in reverse.
  */
 export function bestSupportedModelId(capabilities: LlmCapabilities): LocalModelId {
-	const supported = [...MODEL_ORDER]
-		.reverse()
-		.find((id) => fitsInDevice(capabilities, findModel(id).vramRequiredMB));
+	const supported = MODEL_ORDER.findLast((id) =>
+		fitsInDevice(capabilities, findModel(id).vramRequiredMB)
+	);
 	return supported ?? DEFAULT_MODEL_ID;
 }
 
